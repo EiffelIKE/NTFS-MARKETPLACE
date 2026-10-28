@@ -30,15 +30,25 @@ export function SearchDialog({
   const navigate = useNavigate()
   const [text, setText] = React.useState('')
   const submitted = React.useRef(false)
+  // The dialog has no Radix trigger (the header icon and the tab bar button open it from outside),
+  // so Radix has nowhere to return focus to: the opener is remembered here (spec 11, A11Y-06).
+  const opener = React.useRef<HTMLElement | null>(null)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
+        onOpenAutoFocus={() => {
+          opener.current =
+            document.activeElement instanceof HTMLElement ? document.activeElement : null
+        }}
         onCloseAutoFocus={(event) => {
-          if (!submitted.current) return
-          submitted.current = false
           event.preventDefault()
-          document.getElementById('mercado-title')?.focus({ preventScroll: true })
+          if (submitted.current) {
+            submitted.current = false
+            document.getElementById('mercado-title')?.focus({ preventScroll: true })
+          } else {
+            opener.current?.focus()
+          }
         }}
       >
         <DialogHeader>

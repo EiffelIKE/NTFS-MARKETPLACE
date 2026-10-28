@@ -10,6 +10,7 @@ import type { Cart, Profile, Wallet } from '@/contracts'
 import { quoteQueryOptions } from '@/features/cart/api/cart-queries'
 import { useCartLive } from '@/features/cart/model/use-cart-live'
 import { useCartOwner } from '@/features/cart/model/use-cart'
+import { useBottomBarInset } from '@/hooks/use-bottom-bar-inset'
 import { useMediaQuery } from '@/hooks/use-media-query'
 import type { ApiError } from '@/lib/http/errors'
 import { cn } from '@/lib/utils'
@@ -249,29 +250,12 @@ function MobileComposition({
   onDetailsOpenChange: (open: boolean) => void
 }) {
   const bar = React.useRef<HTMLDivElement>(null)
-  const root = React.useRef<HTMLDivElement>(null)
 
   // The action bar is fixed, so the page keeps its height as bottom padding (as the cart does).
-  React.useEffect(() => {
-    const element = bar.current
-    const host = root.current
-    if (!element || !host) return
-    const measure = () => {
-      host.style.setProperty('--checkout-bar-h', `${String(element.offsetHeight)}px`)
-    }
-    measure()
-    const observer = new ResizeObserver(measure)
-    observer.observe(element)
-    return () => {
-      observer.disconnect()
-    }
-  }, [])
+  useBottomBarInset(bar)
 
   return (
-    <div
-      ref={root}
-      className="flex flex-col gap-6 pt-2 pb-[calc(var(--checkout-bar-h,6rem)+1rem)] [@media(max-height:560px)]:pb-6"
-    >
+    <div className="flex flex-col gap-6 pt-2 pb-[calc(var(--bottom-bar-inset,6rem)+1rem)] [@media(max-height:560px)]:pb-6">
       <WalletCards />
 
       <section aria-labelledby="provider-title" className="flex flex-col gap-4">

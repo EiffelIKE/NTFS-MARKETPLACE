@@ -149,3 +149,5 @@ Decisions taken while finalizing and implementing, where the draft was silent or
 9. **Line labels:** the quantity and subtotal cells carry a visually hidden "Quantidade:" / "Subtotal:" below `lg`, where the column headers are hidden for readers only; from `lg` the headers name the cells.
 
 **Visual check (2026-10-28, browser, against `figma_tokens/screenshots/desktop/Confirmação de Pedido.png`):** at 1440 the card (580 wide, centered), illustration, heading, band with rules, table, totals, note, primary button and bottom bar match. Differences: the shell header above the card (page, not modal), the added "Subtotal" / "Desconto" rows, the edition line, the 12 px band text, the simulated-explorer caption and "Continuar explorando". Mobile 390 has no frame; checked for no overflow and the fixed bottom action.
+
+**Amended by spec 11 (2026-10-28):** the receipt's mobile action bar publishes its height through `useBottomBarInset` and the page pads its bottom with it (it was a fixed 8.5 rem).

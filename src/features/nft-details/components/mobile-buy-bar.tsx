@@ -1,7 +1,10 @@
+import * as React from 'react'
+
 import { CartIcon } from '@/components/icons'
 import { QuantityStepper } from '@/components/quantity-stepper'
 import { Button } from '@/components/ui/button'
 import type { NftDetail } from '@/contracts'
+import { useBottomBarInset } from '@/hooks/use-bottom-bar-inset'
 import { formatEth } from '@/lib/money'
 
 import type { PurchaseSelection } from '../hooks/use-purchase-selection'
@@ -26,8 +29,12 @@ export function MobileBuyBar({
   onBuy: () => void
   onAddToCart: () => void
 }) {
+  const bar = React.useRef<HTMLElement>(null)
+  useBottomBarInset(bar)
+
   return (
     <section
+      ref={bar}
       aria-label="Compra"
       className="fixed inset-x-0 bottom-0 z-30 rounded-t-[30px] bg-surface-card pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-[0_-8px_24px_var(--color-ink)]"
     >

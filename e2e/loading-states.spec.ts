@@ -202,7 +202,7 @@ test.describe('details', () => {
       await expect(
         page.getByRole('alert').filter({ hasText: 'Não foi possível carregar este NFT.' }),
       ).toBeVisible()
-      await expect(detailsHeading(page)).toHaveText('NFT')
+      await expect(detailsHeading(page)).toHaveText('NFT indisponível')
       await expect(page.getByRole('link', { name: 'Voltar ao mercado' })).toBeVisible()
 
       await page.getByRole('button', { name: 'Tentar novamente' }).click()

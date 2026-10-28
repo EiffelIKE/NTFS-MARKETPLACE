@@ -303,3 +303,5 @@ Decisions taken while implementing, where the design was silent or had to give w
 - Mobile 390 ("Pagamento com carteira"): top bar, wallet cards with the ⋮ menu, provider rows and the gradient pill in the fixed bar match; the "Total:" row sits above the bar. Differences: heading "Carteira" (decision 7), the collapsed collector section, and wallet card line 3 "Rede <name>" on both cards.
 
 **For spec 10:** `features/orders/` exports `orderKeys`, `orderQueryOptions`, `useOrderStatus` and the two panels; the receipt page should read the order from `['orders','detail',id]` (checkout seeds it) and replace the stub in `routes/orders.$orderId.tsx`.
+
+**Amended by spec 11 (2026-10-28):** the checkout action bar publishes its height through `useBottomBarInset` (`--bottom-bar-inset`) instead of a local `--checkout-bar-h`; `expectNoAxeViolations` waits for dimmed figures to finish fading, so the `quote-total` patch in `purchase.spec.ts` was replaced.

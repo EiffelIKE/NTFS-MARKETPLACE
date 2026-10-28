@@ -16,13 +16,15 @@ import { useLogout } from '../api/use-logout'
 /**
  * The signed-in header control (AUTH-21): avatar and name open a menu. Radix gives arrow-key
  * navigation, `Esc` and focus return; the content comes from `useSession()`, so a profile edit
- * (spec 08, `session.updateUser`) shows up without a reload.
+ * (spec 08, `session.updateUser`) shows up without a reload. It is non-modal (spec 11): a modal
+ * menu hides the page with `aria-hidden` while its links stay focusable, which axe rightly reports
+ * (`aria-hidden-focus`), and a menu needs no focus trap: `Tab` simply closes it, as in a menu bar.
  */
 export function UserMenu({ name, avatarUrl }: { name: string; avatarUrl?: string | undefined }) {
   const logout = useLogout()
 
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"

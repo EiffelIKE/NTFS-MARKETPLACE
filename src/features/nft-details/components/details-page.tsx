@@ -105,7 +105,7 @@ function DetailsContent({ nft }: { nft: NftDetail }) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-150 pb-[calc(11.5rem+env(safe-area-inset-bottom))] lg:max-w-page lg:px-6 lg:pb-0">
+    <div className="mx-auto w-full max-w-150 pb-[var(--bottom-bar-inset,11.5rem)] lg:max-w-page lg:px-6 lg:pb-0">
       <Breadcrumb className="mb-3 hidden lg:block">
         <BreadcrumbList className="text-body-lg font-bold">
           <BreadcrumbItem>

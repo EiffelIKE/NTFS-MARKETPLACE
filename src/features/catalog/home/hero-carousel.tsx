@@ -15,8 +15,13 @@ import { HERO_FALLBACK } from '../content/home-copy'
 
 type Slide = Highlights['hero'][number]
 
-// Mobile card 366 × 190, desktop 1200 × 450 (Figma); the height is fixed so nothing shifts.
-const frame = 'h-47.5 lg:h-112.5'
+// Mobile card 366 × 190, desktop 1200 × 450 (Figma). The desktop height is fixed so nothing shifts;
+// on mobile the height is a minimum (spec 11): the copy column of a 390, 380 or 360 px phone is
+// narrower than the Figma 414 frame, wraps more lines, and a fixed 190 cut off the eyebrow and the
+// "EXPLORAR" link. The loaded card measures 198 px from 385 px up, 216 at 380 and 245 below 376, so
+// the minimum is 198 and the skeleton reserves 245 on the narrowest phones, which keeps the
+// catalog below it from jumping when the hero loads (CAT-14).
+const frame = 'min-h-49.5 lg:h-112.5'
 
 /**
  * The hero (CAT-19, CAT-20): `highlights.hero` as a scroll-snap carousel with one dot button per
@@ -28,7 +33,13 @@ export function HeroCarousel({ className }: { className?: string | undefined }) 
 
   if (isPending) {
     return (
-      <Skeleton className={cn(frame, 'w-full rounded-hero-mobile lg:rounded-none', className)} />
+      <Skeleton
+        className={cn(
+          frame,
+          'w-full rounded-hero-mobile max-[379px]:min-h-61.25 lg:rounded-none',
+          className,
+        )}
+      />
     )
   }
   if (isError) {
@@ -87,7 +98,7 @@ function Slides({ slides, className }: { slides: Slide[]; className?: string | u
       aria-roledescription="carrossel"
       aria-label="Destaques"
       className={cn(
-        'relative overflow-hidden rounded-hero-mobile bg-surface-dark lg:overflow-visible lg:rounded-none lg:bg-transparent',
+        'relative flex flex-col overflow-hidden rounded-hero-mobile bg-surface-dark lg:overflow-visible lg:rounded-none lg:bg-transparent',
         frame,
         className,
       )}
@@ -95,10 +106,10 @@ function Slides({ slides, className }: { slides: Slide[]; className?: string | u
       <Circles />
       <div
         ref={track}
-        className="relative flex h-full snap-x snap-mandatory [scrollbar-width:none] overflow-x-auto overscroll-x-contain lg:overflow-x-hidden"
+        className="relative flex flex-1 snap-x snap-mandatory [scrollbar-width:none] overflow-x-auto overscroll-x-contain lg:overflow-x-hidden"
       >
         {slides.length === 0 ? (
-          <div className="h-full w-full shrink-0">
+          <div className="w-full shrink-0">
             <SlideContent slide={HERO_FALLBACK} first />
           </div>
         ) : (
@@ -109,7 +120,7 @@ function Slides({ slides, className }: { slides: Slide[]; className?: string | u
               aria-roledescription="slide"
               aria-label={`${String(index + 1)} de ${String(slides.length)}`}
               role="group"
-              className="h-full w-full shrink-0 snap-center"
+              className="w-full shrink-0 snap-center"
             >
               <SlideContent
                 slide={slide}
@@ -188,7 +199,7 @@ function SlideContent({
 
   return (
     <div className="relative flex h-full items-center justify-between gap-2 p-4 lg:gap-8 lg:p-0 lg:pl-10">
-      <div className="flex min-w-0 flex-1 flex-col lg:max-w-150 lg:flex-none">
+      <div className="flex min-w-0 flex-1 flex-col lg:max-w-150 lg:flex-initial">
         <p className="text-caption-sm leading-4 font-medium text-foreground lg:text-body lg:tracking-brand">
           {slide.eyebrow}
         </p>
@@ -218,19 +229,19 @@ function SlideContent({
       </div>
 
       {slide.image && (
-        <div className="relative shrink-0">
+        <div className="relative shrink-0 lg:min-w-0 lg:shrink">
           <NftImage
             image={slide.image}
             slot="hero"
             priority={first}
-            className="size-34.5 rounded-artwork-mobile object-cover lg:size-112.5 lg:rounded-hero"
+            className="size-[clamp(5rem,33vw,8.625rem)] rounded-artwork-mobile object-cover lg:h-112.5 lg:w-112.5 lg:max-w-full lg:rounded-hero"
           />
           {nextImage && (
             <NftImage
               image={nextImage}
               slot="hero"
               alt=""
-              className="absolute top-22 -left-3.5 size-14.5 rounded-artwork-mobile border-2 border-surface-dark object-cover lg:hidden"
+              className="absolute top-22 -left-3.5 size-14.5 rounded-artwork-mobile border-2 border-surface-dark object-cover max-[400px]:hidden lg:hidden"
             />
           )}
         </div>

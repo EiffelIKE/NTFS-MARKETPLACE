@@ -93,7 +93,7 @@ None. The share row icons were delivered on 2026-10-27 in `src/assets/share_icon
 - Gate: `pnpm typecheck`, `pnpm lint` (0 warnings), `pnpm format:check`, `pnpm test` (**553 unit tests** in 42 files, 28 of them new in `cart`, `favorites` and `nft-details`), `pnpm build` and `pnpm test:e2e` (**299 passed, 25 skipped** by design, in `desktop-chromium` and `mobile-chromium`) all exit 0. `nft-details.spec.ts` and `favorites.spec.ts` are new; `loading-states.spec.ts` and `design-system.spec.ts` gain the details rows.
 - **Open warning:** `pnpm build` still reports one chunk over 500 kB, owned by spec 13.
 - **Found by the E2E run:**
-  - Clicking the heart before the favorites list arrived on a fresh load showed "not favorited", so the click asked for "on". That is what the user saw, so the code is unchanged and the test waits for the pressed state first.
+  - Clicking the heart before the favorites list arrived on a fresh load showed "not favorited", so the click asked for "on". Spec 06 left the code unchanged and made the test wait for the pressed state; spec 11 fixed it in the code (the heart is inert until the list is known) and added the E2E rows.
   - The mobile gallery scroller failed axe's `scrollable-region-focusable`; it is now a labelled, focusable region (arrow keys scroll it).
   - The skeleton's gallery box was 24 px off on mobile and 4 px lower on desktop, and the desktop gallery stretched with the right column; the skeleton now uses the page's own box and the box does not stretch (`lg:self-start`).
   - `product-grid.tsx` was missing the card actions until the card test failed; the grid now fills `cornerAction` and `actions`.

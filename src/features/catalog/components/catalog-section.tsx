@@ -98,14 +98,14 @@ export function CatalogSection() {
           {favoritesMode ? 'Lista de interesse' : 'Mercado'}
         </h2>
 
-        <div className="flex items-center justify-between gap-6">
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
           <SegmentTabs active={segment} className="min-w-0 flex-1 lg:flex-none" />
           <SortSelect
             value={search.sort}
             onChange={(sort) => {
               change({ sort })
             }}
-            className="hidden shrink-0 lg:flex"
+            className="ml-auto hidden shrink-0 lg:flex"
           />
         </div>
 

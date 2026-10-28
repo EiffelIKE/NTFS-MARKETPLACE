@@ -14,6 +14,7 @@ import { useCartCount } from '@/features/cart/model/use-cart'
 import { RouteFavorite } from '@/features/favorites/components/route-favorite'
 import { SearchDialog } from '@/features/catalog/components/search-dialog'
 import { useMediaQuery } from '@/hooks/use-media-query'
+import { useRouteFocus } from './use-route-focus'
 import { useSession } from '@/features/auth/model/use-session'
 import type { SessionState } from '@/features/auth/model/session'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -37,6 +38,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const session = shellSession(state)
   const cartCount = useCartCount()
   const { mobile } = shell
+  useRouteFocus()
 
   // Search (CAT-25): on the mobile home the catalog's own field takes focus; everywhere else,
   // including desktop home where Figma draws only the icon, a dialog opens.

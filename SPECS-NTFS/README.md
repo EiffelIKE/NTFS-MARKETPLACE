@@ -27,7 +27,7 @@ A spec is **Done** when all its tasks are checked, its E2E tests pass with mocks
 | 08 | `08-profile-wallets` | Profile details, avatar, password change; primary/secondary wallets add/edit with validation and API errors; mobile layout without dedicated frame | 04 | Profile / Wallets desktop (screenshots) | `ACC` | Done |
 | 09 | `09-checkout-orders` | Checkout form + review step, wallet/network selection, simulated connect/reject/disconnect, quote revalidation requiring re-confirmation, idempotent order creation, pending/confirmed/declined via `order.updated`, recovery after refresh/reconnect, cart cleanup of purchased lines only | 07, 08 | Checkout desktop + mobile (screenshots) | `CHK` | Done |
 | 10 | `10-order-confirmation` | Receipt from order snapshot (immutable amounts), transaction id + simulated explorer link, only for confirmed orders; mobile layout without dedicated frame | 09 | Confirmation desktop (screenshot, modal) | `RCPT` | Done |
-| 11 | `11-a11y-responsive` | Cross-cutting audit pass: keyboard paths, focus traps in dialogs/drawers, live regions for mutations and realtime, contrast, zoom/overflow at 390 / 768 / 1440, tablet composition | 05–10 | All | `A11Y` | Draft |
+| 11 | `11-a11y-responsive` | Cross-cutting audit pass: keyboard paths, focus traps in dialogs/drawers, live regions for mutations and realtime, contrast, zoom/overflow at 390 / 768 / 1440, tablet composition | 05–10 | All | `A11Y` | Done — manual screen-reader pass pending |
 | 12 | `12-visual-regression` | Playwright screenshot baselines for home, details, cart, checkout (desktop + mobile), frozen clock and data, masked dynamic regions | 05–09 | Home, Details, Cart, Checkout | `VR` | Draft |
 | 13 | `13-lighthouse` | Lighthouse CI config, 3 runs × page × profile, medians, LCP/CLS/TBT, HTML/JSON reports, analysis of misses (incl. MSW worker start cost) | 05, 06 | — | `PERF` | Draft |
 | 14 | `14-docs-delivery` | `README.md` (setup, env vars, credentials, scenarios, reset, commands, failure reproduction), `ARCHITECTURE.md` (contracts, events, session, cart, cache, reconciliation, deviations), final deploy check | all | — | `DOC` | Draft |
@@ -103,7 +103,7 @@ Gaps in Figma that specs must resolve (and record as deviations in `ARCHITECTURE
 - **Desktop login / sign-up**: Figma draws them as a modal over home. Decided in spec 04: pages rendering the Figma panel, not a modal.
 - **Confirmation modal**: Figma draws the receipt as a modal. Decided in spec 10: a routed page at `/orders/$orderId` (direct access, refresh, recovery) rendering the Figma card on desktop and a full-width page on mobile.
 - **Social login and "Esqueceu a senha?"**: out of scope. Decided in spec 04: they show "Disponível em breve" and do nothing.
-- **Tablet (768)**: no frame. Proposal: mobile composition with 3-column grid and filter sheet up to `lg` (1024).
+- **Tablet (768)**: no frame. Decided in spec 11: the mobile composition with the 3-column grid and the filter sheet up to `lg` (1024), and a centered 600 px column for details, cart, checkout, receipt and the account screens.
 - **Mobile tab bar FAB**: icon has no defined function. Decided in spec 01: opens search; the bag icon is the cart. Inner mobile screens (details, cart, checkout) hide the tab bar, as their frames show.
 - **Mobile favorites tab**: no favorites screen in scope. Proposal: catalog filtered to the user's favorites (`?favorites=1`, auth required).
 - **Mobile filter sheet**: not drawn. Reuse desktop Filters content in a shadcn `Sheet`.

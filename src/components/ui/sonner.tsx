@@ -10,16 +10,18 @@ import {
 } from '@/components/icons'
 import { useMediaQuery } from '@/hooks/use-media-query'
 
-// Toasts (DS-19): type icon + text, never color alone. Bottom-center above the tab bar below `lg`,
-// bottom-right from `lg` (spec 01 design §6).
+// Toasts (DS-19): type icon + text, never color alone. Bottom-right from `lg`; top-center below it
+// (spec 11 amendment of spec 01 design §6): the bottom of a phone screen belongs to the tab bar and
+// to the fixed action bars (details, cart, checkout, receipt), and a toast there covered the
+// primary action of the screen ("Salvar" in the profile) for as long as it lasted.
 function Toaster(props: ToasterProps) {
   const isDesktop = useMediaQuery('(min-width: 1024px)')
-  const mobileOffset = { bottom: 'calc(134px + env(safe-area-inset-bottom))' }
+  const mobileOffset = { top: 'calc(12px + env(safe-area-inset-top))' }
 
   return (
     <Sonner
       theme="dark"
-      position={isDesktop ? 'bottom-right' : 'bottom-center'}
+      position={isDesktop ? 'bottom-right' : 'top-center'}
       offset={isDesktop ? 24 : mobileOffset}
       mobileOffset={mobileOffset}
       closeButton

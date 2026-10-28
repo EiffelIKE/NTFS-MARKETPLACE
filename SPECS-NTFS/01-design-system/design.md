@@ -490,7 +490,7 @@ Visual baselines of the shells are spec 12.
 16. Tab bar: top radius 32 px is an arbitrary value (no token); icon slots are symmetric around the FAB (centers 46 / 118 / 296 / 368) while Figma is slightly asymmetric (46 / 117 / 302 / 364).
 17. Mobile top bar title is centered in a `40px 1fr 40px` grid at the `title` step (18 px); the cart frame draws it at about 20 px, slightly right of center.
 18. Rotated registry icons: `ChevronRight/Down/Up` from `arrow-left`, `MoreHorizontal` from `menu`.
-19. Sonner offsets: desktop bottom-right 24 px; mobile bottom-center at `134px + safe area`, above the tab bar.
+19. Sonner offsets: desktop bottom-right 24 px; mobile bottom-center at `134px + safe area`, above the tab bar. **Amended by spec 11 (2026-10-28):** below `lg` toasts are top-center (`12px + safe area`), because a toast above the tab bar covered the last action of the screen (the profile's "Salvar") and the fixed action bars of details, cart, checkout and the receipt have no room for one.
 20. `Textarea` added here (spec 09 amendment pulled forward, same field surface).
 21. Tabs: the list is a horizontal scroller (DS-31) with an inset-shadow baseline instead of `border-b`; triggers have `px-1` with gap 24 (still 32 between labels) and an inset focus outline so the scroller never clips it.
 22. Input groups show the focus outline on the group (around input and addons), not on the inner input; the DS-15 E2E checks the group for those controls.
@@ -517,3 +517,4 @@ Visual baselines of the shells are spec 12.
 | 06 | `components/quantity-stepper.tsx` (reused by spec 07) |
 | 04 | `DesktopHeader` `userMenu` slot; `ShellSession` user variant; guest "Entrar" carries the `redirect` on auth pages — **applied in spec 04** (design §14) |
 | 09 | shadcn `textarea` for "Observação do colecionador" (spec 09 T01) |
+| 11 | Spec 11 (2026-10-28): `ui/sonner.tsx` toasts at the top on phones (§11, item 19); `ui/button.tsx` passes a caller's `aria-busy` through; `hooks/use-bottom-bar-inset.ts` is used by the tab bar and by every fixed action bar, and `base.css` sets `scroll-padding-bottom` from it; `app/use-route-focus.ts` moves focus to the new page's `h1` after an in-app navigation. |

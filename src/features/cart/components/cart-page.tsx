@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import type { Cart } from '@/contracts'
 import { useSession } from '@/features/auth/model/use-session'
 import { RelatedRow } from '@/features/nft-details/components/related-row'
+import { useBottomBarInset } from '@/hooks/use-bottom-bar-inset'
 import { useMediaQuery } from '@/hooks/use-media-query'
 
 import { CART_HEADING_ID, removeButtonId, useCartActions } from '../model/use-cart-actions'
@@ -156,30 +157,13 @@ function CartLines({
 
 function MobileCart({ cart, quote, signedIn, onRemoved }: CompositionProps) {
   const sheet = React.useRef<HTMLDivElement>(null)
-  const root = React.useRef<HTMLDivElement>(null)
 
   // The sheet is fixed, so the page keeps its own height as bottom padding: the last line stays
   // reachable above it (CART-24). In short viewports the sheet is static and the padding is 0.
-  React.useEffect(() => {
-    const element = sheet.current
-    const host = root.current
-    if (!element || !host) return
-    const measure = () => {
-      host.style.setProperty('--cart-sheet-h', `${String(element.offsetHeight)}px`)
-    }
-    measure()
-    const observer = new ResizeObserver(measure)
-    observer.observe(element)
-    return () => {
-      observer.disconnect()
-    }
-  }, [])
+  useBottomBarInset(sheet)
 
   return (
-    <div
-      ref={root}
-      className="flex flex-col gap-6 pt-2 pb-[calc(var(--cart-sheet-h,20rem)+1rem)] [@media(max-height:560px)]:pb-6"
-    >
+    <div className="flex flex-col gap-6 pt-2 pb-[calc(var(--bottom-bar-inset,20rem)+1rem)] [@media(max-height:560px)]:pb-6">
       {cart ? (
         <CartLines cart={cart} onRemoved={onRemoved} layout="cards" />
       ) : (

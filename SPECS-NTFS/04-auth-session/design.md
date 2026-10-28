@@ -391,3 +391,5 @@ Decisions taken while implementing, where the design was silent or had to give w
 | Field surface | Figma fields are `ink` with a 1 px `border` inside the card, so the auth fields override the default `surface-dark` fill. |
 
 > Amended by spec 05 (2026-10-28): the favorites guard calls `requireAuth` from `beforeLoad` only when `favorites` is set, and the mobile tab bar heart now links to `/?favorites=1` as well as the footer link.
+
+> Amended by spec 11 (2026-10-28): the header account menu is `DropdownMenu modal={false}` (a modal menu hides a focusable page with `aria-hidden`, which axe reports as `aria-hidden-focus`); `Tab` closes it. In-app navigation to another path focuses the new page's `h1` (`app/use-route-focus.ts`).

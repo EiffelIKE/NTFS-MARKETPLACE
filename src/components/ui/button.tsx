@@ -84,7 +84,7 @@ function Button({
       {...props}
       {...shared}
       data-loading={loading || undefined}
-      aria-busy={loading || undefined}
+      aria-busy={loading || props['aria-busy']}
       aria-disabled={loading || props['aria-disabled']}
       onClick={(event) => {
         if (loading) {

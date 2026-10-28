@@ -12,6 +12,9 @@
   html {
     color-scheme: dark;
     @apply font-sans;
+    /* A fixed bottom bar publishes its height (use-bottom-bar-inset.ts), so a control focused
+       with the keyboard scrolls into view above it (WCAG 2.4.11). */
+    scroll-padding-bottom: var(--bottom-bar-inset, 0px);
   }
 
   body {

@@ -15,7 +15,7 @@ export function DetailsSkeleton() {
     <LoadingRegion
       loading
       label="Carregando NFT"
-      className="mx-auto w-full max-w-150 pb-[calc(11.5rem+env(safe-area-inset-bottom))] lg:max-w-page lg:px-6 lg:pb-0"
+      className="mx-auto w-full max-w-150 pb-[var(--bottom-bar-inset,11.5rem)] lg:max-w-page lg:px-6 lg:pb-0"
     >
       <Skeleton className="mb-3 hidden h-5 w-48 lg:block" />
       <div className="flex flex-col lg:grid lg:grid-cols-[minmax(0,573fr)_minmax(0,595fr)] lg:gap-x-8">

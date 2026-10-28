@@ -247,3 +247,5 @@ Decisions taken while implementing, where the design was silent or had to give w
 17. **CART-14 in E2E** lowers two prices with `updateNft` until the subtotal falls under COLECAO05's minimum; no fixture coupon expires while an applied coupon exists.
 18. **Guest carts in E2E** are created through `POST /cart/items` and the id is stored under `kurio.guestCartId`, as the details page would; the add-to-cart UI itself is covered by spec 06 (one test here uses it for the first guest add and the reload).
 19. `mocks.spec.ts` ("another browser context starts from the seed") and `nft-details.spec.ts` (share targets) hard-code `http://localhost:4173`; they fail only when the suite runs on another port.
+
+20. **Amended by spec 11 (2026-10-28):** the cart sheet publishes its height through `useBottomBarInset` (`--bottom-bar-inset` on `<html>`) instead of a local `--cart-sheet-h`, so focus scrolls clear of it; the guest-merge report toast lasts 12 s; the merge row of `cart.spec.ts` checks the toast before the cart (it waited wrongly).

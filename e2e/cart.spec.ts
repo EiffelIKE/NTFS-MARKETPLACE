@@ -345,11 +345,13 @@ test.describe('guest cart and login (CART-01, CART-04, CART-18)', () => {
     await guestAdds(page, [{ nftId: 'emerald-ape-042', editionId: 'open', quantity: 10 }])
     await signInThroughForm(page, { email: 'ana@kurio.example', password: 'Kurio#Ana2026' })
     await expect(page).toHaveURL(/\/cart$/)
-    await expect(stepperValue(page, EMERALD)).toHaveText('10')
+    // The toast first: it is shown when the merge ends, which can be before the cart has painted,
+    // and a toast does not wait for the page to catch up.
     const toasts = page.getByRole('region', { name: 'Notificações' })
     await expect(toasts.getByText('Carrinho ajustado ao entrar')).toBeVisible()
     await expect(toasts).toContainText('quantidade ajustada para 10')
     await expect(toasts.getByRole('listitem')).toHaveCount(1)
+    await expect(stepperValue(page, EMERALD)).toHaveText('10')
   })
 
   test('"Conectar e finalizar" sends a guest to login and a signed-in user to checkout', async ({

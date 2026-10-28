@@ -53,8 +53,7 @@ test.describe('the purchase (CHK-01, CHK-06, CHK-14, CHK-18, CHK-29, CHK-31)', (
     if (!isMobile) {
       await expect(summaryLines(page)).toHaveCount(2)
       await expect(page.getByTestId('quote-total')).toContainText(eth('3.186'))
-      // A dimmed (outdated) figure is mid-transition and fails contrast: wait for it to settle.
-      await expect(page.getByTestId('quote-total')).not.toHaveAttribute('data-outdated', 'true')
+      // `expectNoAxeViolations` waits for a dimmed (outdated) figure to finish fading back.
       await expectNoAxeViolations(page)
     }
     await expectNoHorizontalOverflow(page)

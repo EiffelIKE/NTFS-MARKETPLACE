@@ -1,8 +1,9 @@
 import { Link } from '@tanstack/react-router'
-import type * as React from 'react'
+import * as React from 'react'
 
 import { BagIcon, HeartIcon, HomeIcon, ScanIcon, UserIcon } from '@/components/icons'
 import { Badge } from '@/components/ui/badge'
+import { useBottomBarInset } from '@/hooks/use-bottom-bar-inset'
 import { cn } from '@/lib/utils'
 
 import { cartLabel } from './cart-label'
@@ -30,11 +31,14 @@ export function MobileTabBar({
   className,
   ...props
 }: MobileTabBarProps) {
+  const nav = React.useRef<HTMLElement>(null)
+  useBottomBarInset(nav)
   const current = (tab: MobileTab) =>
     active === tab ? ({ 'aria-current': 'page' } as const) : undefined
 
   return (
     <nav
+      ref={nav}
       aria-label="Principal"
       className={cn(
         'fixed inset-x-0 bottom-0 z-40 h-[calc(126px+env(safe-area-inset-bottom))]',

@@ -64,7 +64,10 @@ export function createMergeGuestCartTask(deps: MergeDeps): SignedInTask {
   const { queryClient, session } = deps
   const merge = deps.merge ?? ((id: string) => cartApi.merge(id))
   const report =
-    deps.report ?? ((title, lines) => notify.info(title, { description: lines.join('\n') }))
+    deps.report ??
+    // A report of what changed in the user's cart: long enough to read it (WCAG 2.2.1), well
+    // beyond the default few seconds that a one-line confirmation needs.
+    ((title, lines) => notify.info(title, { description: lines.join('\n'), duration: 12_000 }))
   let running: Promise<void> | null = null
 
   const run = async (userId: string): Promise<void> => {

@@ -19,7 +19,8 @@ export function DetailsError({ error, reset }: ErrorComponentProps) {
 
   return (
     <PageContainer className="flex flex-col items-start gap-6 py-10 lg:py-16">
-      <h1 className="sr-only">NFT</h1>
+      <title>NFT indisponível · KURIO</title>
+      <h1 className="sr-only">NFT indisponível</h1>
       <Alert className="max-w-2xl">
         <AlertCircleIcon />
         <AlertTitle>Não foi possível carregar este NFT.</AlertTitle>

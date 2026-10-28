@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test'
 
 import { forgetSession, loginAs, mock } from './support/mock'
+import { waitForConnection } from './support/realtime'
 import { expect, test } from './support/test'
 
 // Spec 06 design §11 (brief §9 scenario 4): favorites, including a failed mutation and its
@@ -78,6 +79,73 @@ test.describe('toggle (DET-20, DET-23)', () => {
   })
 })
 
+test.describe('before the list is known (spec 11, A11Y-10)', () => {
+  // Sage Nomad #009 is one of Ana's favorites: a click that acted on "not favorited" would ask the
+  // server to add what is already there.
+  const SAGE = 'sage-nomad-009'
+  const sageHeart = (page: Page, isMobile: boolean) =>
+    isMobile
+      ? page.getByRole('button', { name: 'Favoritar Sage Nomad #009' })
+      : page.getByRole('button', { name: /^Favorit(ar|ado)$/ })
+
+  test('the heart waits for the list: busy, no request on click, then the true state', async ({
+    page,
+    isMobile,
+  }) => {
+    await loginAs(page, 'ana')
+    await openDetails(page, SAGE)
+    // The first read of the list is slow; the NFT itself is not, so the heart is on screen first.
+    await mock(page).configure({
+      outOfOrder: { ops: ['favorites.list'], slowMs: 2000, fastMs: 100 },
+    })
+    await page.reload()
+
+    const heart = sageHeart(page, isMobile)
+    await expect(heart).toBeVisible()
+    await expect(heart).toHaveAttribute('aria-disabled', 'true')
+    await expect(heart).toHaveAttribute('aria-busy', 'true')
+    // `force`: the control is `aria-disabled`, which Playwright treats as not clickable.
+    await heart.click({ force: true })
+    expect(await mock(page).requests({ op: 'favorites.add' })).toHaveLength(0)
+    expect(await mock(page).requests({ op: 'favorites.remove' })).toHaveLength(0)
+
+    // The list arrives: the heart is pressed, live again, and a click now removes the favorite.
+    await expect(heart).toHaveAttribute('aria-pressed', 'true')
+    await expect(heart).not.toHaveAttribute('aria-disabled', 'true')
+    await expect(heart).not.toHaveAttribute('aria-busy', 'true')
+    await heart.click()
+    await expect(heart).toHaveAttribute('aria-pressed', 'false')
+    await expect.poll(() => serverFavorites(page)).not.toContain(SAGE)
+    expect(await mock(page).requests({ op: 'favorites.add' })).toHaveLength(0)
+  })
+
+  test('a list that failed to load keeps the heart inert; the click asks for it again', async ({
+    page,
+    isMobile,
+  }) => {
+    await loginAs(page, 'ana')
+    await openDetails(page, SAGE)
+    await mock(page).addRule({
+      op: 'favorites.list',
+      effect: { kind: 'http', status: 500, code: 'INTERNAL' },
+      times: 'always',
+    })
+    await page.reload()
+
+    const heart = sageHeart(page, isMobile)
+    await expect(heart).toBeVisible()
+    await expect(heart).toHaveAttribute('aria-disabled', 'true')
+    await expect(heart).toHaveAttribute('aria-pressed', 'false')
+    await heart.click({ force: true })
+    expect(await mock(page).requests({ op: 'favorites.add' })).toHaveLength(0)
+
+    await mock(page).clearRules()
+    await heart.click({ force: true })
+    await expect(heart).toHaveAttribute('aria-pressed', 'true')
+    await expect(heart).not.toHaveAttribute('aria-disabled', 'true')
+  })
+})
+
 test.describe('failure and recovery (DET-21)', () => {
   test('a failed request undoes the change and says so; "Tentar novamente" applies and persists it', async ({
     page,
@@ -127,6 +195,11 @@ test.describe('failure and recovery (DET-21)', () => {
   }) => {
     await loginAs(page, 'ana')
     await openDetails(page)
+    // A read still in flight when the sessions expire would end the session by itself (spec 08),
+    // before the click: wait for the favorites list (the heart is inert until it is known) and for
+    // the socket, so the only request that meets the 401 is the toggle.
+    await expect(heart(page, isMobile)).not.toHaveAttribute('aria-disabled', 'true')
+    await waitForConnection(page, { userId: 'usr_ana' })
     await mock(page).expireSessions()
 
     await heart(page, isMobile).click()

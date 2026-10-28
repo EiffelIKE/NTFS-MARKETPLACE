@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils'
 
 import { favoritesKeys } from '../api/keys'
 import { useToggleFavorite } from '../api/use-toggle-favorite'
-import { useIsFavorite } from '../model/use-is-favorite'
+import { useFavoriteState } from '../model/use-is-favorite'
 
 /** Where the control sits (spec 06 design §8); the behavior is the same everywhere. */
 export type FavoriteVariant = 'button' | 'circle' | 'card-desktop' | 'card-mobile'
@@ -39,13 +39,19 @@ export function FavoriteButton({
 }) {
   const router = useRouter()
   const queryClient = useQueryClient()
-  const authenticated = useSession().status === 'authenticated'
-  const favorite = useIsFavorite(nft.id)
+  const status = useSession().status
+  const { pressed: favorite, known, loading, retry } = useFavoriteState(nft.id)
   const toggle = useToggleFavorite(nft.id)
 
   const onClick = () => {
-    if (!authenticated) {
+    if (status === 'guest') {
       void router.navigate({ to: '/login', search: { redirect: router.state.location.href } })
+      return
+    }
+    // The list has not arrived (or failed): the click cannot know what "toggle" means. The button
+    // stays focusable (`aria-disabled`, not `disabled`), and a failed read is asked for again.
+    if (!known) {
+      if (!loading) retry()
       return
     }
     // Read the cache, not the rendered value: two quick clicks must flip twice even when React has
@@ -64,8 +70,10 @@ export function FavoriteButton({
         type="button"
         variant="outline"
         aria-pressed={favorite}
+        aria-busy={loading || undefined}
+        aria-disabled={!known || undefined}
         onClick={onClick}
-        className={cn('min-w-32.5 px-4', className)}
+        className={cn('min-w-32.5 px-4', !known && 'cursor-progress', className)}
       >
         <Icon />
         {favorite ? 'Favoritado' : 'Favoritar'}
@@ -77,9 +85,12 @@ export function FavoriteButton({
       type="button"
       aria-pressed={favorite}
       aria-label={`Favoritar ${nft.name}`}
+      aria-busy={loading || undefined}
+      aria-disabled={!known || undefined}
       onClick={onClick}
       className={cn(
         'flex shrink-0 cursor-pointer items-center justify-center',
+        !known && 'cursor-progress',
         iconVariants[variant],
         className,
       )}

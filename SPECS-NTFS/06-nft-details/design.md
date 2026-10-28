@@ -381,3 +381,5 @@ Spec 03 receives `nft.updated` and patches or invalidates `catalogKeys.detail(id
     - The live rows use the real `updateNft` and socket (spec 03 is Done).
     - Keyboard radio tests hold the arrow key: Radix checks on focus only while the key is down.
     - The catalog card rows search (`/?q=cosmic`, `/?q=golden`) so the card is on page 1.
+
+> Amended by spec 11 (2026-10-28): the favorite heart is inert until the user's favorites list is known (`useFavoriteState`: `aria-disabled`, `aria-busy`, a click does nothing, or retries a failed read), instead of showing "not favorited" and sending "add". `details-error.tsx` has a document title and a clearer `h1`. The buy bar and the page's bottom padding use `useBottomBarInset`.

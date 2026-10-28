@@ -3,6 +3,7 @@ import * as React from 'react'
 
 import { CloseIcon, ThankYouIcon } from '@/components/icons'
 import { Button } from '@/components/ui/button'
+import { useBottomBarInset } from '@/hooks/use-bottom-bar-inset'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 import type { ReceiptView } from '../model/receipt'
@@ -69,16 +70,18 @@ function SummaryBand({ view }: { view: ReceiptView }) {
  */
 export function ReceiptCard({ view, focusOnMount }: { view: ReceiptView; focusOnMount: boolean }) {
   const heading = React.useRef<HTMLHeadingElement>(null)
+  const bar = React.useRef<HTMLDivElement>(null)
   const captionId = React.useId()
 
   React.useEffect(() => {
     if (focusOnMount) heading.current?.focus()
   }, [focusOnMount])
+  useBottomBarInset(bar)
 
   return (
     <div
       data-testid="receipt"
-      className="relative mx-auto flex w-full max-w-150 flex-col pb-[calc(8.5rem+env(safe-area-inset-bottom))] lg:mt-10 lg:max-w-145 lg:bg-surface-card lg:pb-0"
+      className="relative mx-auto flex w-full max-w-150 flex-col pb-[var(--bottom-bar-inset,8.5rem)] lg:mt-10 lg:max-w-145 lg:bg-surface-card lg:pb-0"
     >
       <Link
         to="/"
@@ -116,7 +119,10 @@ export function ReceiptCard({ view, focusOnMount }: { view: ReceiptView; focusOn
       </section>
 
       <div className="flex flex-col items-center gap-3 px-0 pt-5 pb-8 lg:px-11">
-        <div className="max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:z-30 max-lg:bg-background max-lg:px-6 max-lg:pt-3 max-lg:pb-[calc(1rem+env(safe-area-inset-bottom))] max-lg:[@media(max-height:560px)]:static max-lg:[@media(max-height:560px)]:p-0">
+        <div
+          ref={bar}
+          className="max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:z-30 max-lg:bg-background max-lg:px-6 max-lg:pt-3 max-lg:pb-[calc(1rem+env(safe-area-inset-bottom))] max-lg:[@media(max-height:560px)]:static max-lg:[@media(max-height:560px)]:p-0"
+        >
           <Button
             asChild
             className="h-12 px-8 max-lg:mx-auto max-lg:h-15 max-lg:w-full max-lg:max-w-150 max-lg:rounded-full max-lg:bg-primary-soft"
