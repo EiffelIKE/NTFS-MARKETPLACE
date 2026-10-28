@@ -1,8 +1,10 @@
 import { createFormHook } from '@tanstack/react-form'
 
+import { EnsField } from './ens-field'
 import { fieldContext, formContext } from './form-context'
 import { FormAlert } from './form-alert'
 import { PasswordField } from './password-field'
+import { SelectField } from './select-field'
 import { SubmitButton } from './submit-button'
 import { TextField } from './text-field'
 
@@ -14,6 +16,6 @@ import { TextField } from './text-field'
 export const { useAppForm } = createFormHook({
   fieldContext,
   formContext,
-  fieldComponents: { TextField, PasswordField },
+  fieldComponents: { TextField, PasswordField, SelectField, EnsField },
   formComponents: { SubmitButton, FormAlert },
 })

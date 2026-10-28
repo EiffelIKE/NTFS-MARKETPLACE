@@ -7,9 +7,9 @@ import { realtime, waitForConnection } from './support/realtime'
 import { expect, test } from './support/test'
 
 // Spec 04 design §10 and brief scenario 3: sign-up, login, expiry, logout and user switch, through
-// the real forms, router guards and the mock API. Both projects run it: the mobile one has no
-// header menu (Figma draws none), so the steps that need "Sair" skip there and are covered by the
-// cross-tab and unit tests.
+// the real forms, router guards and the mock API. Both projects run it. Mobile has no header menu
+// (Figma draws none): "Sair" lives in the profile screen there (spec 08), so only the steps about
+// the header menu itself are desktop-only.
 
 // Rejections are the point of several tests, and the browser logs each 4xx and network failure.
 test.use({ allowedConsoleErrors: [/Failed to load resource/] })
@@ -68,6 +68,27 @@ async function fillSignup(
 async function chooseFromMenu(page: Page, user: string, item: string) {
   await menuTrigger(page, user).click()
   await page.getByRole('menuitem', { name: item }).click()
+}
+
+/**
+ * "Sair" from wherever the viewport keeps it: the header menu on desktop, the profile screen's
+ * account menu below `lg`, reached through the tab bar when the page is not already there.
+ */
+async function signOut(page: Page, isMobile: boolean, user: string) {
+  if (!isMobile) {
+    await chooseFromMenu(page, user, 'Sair')
+    return
+  }
+  if (new URL(page.url()).pathname !== '/profile') {
+    await page
+      .getByRole('navigation', { name: 'Principal' })
+      .getByRole('link', { name: 'Perfil' })
+      .click()
+  }
+  await page
+    .getByRole('navigation', { name: 'Conta' })
+    .getByRole('button', { name: 'Sair' })
+    .click()
 }
 
 async function storedSession(page: Page) {
@@ -381,6 +402,9 @@ test.describe('expiry (AUTH-08, AUTH-13, AUTH-14, AUTH-15)', () => {
     await loginAs(page, 'ana')
     await page.goto('/profile')
     await expect(page.getByRole('heading', { level: 1, name: 'Perfil' })).toBeVisible()
+    // Let the screen's own reads finish: a 401 on one of them would expire the session in the page.
+    await expect(main(page).getByLabel(/^Nome de exibição/)).toHaveValue('Ana Souza')
+    await waitForConnection(page, { userId: 'usr_ana' })
 
     await mock(page).expireSessions()
     await page.reload()
@@ -422,15 +446,15 @@ test.describe('logout and user switch (AUTH-16, AUTH-17)', () => {
     page,
     isMobile,
   }) => {
-    test.skip(isMobile, 'mobile has no header menu: "Sair" lives in the profile screen (spec 08)')
     await loginAs(page, 'ana')
     await page.goto('/profile')
     await expect(page.getByRole('heading', { level: 1, name: 'Perfil' })).toBeVisible()
 
-    await chooseFromMenu(page, 'Ana Souza', 'Sair')
+    await signOut(page, isMobile, 'Ana Souza')
     await expect(page).toHaveURL('/')
     await expect(toasts(page)).toContainText('Você saiu da sua conta.')
-    await expect(page.getByRole('link', { name: 'Entrar' }).first()).toBeVisible()
+    // The header (and its "Entrar") is desktop-only.
+    if (!isMobile) await expect(page.getByRole('link', { name: 'Entrar' }).first()).toBeVisible()
     expect(await storedSession(page)).toBeNull()
 
     const snapshot = await mock(page).snapshot()
@@ -445,21 +469,22 @@ test.describe('logout and user switch (AUTH-16, AUTH-17)', () => {
     page,
     isMobile,
   }) => {
-    test.skip(isMobile, 'signing out needs the header menu')
     await openLogin(page)
     await fillLogin(page, 'ana')
-    await expect(menuTrigger(page, 'Ana Souza')).toBeVisible()
+    if (!isMobile) await expect(menuTrigger(page, 'Ana Souza')).toBeVisible()
     await waitForConnection(page, { userId: 'usr_ana' })
 
-    await chooseFromMenu(page, 'Ana Souza', 'Sair')
+    await signOut(page, isMobile, 'Ana Souza')
     await waitForConnection(page, { userId: null })
 
-    await page.getByRole('link', { name: 'Entrar' }).first().click()
+    // The header has "Entrar" on desktop; on mobile the sign-in page is opened directly.
+    if (isMobile) await openLogin(page)
+    else await page.getByRole('link', { name: 'Entrar' }).first().click()
     await emailField(page).fill(CREDENTIALS.bruno.email)
     await passwordField(page).fill(CREDENTIALS.bruno.password)
     await loginButton(page).click()
 
-    await expect(menuTrigger(page, 'Bruno Lima')).toBeVisible()
+    if (!isMobile) await expect(menuTrigger(page, 'Bruno Lima')).toBeVisible()
     await expect
       .poll(async () => (await realtime(page).connections()).map((c) => c.userId))
       .toEqual(['usr_bruno'])
@@ -524,14 +549,7 @@ test.describe('other tabs (AUTH-18)', () => {
     await other.goto('/profile')
     await expect(other.getByRole('heading', { level: 1, name: 'Perfil' })).toBeVisible()
 
-    if (isMobile) {
-      // No header menu on mobile: the storage change is what the other tab reacts to.
-      await other.evaluate((key) => {
-        localStorage.removeItem(key)
-      }, SESSION_STORAGE_KEY)
-    } else {
-      await chooseFromMenu(other, 'Ana Souza', 'Sair')
-    }
+    await signOut(other, isMobile, 'Ana Souza')
 
     await expect(toasts(page)).toContainText('Sua sessão foi encerrada em outra aba.')
     await expect(emailField(page)).toBeVisible()

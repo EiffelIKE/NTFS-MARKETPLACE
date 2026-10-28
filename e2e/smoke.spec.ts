@@ -14,7 +14,7 @@ const routes = [
   },
   { path: '/login', heading: 'Entrar', private: false },
   { path: '/signup', heading: 'Criar conta', private: false },
-  { path: '/profile', heading: 'Perfil', private: true },
+  { path: '/profile', heading: 'Perfil do colecionador', title: 'Meu perfil', private: true },
   { path: '/wallets', heading: 'Carteiras', private: true },
 ] as readonly {
   path: string

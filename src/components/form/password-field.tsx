@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 
 import { useFieldContext } from './form-context'
 import { useFieldMessage } from './messages'
+import { RequiredMark } from './required-mark'
 import { clearServerError } from './server-errors'
 
 export interface PasswordFieldProps extends Omit<
@@ -16,6 +17,7 @@ export interface PasswordFieldProps extends Omit<
   hideLabel?: boolean
   description?: React.ReactNode
   fieldClassName?: string
+  required?: boolean
 }
 
 /** Password input with the show/hide toggle, bound to the surrounding `form.AppField`. */
@@ -24,6 +26,7 @@ export function PasswordField({
   hideLabel,
   description,
   fieldClassName,
+  required,
   ...props
 }: PasswordFieldProps) {
   const field = useFieldContext<string>()
@@ -31,7 +34,10 @@ export function PasswordField({
 
   return (
     <Field invalid={message !== undefined} className={fieldClassName}>
-      <FieldLabel className={cn(hideLabel && 'sr-only')}>{label}</FieldLabel>
+      <FieldLabel className={cn(hideLabel && 'sr-only', required && 'gap-0.5')}>
+        {label}
+        {required && <RequiredMark />}
+      </FieldLabel>
       <PasswordInput
         name={field.name}
         value={field.state.value}
@@ -40,6 +46,7 @@ export function PasswordField({
           clearServerError(field)
         }}
         onBlur={field.handleBlur}
+        aria-required={required ? true : undefined}
         {...props}
       />
       {description && <FieldDescription>{description}</FieldDescription>}

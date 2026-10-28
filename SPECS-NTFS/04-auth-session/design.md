@@ -378,7 +378,7 @@ Decisions taken while implementing, where the design was silent or had to give w
 - The sign-up submit reads "Criar conta" from `lg` and "Criar perfil" below it, as in Figma, with both texts in the DOM and one hidden.
 - The panel's × is an anchor built by `components/href-link.tsx` (`HrefLink`), because its target is a string with search and hash rather than a typed route. "Lista de interesse" in the menu uses it too, because `/` gets its `favorites` search from spec 05.
 - Figma centers the mobile "Nome de usuário" placeholder; it is left-aligned like the other fields (recorded as a deviation).
-- The mobile profile screen (spec 08) owns "Sair" on mobile. Until then the mobile project skips the E2E steps that need the header menu, and the cross-tab test removes the stored session from the other tab instead.
+- The mobile profile screen (spec 08) owns "Sair" on mobile. *Amended by spec 08:* the account menu has it (mobile and desktop), so the mobile project now runs the logout, user-switch and cross-tab steps through it (`signOut` helper in `auth.spec.ts`); only the steps about the header menu itself and the desktop close button stay desktop-only.
 - `/dev/ui-kit` has a "Formulários" section that proves the validation timing (T01).
 
 **Visual check 04** (50 % overlay at 1440 and 390 against `figma_tokens/screenshots/`)

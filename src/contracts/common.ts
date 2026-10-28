@@ -19,7 +19,9 @@ export type IsoDateTime = z.infer<typeof IsoDateTime>
 export const NftId = z.string().regex(/^[a-z0-9-]{3,64}$/)
 export type NftId = z.infer<typeof NftId>
 
-export const NetworkId = z.enum(['ethereum', 'polygon', 'solana'])
+export const NetworkId = z.enum(['ethereum', 'polygon', 'solana'], {
+  error: 'Selecione uma rede.',
+})
 export type NetworkId = z.infer<typeof NetworkId>
 
 export const Image = z.object({

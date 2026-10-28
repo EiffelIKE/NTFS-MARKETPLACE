@@ -923,6 +923,7 @@ Decisions taken while implementing, where the design was silent or had to give w
 | 00, 01 | E2E: `smoke.spec.ts` ("a route chunk that fails to load") and `design-system.spec.ts` (fallback font) use `page.context().route()`, because Playwright's `page.route()` does not see requests that go through a service worker. Both suites pass again. |
 | 01 | `styles/no-raw-colors.test.ts` skips `src/mocks/fixtures/catalog.ts`: NFT names such as `Golden Beat #207` match the hex pattern. |
 | 08 | `addressMatchesNetwork`, `addressFamily`, `networkFamily` and the `superRefine` on `WalletFields` were applied in `contracts/wallets.ts` now (§15). |
+| 08 (later) | `NetworkId` and `WalletProvider` carry the pt-BR enum messages "Selecione uma rede." and "Selecione uma carteira.", so a select that was not chosen reads well in the client form and in the mock's `VALIDATION_FAILED` (spec 08 design §11). |
 
 **Contracts and errors**
 - `AuthMode` has a fifth value, `'lenient'`, for `auth.logout`: it accepts a missing or expired token and still answers 204.

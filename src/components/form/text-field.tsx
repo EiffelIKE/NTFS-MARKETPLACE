@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 
 import { useFieldContext } from './form-context'
 import { useFieldMessage } from './messages'
+import { RequiredMark } from './required-mark'
 import { clearServerError } from './server-errors'
 
 export interface TextFieldProps extends Omit<
@@ -17,6 +18,10 @@ export interface TextFieldProps extends Omit<
   hideLabel?: boolean
   description?: React.ReactNode
   fieldClassName?: string
+  /** Adds the `*` mark, a hidden "(obrigatório)" and `aria-required` (ACC-24). */
+  required?: boolean
+  /** Rewrites what the user types before it reaches the form (e.g. upper-case a code). */
+  format?: (value: string) => string
 }
 
 /** A text input bound to the surrounding `form.AppField` (AUTH-01, AUTH-22). */
@@ -26,6 +31,8 @@ export function TextField({
   description,
   fieldClassName,
   className,
+  required,
+  format,
   ...props
 }: TextFieldProps) {
   const field = useFieldContext<string>()
@@ -33,16 +40,20 @@ export function TextField({
 
   return (
     <Field invalid={message !== undefined} className={fieldClassName}>
-      <FieldLabel className={cn(hideLabel && 'sr-only')}>{label}</FieldLabel>
+      <FieldLabel className={cn(hideLabel && 'sr-only', required && 'gap-0.5')}>
+        {label}
+        {required && <RequiredMark />}
+      </FieldLabel>
       <Input
         name={field.name}
         value={field.state.value}
         className={className}
         onChange={(event) => {
-          field.handleChange(event.target.value)
+          field.handleChange(format ? format(event.target.value) : event.target.value)
           clearServerError(field)
         }}
         onBlur={field.handleBlur}
+        aria-required={required ? true : undefined}
         {...props}
       />
       {description && <FieldDescription>{description}</FieldDescription>}

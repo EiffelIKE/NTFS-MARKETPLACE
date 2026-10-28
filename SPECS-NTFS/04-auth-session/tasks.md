@@ -74,6 +74,8 @@ None. The Figma auth screens are in `figma_tokens/screenshots/`.
   - README (owned by spec 14): the fixture credentials table, plus how `session-short` and `expireSessions()` reproduce expiry.
   - **Proof:** Spec 14 design §3 lists the spec 04 notes; its README outline (§2) already has the credentials table and the expiry rows (`session-short`, `expireSessions()`).
 
+> Amended by spec 08 (2026-10-28): the mobile logout and user-switch tests run now ("Sair" is in the mobile profile screen). `auth.spec.ts` skips 3 tests on mobile (menu keyboard, menu follows a profile update, close button). The "session the server dropped" test also waits for the profile read and the socket before expiring the sessions, because a 401 on a read in flight would otherwise expire the session in the page first.
+
 ## Run log (2026-10-28)
 
 - Gate: `pnpm typecheck`, `pnpm lint` (0 warnings), `pnpm format:check`, `pnpm test` (**494 unit tests** in 32 files), `pnpm build` and `pnpm test:e2e` (**163 passed, 7 skipped** by design, in `desktop-chromium` and `mobile-chromium`) all exit 0. `auth.spec.ts` has 36 tests per project; 5 skip on mobile because they need the header menu (logout, user switch, menu keyboard and update, the close button).

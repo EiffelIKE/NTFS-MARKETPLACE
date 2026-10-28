@@ -1,8 +1,8 @@
 # 08 — Profile & wallets · Requirements
 
-> Status: Draft — see Open questions (mobile layout has no Figma frame; desktop is ready for review)
+> Status: Done (mobile layout decided at the start of the implementation; see Decisions and design §14)
 
-Build the collector account screens: "Perfil do Colecionador" (profile details, avatar, password change) and "Carteiras" (primary and secondary wallet slots), both private, on top of the spec 02 profile and wallet operations. Desktop follows the Figma frames; mobile has no frame and follows the proposal in design §8.
+Build the collector account screens: "Perfil do Colecionador" (profile details, avatar, password change) and "Carteiras" (primary and secondary wallet slots), both private, on top of the spec 02 profile and wallet operations. Desktop follows the Figma frames; mobile has no frame and follows the composition of design §8.
 
 Brief coverage: §3 (Collector profile, Wallets; both must work on mobile), §3.4 (validation including API errors, persistence after refresh, no plaintext passwords), §4 (states, per-user isolation), §8 (responsiveness, accessibility), §9 (E2E scenario 8).
 
@@ -65,9 +65,10 @@ Brief coverage: §3 (Collector profile, Wallets; both must work on mobile), §3.
 - Avatar cropping UI: the image fills the circle with `object-cover`; the mock adapter already resizes it (spec 02).
 - Email verification, account deletion, unsaved-changes prompts.
 
-## Open questions
+## Decisions (formerly open questions)
 
-1. **Mobile layout** (no Figma frame). Default proposal in design §8: `/profile` shows the account menu as a compact list at the top, then the single-column form with "Salvar" at the end; `/wallets` is an inner screen ("Carteiras", back to `/profile`) with the two slots stacked. To be confirmed when spec 08 starts.
-2. **One "Salvar" for profile and password.** Figma draws one button for the whole page. Default: keep one button and run both requests in sequence (ACC-11, ACC-13). Alternative: a separate "Alterar senha" button, simpler error reporting but not in Figma.
-3. **"Igual à carteira principal" control.** Figma draws a single radio, which cannot be unchecked. Default: a `Checkbox` with the same label (deviation).
-4. **"Adicionar" on a filled or open primary slot.** Figma shows the link next to an open, empty primary form. Default: hide it while the form is visible; it only appears on an empty, closed slot.
+1. **Mobile layout** (no Figma frame): confirmed as proposed. `/profile` shows the account menu as a compact list at the top (with "Sair"), then the single-column form with "Salvar" at the end; `/wallets` is an inner screen ("Carteiras", back via the shared top bar) with the two slots stacked and no menu. Tablet (768) is the same with two-column fields from `md`. Details in design §8 and §14.
+2. **One "Salvar" for profile and password**: kept (ACC-11, ACC-13).
+3. **"Igual à carteira principal"**: a `Checkbox` with the same label (deviation from Figma's single radio).
+4. **"Adicionar" on an open primary slot**: hidden while the form is visible; it only appears on an empty, closed secondary slot.
+5. **Mobile logout**: "Sair" is part of the account menu on both widths (ACC-02), which is what lets the mobile E2E project run the logout and user-switch tests of spec 04.

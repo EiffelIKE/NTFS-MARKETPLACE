@@ -14,7 +14,9 @@ import {
 } from './common'
 import { WalletFamily } from './networks'
 
-export const WalletProvider = z.enum(['metamask', 'walletconnect', 'coinbase'])
+export const WalletProvider = z.enum(['metamask', 'walletconnect', 'coinbase'], {
+  error: 'Selecione uma carteira.',
+})
 export type WalletProvider = z.infer<typeof WalletProvider>
 
 export const WALLET_PROVIDER_LABELS: Record<WalletProvider, string> = {
