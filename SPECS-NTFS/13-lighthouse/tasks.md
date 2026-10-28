@@ -10,6 +10,10 @@ Starts after specs 05 and 06 are Done (spec 11 ideally too, since its fixes affe
 
 - **B1 — Vercel deploy** for PERF-04 (T06). Every other task runs locally.
 
+## Carried over
+
+- **Build chunk warning (from spec 01).** `pnpm build` warns that `index-*.js` is over 500 kB (661 kB minified after spec 01; later specs add to it). Decide here between vendor chunk splitting (`build.rolldownOptions.output.codeSplitting`), lazy-loading heavy modules, or raising `chunkSizeWarningLimit` with a recorded reason, so the done gate runs with zero warnings again.
+
 ## Tasks
 
 - [ ] **T01 — Configs and runner** · PERF-01 – PERF-03, PERF-05, PERF-06

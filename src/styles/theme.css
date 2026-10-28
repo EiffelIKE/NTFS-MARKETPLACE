@@ -1,0 +1,160 @@
+/*
+ * KURIO design tokens (spec 01 design §3). The only file in src/ allowed to hold color literals.
+ * Figma names are kept 1:1 (figma_tokens/tokens.json); derived colors are marked.
+ */
+
+/* `static` emits every variable, so components, the gallery and tests can always read them. */
+@theme static {
+  --color-*: initial;
+
+  /* Figma palette */
+  --color-ink: #140d0a;
+  --color-surface-card: #241612;
+  --color-surface-raised: #2f1d15;
+  --color-surface-dark: #38220f;
+  --color-border: #3f2319;
+  --color-border-soft: #55321f;
+  --color-primary: #d28a4c;
+  --color-secondary: #b39463;
+  --color-foreground: #f5f1eb;
+  --color-text-primary: #f7f3ec;
+  --color-text-secondary: #cfb28c;
+  --color-text-accent: #e89b55;
+
+  /* Derived (not in Figma; spec 01 deviation 1) */
+  --color-error: #f2836b;
+  --color-error-surface: #3a1a14;
+  --color-success: #9bcb89;
+  --color-success-surface: #1e2a17;
+  --color-warning: #e8c26a;
+  --color-disabled: #8f7766;
+  --color-scrim: rgb(10 6 4 / 0.72);
+  --color-skeleton-highlight: #4a2e21;
+
+  --radius-*: initial;
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-input-mobile: 10px;
+  --radius-hero-mobile: 12px;
+  --radius-icon-button: 14px;
+  --radius-artwork: 15px;
+  --radius-artwork-mobile: 16px;
+  --radius-artwork-lg: 18px;
+  --radius-card-mobile: 20px;
+  --radius-hero: 24px;
+  --radius-full: 9999px;
+
+  --shadow-*: initial;
+  --shadow-input: 0 0 10px rgb(10 6 4 / 0.45);
+
+  /* Layout (Tailwind's 4 px spacing base matches Figma) */
+  --container-page: 1248px; /* 1200 content + 2 × 24 gutter */
+  --spacing-section: 96px;
+  --spacing-sidebar: 310px;
+
+  /* Typography (design §3): one step per collapsed group of Figma styles */
+  --font-*: initial;
+  --font-sans: 'Roboto Mono Variable', 'Roboto Mono Fallback', ui-monospace, monospace;
+  --font-mono: 'Roboto Mono Variable', 'Roboto Mono Fallback', ui-monospace, monospace;
+  --font-weight-*: initial;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 700;
+
+  --text-*: initial;
+  --text-display: 2.6875rem;
+  --text-display--line-height: 4.375rem;
+  --text-display--font-weight: 700;
+  --text-heading: 1.5rem;
+  --text-heading--line-height: 2rem;
+  --text-heading--font-weight: 700;
+  --text-title: 1.125rem;
+  --text-title--line-height: 1.5rem;
+  --text-title--font-weight: 700;
+  --text-body-lg: 1rem;
+  --text-body-lg--line-height: 1.25rem;
+  --text-body-md: 0.9375rem;
+  --text-body-md--line-height: 1.375rem;
+  --text-body: 0.875rem;
+  --text-body--line-height: 1.375rem;
+  --text-caption: 0.8125rem;
+  --text-caption--line-height: 1.375rem;
+  --text-caption--font-weight: 500;
+  --text-caption-sm: 0.75rem;
+  --text-caption-sm--line-height: 1.125rem;
+  --text-tiny: 0.625rem;
+  --text-tiny--line-height: normal;
+  --text-tiny--font-weight: 500;
+
+  --tracking-*: initial;
+  --tracking-brand: 0.1em;
+}
+
+/* Aliases and the shadcn/ui variable mapping (design §3, DS-05) */
+@theme inline {
+  --color-focus: var(--color-text-accent);
+  --color-skeleton: var(--color-surface-dark);
+
+  --color-background: var(--color-ink);
+  --color-card: var(--color-surface-card);
+  --color-card-foreground: var(--color-foreground);
+  --color-popover: var(--color-surface-card);
+  --color-popover-foreground: var(--color-foreground);
+  --color-primary-foreground: var(--color-ink);
+  --color-secondary-foreground: var(--color-ink);
+  --color-muted: var(--color-surface-dark);
+  --color-muted-foreground: var(--color-text-secondary);
+  --color-accent: var(--color-surface-raised);
+  --color-accent-foreground: var(--color-foreground);
+  --color-destructive: var(--color-error);
+  --color-input: var(--color-surface-dark);
+  --color-ring: var(--color-focus);
+}
+
+:root {
+  --radius: 6px;
+}
+
+@utility bg-primary-soft {
+  background-image: linear-gradient(137deg, rgb(210 138 76 / 0.45) 24.6%, #d28a4c 100%);
+}
+
+@utility bg-card-gradient {
+  background-image: linear-gradient(
+    139.5deg,
+    var(--color-surface-card) 12%,
+    var(--color-surface-raised) 106.6%
+  );
+}
+
+@utility skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-skeleton) 0%,
+    var(--color-skeleton-highlight) 50%,
+    var(--color-skeleton) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    background: var(--color-skeleton);
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+/* Mobile tab bar: concave notch around the center button (Figma shape `15:5504`). The mask colors
+   are alpha values, not visual colors. */
+@utility tab-bar-notch {
+  mask-image: radial-gradient(circle 42px at 50% 0, transparent 41px, #000 42px);
+}

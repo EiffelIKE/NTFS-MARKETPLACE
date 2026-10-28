@@ -9,6 +9,16 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
+const axiosRestriction = {
+  name: 'axios',
+  message: 'Use the shared instance from `@/lib/http/client` (spec 00, FND-15).',
+}
+
+const lucideRestriction = {
+  name: 'lucide-react',
+  message: 'Use icons from @/components/icons (AGENTS.md).',
+}
+
 export default defineConfig(
   globalIgnores([
     'dist',
@@ -49,19 +59,14 @@ export default defineConfig(
   pluginRouter.configs['flat/recommended'],
   {
     files: ['src/**/*.{ts,tsx}'],
-    ignores: ['src/lib/http/**'],
     rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          paths: [
-            {
-              name: 'axios',
-              message: 'Use the shared instance from `@/lib/http/client` (spec 00, FND-15).',
-            },
-          ],
-        },
-      ],
+      'no-restricted-imports': ['error', { paths: [axiosRestriction, lucideRestriction] }],
+    },
+  },
+  {
+    files: ['src/lib/http/**'],
+    rules: {
+      'no-restricted-imports': ['error', { paths: [lucideRestriction] }],
     },
   },
   {

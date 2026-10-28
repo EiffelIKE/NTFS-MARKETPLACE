@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/')({
+  staticData: { shell: { nav: 'home', headerDivider: true, mobile: { kind: 'tab', tab: 'home' } } },
   head: () => ({ meta: [{ title: 'KURIO — Marketplace de NFTs' }] }),
   component: HomePage,
 })
@@ -8,7 +9,7 @@ export const Route = createFileRoute('/')({
 // Placeholder navigation until spec 05 builds the catalog.
 function HomePage() {
   return (
-    <main>
+    <div>
       <h1>KURIO</h1>
       <nav aria-label="Telas">
         <ul>
@@ -42,6 +43,6 @@ function HomePage() {
           </li>
         </ul>
       </nav>
-    </main>
+    </div>
   )
 }

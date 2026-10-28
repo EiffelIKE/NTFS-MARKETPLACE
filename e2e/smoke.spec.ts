@@ -70,7 +70,10 @@ test.describe('a route chunk that fails to load', () => {
   async function openBrokenCart(page: Page) {
     await page.goto('/')
     await page.route('**/assets/cart-*.js', (route) => route.abort())
-    await page.getByRole('link', { name: 'Carrinho', exact: true }).click()
+    await page
+      .getByRole('navigation', { name: 'Telas' })
+      .getByRole('link', { name: 'Carrinho', exact: true })
+      .click()
     await expect(heading(page, 'Algo deu errado')).toBeVisible()
     await page.unroute('**/assets/cart-*.js')
   }

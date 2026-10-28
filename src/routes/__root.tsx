@@ -1,5 +1,6 @@
 import { createRootRouteWithContext, HeadContent, Outlet } from '@tanstack/react-router'
 
+import { AppShell } from '@/app/app-shell'
 import type { RouterContext } from '@/app/router'
 import { NotFound } from '@/components/route-states'
 
@@ -12,7 +13,9 @@ function RootLayout() {
   return (
     <>
       <HeadContent />
-      <Outlet />
+      <AppShell>
+        <Outlet />
+      </AppShell>
     </>
   )
 }

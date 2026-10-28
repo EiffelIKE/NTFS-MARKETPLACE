@@ -3,6 +3,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { loginSearchSchema } from './-login-search'
 
 export const Route = createFileRoute('/login')({
+  staticData: { shell: { nav: 'home', headerDivider: true, mobile: { kind: 'bare' } } },
   validateSearch: loginSearchSchema,
   head: () => ({ meta: [{ title: 'Entrar · KURIO' }] }),
   component: LoginPage,
@@ -10,8 +11,8 @@ export const Route = createFileRoute('/login')({
 
 function LoginPage() {
   return (
-    <main>
+    <div>
       <h1>Entrar</h1>
-    </main>
+    </div>
   )
 }

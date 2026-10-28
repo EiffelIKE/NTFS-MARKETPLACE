@@ -483,6 +483,31 @@ Visual baselines of the shells are spec 12.
 9. Out-of-scope links: visible, `aria-disabled`, "Disponível em breve"; newsletter shows an "unavailable" notice.
 10. Tab bar notch drawn with a CSS mask instead of the exported shape (if visually equivalent).
 11. Gallery route `/dev/ui-kit` present in production builds (unlinked, `noindex`).
+12. shadcn 4.22.1 has no `new-york` preset: initialised with `radix-vega` (`radix-ui` package), then every component restyled to these tokens; `cn` from `@/lib/utils`, with `tailwind-merge` extended for the custom `text-*`, `radius`, `shadow`, `tracking` and `container` scales.
+13. Field wiring is a small context (`Field` → `useFieldControl`) instead of shadcn's markup-only `field`: `Input`, `Textarea`, `SelectTrigger` and `Checkbox` read `id`, `aria-describedby` and `aria-invalid` from it.
+14. `UnavailableLink` is `Unavailable` with `as: 'link' | 'button'`, because the unavailable search button and tab-bar FAB need the button role.
+15. Item 6 amended: until spec 05, the favorites tab and the footer "Lista de interesse" are `Unavailable`; spec 05 points them at the favorites filter.
+16. Tab bar: top radius 32 px is an arbitrary value (no token); icon slots are symmetric around the FAB (centers 46 / 118 / 296 / 368) while Figma is slightly asymmetric (46 / 117 / 302 / 364).
+17. Mobile top bar title is centered in a `40px 1fr 40px` grid at the `title` step (18 px); the cart frame draws it at about 20 px, slightly right of center.
+18. Rotated registry icons: `ChevronRight/Down/Up` from `arrow-left`, `MoreHorizontal` from `menu`.
+19. Sonner offsets: desktop bottom-right 24 px; mobile bottom-center at `134px + safe area`, above the tab bar.
+20. `Textarea` added here (spec 09 amendment pulled forward, same field surface).
+21. Tabs: the list is a horizontal scroller (DS-31) with an inset-shadow baseline instead of `border-b`; triggers have `px-1` with gap 24 (still 32 between labels) and an inset focus outline so the scroller never clips it.
+22. Input groups show the focus outline on the group (around input and addons), not on the inner input; the DS-15 E2E checks the group for those controls.
+23. Chrome renders the Figma text about 4 % wider than the Figma export at the same size (16 px "Mercado": 67 vs 64 px). To keep Figma line breaks the footer feature copy is 214 px wide (Figma 204) and the feature titles stay on one line from `xl` up.
+
+### Visual check 01 (T17, 2026-10-28)
+
+50 % overlays of the app (`vite preview`) on `figma_tokens/screenshots/` at the same viewport. Differences > 2 px or wrong tokens are fixed or listed here.
+
+| Element | Reference | Result |
+|---|---|---|
+| Header with divider (`/`) | `desktop/Início.png` 1440 | Matched: wordmark, icons, `Entrar` and divider within 1 px. Nav labels start 9 px further left because of the wider text (deviation 23); the group stays centered. Cart badge hidden at 0 by design (DS-28). |
+| Header without divider (`/nfts/1`) | `desktop/Detalhes do NFT.png` 1440 | Matched, same nav note; `Mercado` active. |
+| Footer, brand band and links panel | `desktop/Início.png` 1440 | Matched within 2 px. Email is `contato@kurio.example` (Figma placeholder domain replaced). |
+| Footer, features band | `desktop/Início.png` 1440 | Deviation: 274 px tall vs 250. Titles are 18 px (deviation 2) and the longest copy needs 4 lines at 22 px; Figma's fixed height clips the same content. Medallions, rules and newsletter match. |
+| Mobile tab bar | `mobile/Início.png` 414 | Matched: notch, FAB and bar height. Icon positions within 1 px on the left pair, 4–6 px on the right pair (deviation 16). |
+| Mobile top bar (`/cart`) | `mobile/Carrinho de NFTs.png` 414 | Fixed during the check: back button 35 px (was 40, hit area kept with `::after`) and row moved 6 px down; now within 2 px. Title baseline matches; the title is 18 px (Figma about 20, not a type step, see deviation 2) and centered (deviation 17), so it starts 5 px left of Figma's. The progress rule under it belongs to spec 07. |
 
 ## 12. Amendments requested by later specs
 

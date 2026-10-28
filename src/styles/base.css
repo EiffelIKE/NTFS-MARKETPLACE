@@ -1,0 +1,43 @@
+/* Metric-adjusted fallback so the Roboto Mono swap does not shift layout (DS-10, design §4). */
+@font-face {
+  font-family: 'Roboto Mono Fallback';
+  src: local('DejaVu Sans Mono'), local('Menlo'), local('Consolas'), local('Courier New');
+  size-adjust: 100%; /* all candidates advance 0.6em, like Roboto Mono */
+  ascent-override: 104.8%; /* Roboto Mono hhea ascender 2146 / 2048 */
+  descent-override: 27.1%; /* 555 / 2048 */
+  line-gap-override: 0%;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    @apply font-sans;
+  }
+
+  body {
+    @apply bg-background text-body text-foreground;
+  }
+
+  /* One focus style for every control (DS-15): accent ring offset onto the surface. */
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+
+  /* Programmatic focus targets (e.g. main after the skip link) need no ring. */
+  [tabindex='-1']:focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  /* Reduced motion (DS-23): transitions and animations become instant. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
