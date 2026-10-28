@@ -1,0 +1,16 @@
+dist
+pnpm-lock.yaml
+src/routeTree.gen.ts
+playwright-report
+test-results
+reports
+.lighthouseci
+
+# Hand-written docs that Prettier would re-flow
+SPECS-NTFS
+figma_tokens
+OBJETIVES.md
+AGENTS.md
+CLAUDE.md
+.agents
+skills-lock.json

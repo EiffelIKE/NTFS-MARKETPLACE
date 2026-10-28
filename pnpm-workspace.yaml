@@ -1,0 +1,6 @@
+# pnpm settings.
+
+nodeLinker: hoisted
+
+# Seguridad supply-chain
+minimumReleaseAge: 10080 # 1 semana (7 * 24 * 60)

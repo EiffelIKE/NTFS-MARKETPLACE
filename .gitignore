@@ -1,0 +1,28 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+node_modules/.tmp
+
+# Env and local files
+*.local
+.env*.local
+
+# Test and audit reports
+playwright-report
+test-results
+blob-report
+reports
+.lighthouseci
+
+# Deploy
+.vercel
+
+# Figma frame screenshots (7+ MB of PNGs, local reference only)
+figma_tokens/screenshots/
+
+# Editors / OS
+.DS_Store
+.idea
+*.swp
