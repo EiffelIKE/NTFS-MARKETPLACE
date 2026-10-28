@@ -110,6 +110,19 @@ export function MockPanel({ runtime, initialOpen, registerOpen, onFirstOpen }: M
     say(checked ? 'Sem conexão ativado.' : 'Sem conexão desativado.')
   }
 
+  const setRealtimeOff = (checked: boolean) => {
+    if (checked) {
+      control.realtime.drop({ block: true })
+    } else {
+      control.realtime.restore()
+      // The offline scenario turns realtime off in its config; unticking has to undo that too.
+      if (!runtime.config.effective().realtime.available) {
+        control.configure({ realtime: { available: true } })
+      }
+    }
+    say(checked ? 'Tempo real indisponível ativado.' : 'Tempo real indisponível desativado.')
+  }
+
   const settleAll = (outcome: 'confirmed' | 'declined') => {
     for (const order of pending) control.settleOrder(order.id, outcome)
     say(outcome === 'confirmed' ? 'Pedidos pendentes confirmados.' : 'Pedidos pendentes recusados.')
@@ -208,6 +221,18 @@ export function MockPanel({ runtime, initialOpen, registerOpen, onFirstOpen }: M
               />
               <Label htmlFor={`${ids}-offline`} className="font-normal">
                 Sem conexão
+              </Label>
+            </div>
+            <div className="flex items-center gap-3">
+              <Checkbox
+                id={`${ids}-realtime-off`}
+                checked={!runtime.realtime.accepting()}
+                onCheckedChange={(checked) => {
+                  setRealtimeOff(checked === true)
+                }}
+              />
+              <Label htmlFor={`${ids}-realtime-off`} className="font-normal">
+                Tempo real indisponível
               </Label>
             </div>
           </section>

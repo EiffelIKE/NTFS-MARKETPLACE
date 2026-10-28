@@ -3,6 +3,7 @@ import { createBus, type Bus } from './db/bus'
 import { seed } from './db/seed'
 import { createStore, type Store, type StorageAdapter } from './db/store'
 import { nextSettlement, settleDue } from './domain/orders'
+import { createHub, type RealtimeHub } from './realtime/hub'
 import { defaultAvatarProcessor, type AvatarProcessor } from './lib/images'
 import { createNetwork, type Network } from './network'
 import { SCENARIOS, type ScenarioId } from './scenarios'
@@ -14,6 +15,8 @@ export interface MockRuntime {
   store: Store
   config: ConfigStore
   network: Network
+  /** The Socket.IO mock server's state; call `realtime.start()` to forward bus changes. */
+  realtime: RealtimeHub
   processAvatar: AvatarProcessor
   settlement: {
     /** Settles every due order now (also runs at the start of every handled request). */
@@ -45,6 +48,7 @@ export function createRuntime({ storage, baseUrl, processAvatar }: RuntimeOption
     seed: () => seed(SCENARIOS[config.scenarioId()].seed),
   })
   store.load()
+  const realtime = createHub({ store, bus, config })
 
   let timer: ReturnType<typeof setTimeout> | undefined
   const settlement: MockRuntime['settlement'] = {
@@ -78,6 +82,7 @@ export function createRuntime({ storage, baseUrl, processAvatar }: RuntimeOption
     store,
     config,
     network,
+    realtime,
     processAvatar: processAvatar ?? defaultAvatarProcessor(),
     settlement,
     useScenario(id) {

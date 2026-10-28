@@ -32,7 +32,7 @@ Generated sections sit between `<!-- generated:operations -->` … `<!-- /genera
    | Bruno Lima | `bruno@kurio.example` | `Kurio#Bruno2026` | one wallet, empty cart; 403 on Ana's order |
    | Carla Mendes | `carla@kurio.example` | `Kurio#Carla2026` | no wallets: checkout asks to register one |
 
-4. **Environment variables**: `VITE_API_BASE_URL`, `VITE_API_TIMEOUT_MS`, `VITE_ENABLE_MOCKS`, `VITE_SOCKET_URL` (spec 03), and any later addition, from the env schema.
+4. **Environment variables**: `VITE_API_BASE_URL`, `VITE_API_TIMEOUT_MS`, `VITE_ENABLE_MOCKS`, `VITE_REALTIME_URL` (spec 03), and any later addition, from the env schema.
 5. **Scenarios and reset**: how to select (URL, panel, `window.__mock`), generated scenario table, reset methods, persistence note (`localStorage`, per browser).
 6. **Reproducing failure flows**: one row per flow — goal, how to trigger, steps, expected result:
 
@@ -81,7 +81,7 @@ Generated sections sit between `<!-- generated:operations -->` … `<!-- /genera
 
 **Deviation collection (DOC-13).** Each spec ends with a "Deviations and notes for `ARCHITECTURE.md`" (or "Notes for …") section. T03 walks `SPECS-NTFS/*/design.md`, copies every item into §13 under one of: Figma, Accessibility, Assets, Brief interpretation, Technical. Each item keeps its reason and links back to the spec section. Items already known from specs 00–02 include: TypeScript 6 / ESLint 9 pins, no icon package, SPA 404 with HTTP 200, derived colors, type-scale collapse, drawn icons, tab bar choices, `aria-current` vs. Figma highlight, out-of-scope links, MSW 2.x, Axios fetch adapter, quote fingerprints, 403 vs. 404, ETH on every network, dot decimal separator, PBKDF2 iterations, mock clock, multi-tab behavior, Service Worker limits.
 
-**Transport limits (DOC-10)** to state explicitly, confirmed against spec 03 when it is Done: the Socket.IO "server" runs inside the page's Service Worker interception, not in a separate process; events reach only the tab that caused the change (spec 02 multi-tab note); a real network drop cannot be simulated at the socket level beyond what the binding exposes, so disconnection is driven by the mock control; there is no server persistence of missed events, so reconnection relies on REST reconciliation, which is also the production design.
+**Transport limits (DOC-10)** to state explicitly, confirmed against spec 03 (Done; its design §3 and §12 hold the details: MSW strips the `/socket.io/` path, the binding has no heartbeat, rooms, acks or CONNECT `auth`, refusing a connection needs an `error` event, WebSocket only): the Socket.IO "server" runs inside the page's Service Worker interception, not in a separate process; events reach only the tab that caused the change (spec 02 multi-tab note); a real network drop cannot be simulated at the socket level beyond what the binding exposes, so disconnection is driven by the mock control; there is no server persistence of missed events, so reconnection relies on REST reconciliation, which is also the production design.
 
 ## 4. Commit identifier (DOC-16)
 

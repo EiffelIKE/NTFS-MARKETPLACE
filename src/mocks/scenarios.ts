@@ -77,9 +77,12 @@ const list: Scenario[] = [
   {
     id: 'offline',
     label: 'Sem conexão',
-    description: 'Toda chamada falha como se não houvesse rede.',
+    description: 'Toda chamada falha como se não houvesse rede, e o tempo real fica indisponível.',
     seed: 'default',
-    config: { rules: [{ op: '*', effect: { kind: 'network-error' }, times: 'always' }] },
+    config: {
+      rules: [{ op: '*', effect: { kind: 'network-error' }, times: 'always' }],
+      realtime: { available: false },
+    },
   },
   {
     id: 'errors-then-recover',

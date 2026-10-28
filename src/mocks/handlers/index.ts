@@ -1,8 +1,9 @@
-import type { HttpHandler } from 'msw'
+import type { HttpHandler, WebSocketHandler } from 'msw'
 
 import type { OperationId } from '@/contracts'
 
 import type { MockRuntime } from '../runtime'
+import { realtimeHandler } from '../realtime/handler'
 import { authOps } from './auth'
 import { cartOps } from './cart'
 import { catalogOps } from './catalog'
@@ -25,7 +26,10 @@ const OPS: Record<OperationId, AnyOp> = {
   ...walletOps,
 }
 
-/** One MSW handler per operation of the contract, then the 404 catch-all. */
-export function createHandlers(runtime: MockRuntime): HttpHandler[] {
-  return [...routes(runtime, OPS), fallback(runtime)]
+/**
+ * One MSW handler per operation of the contract, the Socket.IO endpoint (spec 03), then the 404
+ * catch-all.
+ */
+export function createHandlers(runtime: MockRuntime): (HttpHandler | WebSocketHandler)[] {
+  return [...routes(runtime, OPS), realtimeHandler(runtime), fallback(runtime)]
 }

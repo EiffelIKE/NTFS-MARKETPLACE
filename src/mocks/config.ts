@@ -32,6 +32,11 @@ export interface MockConfig {
   payment: { outcome: 'confirm' | 'decline' | 'manual'; settleDelayMs: number }
   walletConnect: { outcome: 'approve' | 'reject'; delayMs: number }
   sessionTtlMs: number
+  /**
+   * Socket.IO mock server (spec 03). `available: false` refuses new connections and closes open
+   * ones; `deliveryDelayMs` is the wait between a committed change and its event.
+   */
+  realtime: { available: boolean; deliveryDelayMs: number }
   /** Once per seed, on the first `orders.create` (revalidation then fails). */
   checkoutTrigger: 'raise-price' | 'sell-out' | null
   /** Drives `range` latency. */
@@ -45,6 +50,7 @@ export interface ConfigPatch {
   rules?: (Omit<FailureRule, 'id'> & { id?: string })[]
   payment?: Partial<MockConfig['payment']>
   walletConnect?: Partial<MockConfig['walletConnect']>
+  realtime?: Partial<MockConfig['realtime']>
   sessionTtlMs?: number
   checkoutTrigger?: MockConfig['checkoutTrigger']
   prngSeed?: number
@@ -56,6 +62,7 @@ export const BASE_CONFIG: MockConfig = {
   rules: [],
   payment: { outcome: 'confirm', settleDelayMs: 3000 },
   walletConnect: { outcome: 'approve', delayMs: 600 },
+  realtime: { available: true, deliveryDelayMs: 50 },
   sessionTtlMs: 2 * 60 * 60 * 1000,
   checkoutTrigger: null,
   prngSeed: 20261027,
@@ -100,6 +107,7 @@ export function mergeConfig(
     rules: base.rules,
     payment: { ...base.payment, ...patch.payment },
     walletConnect: { ...base.walletConnect, ...patch.walletConnect },
+    realtime: { ...base.realtime, ...patch.realtime },
     sessionTtlMs: patch.sessionTtlMs ?? base.sessionTtlMs,
     checkoutTrigger:
       patch.checkoutTrigger === undefined ? base.checkoutTrigger : patch.checkoutTrigger,
@@ -176,6 +184,7 @@ export function createConfigStore(storage: StorageAdapter): ConfigStore {
         ...rest,
         payment: { ...overrides.payment, ...rest.payment },
         walletConnect: { ...overrides.walletConnect, ...rest.walletConnect },
+        realtime: { ...overrides.realtime, ...rest.realtime },
       }
       if (rules) {
         const seq = overrides.ruleSeq ?? 0

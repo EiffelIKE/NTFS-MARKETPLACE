@@ -233,7 +233,7 @@ Mapping: `axios.isCancel(e)` or `code === 'ERR_CANCELED'` → `cancelled`. `ECON
 | `VITE_API_BASE_URL` | non-empty string | `/api` | REST base. MSW (02) intercepts this same path, so the same build works mocked or against a real API. |
 | `VITE_API_TIMEOUT_MS` | positive int (coerced) | `10000` | Axios timeout; spec 02 timeout scenarios rely on it. |
 
-Spec 02 adds `VITE_ENABLE_MOCKS`, spec 03 adds `VITE_SOCKET_URL`, by extending the same schema.
+Spec 02 adds `VITE_ENABLE_MOCKS`, spec 03 adds `VITE_REALTIME_URL` (a URL, default `wss://realtime.kurio.example`, a reserved host that never reaches a real server), by extending the same schema.
 
 Fail fast happens twice. `vite.config.ts` loads env with `loadEnv` and runs `parseEnv`, so a bad deploy fails at build time. `main.tsx` imports `env` first, so a bad runtime env throws before render. The error message lists each invalid variable and the Zod reason, e.g. `Invalid environment: VITE_API_TIMEOUT_MS — expected positive integer`.
 
@@ -259,7 +259,7 @@ Fail fast happens twice. `vite.config.ts` loads env with `loadEnv` and runs `par
 5. `eslint-plugin-react-refresh` (`configs.vite`) with `allowExportNames: ['Route']`. Turned off for `src/components/ui/**` (shadcn exports variants) and `src/routes/**`: v0.5 reports a file-local component when the file exports only non-components (`Route`), and with `autoCodeSplitting` the router plugin moves the component into its own module anyway.
 6. `eslint-plugin-jsx-a11y` flat `strict`.
 7. `@tanstack/eslint-plugin-query` flat recommended; `@tanstack/eslint-plugin-router` flat recommended.
-8. Project rules: `no-restricted-imports` for `axios` outside `src/lib/http/**`, `no-restricted-globals` for `fetch` in `src/**` (FND-15).
+8. Project rules: `no-restricted-imports` for `axios` outside `src/lib/http/**`, `no-restricted-globals` for `fetch` in `src/**` (FND-15). Spec 03 adds `socket.io-client` (only `src/lib/realtime/**`) and `@mswjs/socket.io-binding` (only `src/mocks/**`).
 9. `eslint-config-prettier` last.
 
 `.prettierrc.json`: `singleQuote: true`, `semi: false`, `trailingComma: "all"`, `printWidth: 100`, plugins `prettier-plugin-tailwindcss` with `tailwindStylesheet: "./src/styles/index.css"` and `tailwindFunctions: ["cn", "cva"]`.
@@ -348,7 +348,7 @@ Pending changes collected when specs 03–14 were drafted; each is applied by th
 
 | From | Change |
 |---|---|
-| 03 | `VITE_REALTIME_URL` in `lib/env.ts` and `.env.example` |
+| 03 | `VITE_REALTIME_URL` in `lib/env.ts` and `.env.example` — **applied in spec 03** |
 | 04 | `RouterContext.session`; the root route waits for the session check; `reason` search param on `/login` and `/signup`; auth interceptors on the Axios instance |
 | 12 | Playwright projects/config for visual tests; scripts `test:visual`, `test:visual:update` |
 | 13 | Script `lighthouse:deployed`; `public/robots.txt` (the SPA rewrite would answer it with HTML); `kurio-build` meta tag with the commit id |

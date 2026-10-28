@@ -8,7 +8,15 @@ describe('parseEnv', () => {
       VITE_API_BASE_URL: '/api',
       VITE_API_TIMEOUT_MS: 10_000,
       VITE_ENABLE_MOCKS: true,
+      VITE_REALTIME_URL: 'wss://realtime.kurio.example',
     })
+  })
+
+  it('rejects a realtime URL that is not absolute, naming the variable', () => {
+    expect(() => parseEnv({ VITE_REALTIME_URL: '/socket' })).toThrow(/VITE_REALTIME_URL/)
+    expect(parseEnv({ VITE_REALTIME_URL: 'ws://localhost:3001' }).VITE_REALTIME_URL).toBe(
+      'ws://localhost:3001',
+    )
   })
 
   it('coerces the timeout from a string', () => {

@@ -19,6 +19,24 @@ const lucideRestriction = {
   message: 'Use icons from @/components/icons (AGENTS.md).',
 }
 
+const socketClientRestriction = {
+  name: 'socket.io-client',
+  message: 'Only `src/lib/realtime` talks to Socket.IO; use its hooks (spec 03, RT-01).',
+}
+
+const socketBindingRestriction = {
+  name: '@mswjs/socket.io-binding',
+  message: 'The Socket.IO binding is mock-server code; keep it under `src/mocks` (spec 03).',
+}
+
+// What no app code may import, whatever else its folder restricts.
+const baseRestrictions = [
+  axiosRestriction,
+  lucideRestriction,
+  socketClientRestriction,
+  socketBindingRestriction,
+]
+
 // Test files and the shared helpers the contract tests import.
 const testFiles = ['src/**/*.test.ts', 'src/**/*-kit.ts']
 
@@ -72,7 +90,7 @@ export default defineConfig(
       'no-restricted-imports': [
         'error',
         {
-          paths: [axiosRestriction, lucideRestriction],
+          paths: baseRestrictions,
           patterns: [{ group: ['@/mocks', '@/mocks/*', '**/mocks/**'], message: mocksMessage }],
         },
       ],
@@ -82,7 +100,20 @@ export default defineConfig(
     files: ['src/main.tsx', ...testFiles],
     ignores: ['src/mocks/**', 'src/contracts/**'],
     rules: {
-      'no-restricted-imports': ['error', { paths: [axiosRestriction, lucideRestriction] }],
+      'no-restricted-imports': ['error', { paths: baseRestrictions }],
+    },
+  },
+  {
+    // The one folder that may import `socket.io-client`; everything else stays restricted.
+    files: ['src/lib/realtime/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [axiosRestriction, lucideRestriction, socketBindingRestriction],
+          patterns: [{ group: ['@/mocks', '@/mocks/*', '**/mocks/**'], message: mocksMessage }],
+        },
+      ],
     },
   },
   {
@@ -91,7 +122,7 @@ export default defineConfig(
       'no-restricted-imports': [
         'error',
         {
-          paths: [lucideRestriction],
+          paths: [lucideRestriction, socketClientRestriction, socketBindingRestriction],
           patterns: [{ group: ['@/mocks', '@/mocks/*', '**/mocks/**'], message: mocksMessage }],
         },
       ],
@@ -105,8 +136,7 @@ export default defineConfig(
         'error',
         {
           paths: [
-            axiosRestriction,
-            lucideRestriction,
+            ...baseRestrictions,
             { name: 'msw', message: 'Contracts depend only on zod and money.' },
             { name: 'react', message: 'Contracts depend only on zod and money.' },
           ],
@@ -132,12 +162,17 @@ export default defineConfig(
           paths: [
             axiosRestriction,
             lucideRestriction,
+            socketClientRestriction,
             { name: '@/api', message: mocksClientMessage },
           ],
           patterns: [
             {
               group: ['@/api/*', '@/lib/http/*', '@/features/*', '@/routes/*'],
               message: mocksClientMessage,
+            },
+            {
+              group: ['@/lib/realtime', '@/lib/realtime/*'],
+              message: "Mocks implement the server; they don't use the realtime client.",
             },
           ],
         },

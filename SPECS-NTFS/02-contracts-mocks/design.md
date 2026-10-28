@@ -699,6 +699,7 @@ interface MockConfig {
   rules: FailureRule[]
   payment: { outcome: 'confirm' | 'decline' | 'manual'; settleDelayMs: number }
   walletConnect: { outcome: 'approve' | 'reject'; delayMs: number }
+  realtime: { available: boolean; deliveryDelayMs: number }   // spec 03; `offline` sets available: false
   sessionTtlMs: number
   checkoutTrigger: 'raise-price' | 'sell-out' | null   // once per seed, on the first orders.create
   prngSeed: number                                     // drives 'range' latency
@@ -781,6 +782,7 @@ interface MockControl {
   updateNft(nftId: NftId, patch: { price?: Eth; available?: { editionId: EditionId; value: number | null } }): void
   settleOrder(orderId: OrderId, outcome: 'confirmed' | 'declined'): void
   disconnectWallet(connectionId?: ConnectionId): void   // default: every active connection
+  realtime: RealtimeControl                   // spec 03 §5: connections, drop/restore, redeliver, inject, log
   requests(filter?: { op?: OperationId }): RequestLogEntry[]; clearRequests(): void
   snapshot(): MockState                       // deep copy
 }
@@ -818,6 +820,9 @@ Added to `eslint.config.js` (spec 00 §9, project rules):
 | `src/**` except `src/mocks/**`, `src/main.tsx`, `src/**/*.test.ts` | `@/mocks`, `@/mocks/*`, `**/mocks/**` | "Mock code is only reachable from the bootstrap (API-35)." |
 | `src/contracts/**` | `@/*` except `@/contracts/*` and `@/lib/money`; `axios`; `msw` | "Contracts depend only on zod and money." |
 | `src/mocks/**` | `@/api/*`, `@/lib/http/*`, `@/features/*`, `@/routes/*`, `axios` | "Mocks implement the server; they don't use the client." |
+| `src/mocks/**` (spec 03) | `@/lib/realtime`, `@/lib/realtime/*`, `socket.io-client` | "Mocks implement the server; they don't use the realtime client." |
+| everything but `src/mocks/**` (spec 03) | `@mswjs/socket.io-binding` | "The Socket.IO binding is mock-server code; keep it under `src/mocks`." |
+| everything but `src/lib/realtime/**` (spec 03) | `socket.io-client` | "Only `src/lib/realtime` talks to Socket.IO." |
 
 `main.tsx` only uses a dynamic `import()`, which `no-restricted-imports` does not see anyway. Its exemption is documentation.
 
@@ -898,9 +903,9 @@ Pending changes collected when specs 03–14 were drafted. Apply them in the own
 
 | From | Change | Applied in |
 |---|---|---|
-| 03 | `MockConfig.realtime = { available, deliveryDelayMs }`; the `offline` scenario sets `available: false`; panel checkbox "Tempo real indisponível" | spec 03 tasks |
-| 03 | `window.__mock.realtime` (connections, drop/restore, redeliver, inject, log); `contracts/events.ts`; realtime handler in `createHandlers` and `startMocks` | spec 03 tasks |
-| 03 | Lint boundaries for `socket.io-client` (app only) and `@mswjs/socket.io-binding` (mocks only) | spec 03 tasks |
+| 03 | `MockConfig.realtime = { available, deliveryDelayMs }`; the `offline` scenario sets `available: false`; panel checkbox "Tempo real indisponível" | **applied in spec 03** (design §13) |
+| 03 | `window.__mock.realtime` (connections, drop/restore, redeliver, inject, log); `contracts/events.ts`; realtime handler in `createHandlers` and `startMocks` | **applied in spec 03** (design §13) |
+| 03 | Lint boundaries for `socket.io-client` (app only) and `@mswjs/socket.io-binding` (mocks only) | **applied in spec 03** (design §13) |
 | 04 | `loginAs` also writes the app session (`kurio.session`) to `localStorage` | spec 04 tasks (spec 02's `e2e/support/mock.ts` `loginAs` returns the token only) |
 | 08 | `contracts/wallets.ts` exports `addressMatchesNetwork(address, network)` and refines `WalletFields` with "Endereço inválido para a rede selecionada."; the wallet handler parses with the same schema | **applied early in spec 02** (§16); spec 08 T-task only has to use it |
 | 13 | Optional: render the shell before the worker is ready, if the MSW start cost misses the LCP target (changes §3 bootstrap order) | spec 13 analysis |

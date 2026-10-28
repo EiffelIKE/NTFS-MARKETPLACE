@@ -26,6 +26,8 @@ export function createControl(runtime: MockRuntime): MockControl {
     configure(patch) {
       config.configure(patch)
       settlement.arm()
+      // `realtime: { available: false }` closes the open sockets right away.
+      runtime.realtime.enforce()
     },
     addRule: (rule) => config.addRule(rule),
     clearRules: () => {
@@ -73,6 +75,25 @@ export function createControl(runtime: MockRuntime): MockControl {
               .map((connection) => connection.id)
         for (const id of ids) disconnectWallet(tx, id)
       })
+    },
+    realtime: {
+      connections: () => runtime.realtime.connections(),
+      drop: (opts) => {
+        runtime.realtime.drop(opts)
+      },
+      restore: () => {
+        runtime.realtime.restore()
+      },
+      redeliver: (count) => {
+        runtime.realtime.redeliver(count)
+      },
+      inject: (event, to) => {
+        runtime.realtime.inject(event, to)
+      },
+      log: () => runtime.realtime.log(),
+      clearLog: () => {
+        runtime.realtime.clearLog()
+      },
     },
     requests: (filter) => network.log.list(filter),
     clearRequests: () => {

@@ -3,6 +3,7 @@ import type { EditionId, Eth, NftId, OperationId } from '@/contracts'
 import type { ConfigPatch, FailureRule, MockConfig } from './config'
 import type { ConnectionId, MockState, OrderId, UserId } from './db/state'
 import type { RequestLogEntry } from './network'
+import type { RealtimeControl } from './realtime/types'
 import type { ScenarioId } from './scenarios'
 
 // The `window.__mock` contract, with no DOM or Vite dependencies so the E2E helpers can import it.
@@ -36,6 +37,8 @@ export interface MockControl {
   settleOrder(orderId: OrderId, outcome: 'confirmed' | 'declined'): void
   /** Ends the connection with `connectionId`, or every active one. */
   disconnectWallet(connectionId?: ConnectionId): void
+  /** The Socket.IO mock server: connections, drops, replays and injected events (spec 03). */
+  realtime: RealtimeControl
   requests(filter?: { op?: OperationId }): RequestLogEntry[]
   clearRequests(): void
   /** Deep copy of the whole mock database. */

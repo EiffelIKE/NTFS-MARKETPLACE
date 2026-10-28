@@ -71,6 +71,8 @@ export async function startMocks(): Promise<void> {
 
   window.__mock = createControl(runtime)
   runtime.settlement.arm()
+  // Domain changes now reach connected sockets as events (spec 03).
+  runtime.realtime.start()
 
   // Another tab wrote the database: last write wins (domain changes publish only where they happen).
   window.addEventListener('storage', (event) => {
