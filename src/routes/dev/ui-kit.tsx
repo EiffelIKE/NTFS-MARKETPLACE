@@ -12,6 +12,7 @@ import {
   NavigationSection,
   OverlaysSection,
 } from '@/features/ui-kit/display'
+import { CatalogCardsSection } from '@/features/ui-kit/catalog'
 import { FormLayerSection } from '@/features/ui-kit/forms'
 import { ColorsSection, IconsSection, TypeSection } from '@/features/ui-kit/foundations'
 import { PageContainer } from '@/components/layout/page-container'
@@ -41,6 +42,7 @@ function UiKitPage() {
       <NavigationSection />
       <DisplaySection />
       <LoadingSection />
+      <CatalogCardsSection />
       <OverlaysSection />
       <UnavailableSection />
     </PageContainer>

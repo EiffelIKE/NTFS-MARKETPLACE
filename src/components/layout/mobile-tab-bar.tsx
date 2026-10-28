@@ -59,9 +59,16 @@ export function MobileTabBar({
           </Link>
         </li>
         <li className="flex justify-center">
-          <Unavailable aria-label="Favoritos" className={item}>
+          {/* Favorites mode of the catalog (spec 05); a visitor is sent to sign in first. */}
+          <Link
+            to="/"
+            search={{ favorites: 1 }}
+            aria-label="Favoritos"
+            className={cn(item, active === 'favorites' && itemActive)}
+            {...current('favorites')}
+          >
             <HeartIcon className="size-5" />
-          </Unavailable>
+          </Link>
         </li>
         <li className="flex justify-center">
           {onSearch ? (

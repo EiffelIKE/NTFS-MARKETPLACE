@@ -11,10 +11,13 @@ function Slider({
   min = 0,
   max = 100,
   thumbLabels,
+  thumbValueText,
   ...props
 }: React.ComponentProps<typeof SliderPrimitive.Root> & {
   /** Accessible name per thumb, e.g. ["Preço mínimo", "Preço máximo"]. */
   thumbLabels?: string[]
+  /** Spoken value per thumb, when the raw number is not meaningful (`"1.19 ETH"`). */
+  thumbValueText?: (value: number, index: number) => string
 }) {
   const values = React.useMemo(
     () => (Array.isArray(value) ? value : Array.isArray(defaultValue) ? defaultValue : [min]),
@@ -43,11 +46,12 @@ function Slider({
           className="absolute h-full bg-text-accent"
         />
       </SliderPrimitive.Track>
-      {values.map((_, index) => (
+      {values.map((thumbValue, index) => (
         <SliderPrimitive.Thumb
           data-slot="slider-thumb"
           key={index}
           aria-label={thumbLabels?.[index]}
+          aria-valuetext={thumbValueText?.(thumbValue, index)}
           className="relative block size-3.75 cursor-grab rounded-full bg-text-accent before:absolute before:-inset-2 before:rounded-full active:cursor-grabbing data-disabled:cursor-not-allowed"
         />
       ))}

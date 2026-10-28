@@ -495,6 +495,7 @@ Visual baselines of the shells are spec 12.
 21. Tabs: the list is a horizontal scroller (DS-31) with an inset-shadow baseline instead of `border-b`; triggers have `px-1` with gap 24 (still 32 between labels) and an inset focus outline so the scroller never clips it.
 22. Input groups show the focus outline on the group (around input and addons), not on the inner input; the DS-15 E2E checks the group for those controls.
 23. Chrome renders the Figma text about 4 % wider than the Figma export at the same size (16 px "Mercado": 67 vs 64 px). To keep Figma line breaks the footer feature copy is 214 px wide (Figma 204) and the feature titles stay on one line from `xl` up.
+24. Amended by spec 05 (2026-10-28): `onSearch` is wired in `app-shell.tsx` (header search opens the search dialog; the tab bar button focuses the mobile search field on the catalog or opens the dialog elsewhere). The tab bar heart and the footer "Lista de interesse" are links to `/?favorites=1`. `Slider` gains an optional `thumbValueText` prop for `aria-valuetext`.
 
 ### Visual check 01 (T17, 2026-10-28)
 

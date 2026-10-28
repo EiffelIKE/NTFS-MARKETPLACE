@@ -389,3 +389,5 @@ Decisions taken while implementing, where the design was silent or had to give w
 | Desktop sign-up | Matched; four fields plus the password hint make the panel taller than login (not drawn in Figma with a hint). |
 | Mobile login / sign-up: logo, title, 358 × 50 fields, 358 × 60 button, divider, social buttons, footer link | Matched within 2 px vertically; the footer link sits below the fold at 390 × 844 on sign-up, as the page is longer than the frame with the hint. |
 | Field surface | Figma fields are `ink` with a 1 px `border` inside the card, so the auth fields override the default `surface-dark` fill. |
+
+> Amended by spec 05 (2026-10-28): the favorites guard calls `requireAuth` from `beforeLoad` only when `favorites` is set, and the mobile tab bar heart now links to `/?favorites=1` as well as the footer link.

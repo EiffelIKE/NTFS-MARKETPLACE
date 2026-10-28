@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test'
 
 import { NftListResponse } from '../src/contracts'
 import { expectNoAxeViolations } from './support/a11y'
+import { homeHeading } from './support/home'
 import { apiFetch, bearer, forgetSession, loginAs, mock } from './support/mock'
 import { expect, test } from './support/test'
 
@@ -10,7 +11,7 @@ import { expect, test } from './support/test'
 
 async function open(page: Page, url = '/') {
   await page.goto(url)
-  await expect(page.getByRole('heading', { level: 1, name: 'KURIO' })).toBeVisible()
+  await expect(homeHeading(page)).toBeVisible()
 }
 
 async function total(page: Page) {
@@ -59,7 +60,7 @@ test('data persists across reloads and ?reset=1 restores the seed (API-36, API-4
   expect((await apiFetch(page, `/favorites/${nftId}`, { method: 'PUT', headers })).status).toBe(204)
 
   await page.reload()
-  await expect(page.getByRole('heading', { level: 1, name: 'KURIO' })).toBeVisible()
+  await expect(homeHeading(page)).toBeVisible()
   const after = await apiFetch<{ nftIds: string[] }>(page, '/favorites', { headers })
   expect(after.body.nftIds).toContain(nftId)
 
@@ -110,7 +111,7 @@ test.describe('offline scenario (API-41)', () => {
 test('latency follows the page clock (API-41, API-43)', async ({ page }) => {
   await page.clock.install()
   await page.goto('/?scenario=slow')
-  await expect(page.getByRole('heading', { level: 1, name: 'KURIO' })).toBeVisible()
+  await expect(homeHeading(page)).toBeVisible()
   await page.evaluate(() => {
     const w = window as unknown as { done?: boolean }
     void fetch('/api/nfts?pageSize=1').then(() => {

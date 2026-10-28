@@ -1,4 +1,5 @@
-import type * as React from 'react'
+import { useRouterState } from '@tanstack/react-router'
+import * as React from 'react'
 
 import { Announcer, Toaster } from '@/components/feedback'
 import { DesktopFooter } from '@/components/layout/desktop-footer'
@@ -9,13 +10,15 @@ import type { ShellSession } from '@/components/layout/session'
 import { useShellConfig } from '@/components/layout/shell-config'
 import { SkipLink } from '@/components/layout/skip-link'
 import { UserMenu } from '@/features/auth/components/user-menu'
+import { SearchDialog } from '@/features/catalog/components/search-dialog'
+import { useMediaQuery } from '@/hooks/use-media-query'
 import { useSession } from '@/features/auth/model/use-session'
 import type { SessionState } from '@/features/auth/model/session'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 // The only place specs plug data into the shell (DS-28): session (04), search (05) and cart count
-// (07). Search and cart still render their empty state.
+// (07). The cart still renders its empty state.
 function shellSession(state: SessionState): ShellSession {
   return state.status === 'authenticated'
     ? { status: 'user', name: state.user.displayName, avatarUrl: state.user.avatarUrl ?? undefined }
@@ -31,8 +34,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const state = useSession()
   const session = shellSession(state)
   const cartCount = 0
-  const onSearch = undefined
   const { mobile } = shell
+
+  // Search (CAT-25): on the mobile home the catalog's own field takes focus; everywhere else,
+  // including desktop home where Figma draws only the icon, a dialog opens.
+  const [searchOpen, setSearchOpen] = React.useState(false)
+  const onHome = useRouterState({ select: (router) => router.location.pathname === '/' })
+  const wide = useMediaQuery('(min-width: 1024px)')
+  const onSearch = () => {
+    const field = document.getElementById('catalog-search')
+    if (onHome && !wide && field) {
+      field.scrollIntoView({ block: 'center' })
+      field.focus({ preventScroll: true })
+    } else {
+      setSearchOpen(true)
+    }
+  }
 
   return (
     <TooltipProvider>
@@ -71,6 +88,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           onSearch={onSearch}
         />
       )}
+      <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
       <Toaster />
       <Announcer />
     </TooltipProvider>

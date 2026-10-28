@@ -35,7 +35,10 @@ const features = [
 ]
 
 type FooterLink =
-  { label: string; to: '/profile' } | { label: string; category: string } | { label: string }
+  | { label: string; to: '/profile' }
+  | { label: string; favorites: true }
+  | { label: string; category: string }
+  | { label: string }
 
 const columns: { title: string; links: FooterLink[] }[] = [
   {
@@ -45,8 +48,7 @@ const columns: { title: string; links: FooterLink[] }[] = [
       { label: 'Minha coleção' },
       { label: 'Atividade' },
       { label: 'Estúdio do criador' },
-      // Spec 05 points this at the favorites filter (`/?favorites=1`), like the tab bar heart.
-      { label: 'Lista de interesse' },
+      { label: 'Lista de interesse', favorites: true },
     ],
   },
   {
@@ -88,6 +90,13 @@ function FooterLinkItem({ link }: { link: FooterLink }) {
   if ('to' in link) {
     return (
       <Link to={link.to} className={linkClass}>
+        {link.label}
+      </Link>
+    )
+  }
+  if ('favorites' in link) {
+    return (
+      <Link to="/" search={{ favorites: 1 }} className={linkClass}>
         {link.label}
       </Link>
     )

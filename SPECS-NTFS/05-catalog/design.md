@@ -1,6 +1,6 @@
 # 05 — Catalog · Design
 
-> Status: Ready for review
+> Status: Done (see §15 for what changed while implementing)
 
 Implements [`requirements.md`](requirements.md). Figma: Home desktop `2:2` ([`desktop/home.md`](../../figma_tokens/desktop/home.md)), Home mobile `14:5226` ([`mobile/home.md`](../../figma_tokens/mobile/home.md)), and the screenshots `desktop/Início.png` and `mobile/Início.png`.
 
@@ -362,3 +362,20 @@ Each "Ler mais →" is a spec 01 `UnavailableLink`. The 4 × 268 row is centered
 9. Pagination adds "Anterior".
 10. Blog "Ler mais" links are unavailable. Promo body copy 2 is completed ("…que definem a cultura."), because it is truncated in Figma.
 11. Catalog list params are comma-joined strings in the URL (readable, shareable), not the router's JSON arrays.
+12. **Router-level search serializer** (`app/router.ts`): plain strings, no JSON, for every route. The default serializer would write `categories=musica,music` as `%22musica%2C…%22` and break the shared URLs of the footer links. Other routes only use string params, so nothing else changes.
+13. **The router merges raw URL params under the validated ones.** A key the schema drops (`page=abc`, `sort=foo`) must stay present as `undefined` in the validated output, or the raw value comes back and the API answers 422. `catalogSearch`'s final transform keeps dropped keys as `undefined` and `search.test.ts` asserts it.
+14. **Schema shape:** each param is `z.unknown().transform(...).optional()` (a transform's output is "non-optional" in Zod 4). `favorites` accepts `1`, `'1'` or `true`. `page` is coerced to 2..10000.
+15. **One responsive card** (`ProductCard`) instead of three components: `cornerAction` and `actions` slots carry the mobile heart and the desktop hover row. Variants only change media shape and padding.
+16. **Facet rows are never disabled:** each stays a real checkbox, even with a count of 0, so a combination that returns nothing is reachable and the empty state explains it. Counts come from `shown.facets` of the response on screen.
+17. **`lastShown`:** when a refetch fails with results already on screen, the alert goes above the old cards (dimmed, `data-outdated="true"`) and "Tentar novamente" refetches. A first load that fails shows the alert alone.
+18. **Focus after pagination moves only on a click** on a pagination link, not on a URL change from back/forward, so history navigation does not steal focus.
+19. **The `h1`** is the first hero slide's title only. When highlights fail, a hidden `h1` "KURIO" keeps one heading. In favorites mode the `h2#mercado-title` ("Lista de interesse") becomes visible.
+20. **The carousel track is a `div`**, not `ul > li[role=group]` (axe `list` violation). The active dot comes from a scroll-position listener, because an IntersectionObserver picked the wrong slide. The dots container is `pointer-events-none` with `pointer-events-auto` buttons so it never covers the hero CTA.
+21. **`Slider.thumbValueText`** (spec 01 component): each thumb gets `aria-valuetext` ("0.02 ETH") from the price formatter. Spec 01's slider otherwise unchanged.
+22. **Home `<title>`** is "Início · KURIO", and the home heading is the hero title; `smoke.spec.ts`, `mocks.spec.ts` and `design-system.spec.ts` follow (shared `e2e/support/home.ts`).
+23. **Sticky sheet footer:** "Ver N NFTs" and "Limpar filtros" stay at the bottom of the filter sheet (`sticky -bottom-6`, with the safe-area inset), so they are reachable without scrolling the facets.
+24. **Favorites links:** the mobile tab bar heart and the desktop footer "Lista de interesse" link point to `/?favorites=1` (amends spec 01's shell config and spec 04's footer). A guest is sent to login and returns to the list.
+25. **No hash on filter changes:** navigation keeps `resetScroll: false` and does not add `#mercado`, so the URL stays canonical and the page does not jump. Promo and footer links that target the catalog do carry `#mercado`.
+26. **`queryClient.query()`** replaces `prefetchQuery` in the loader (deprecated in the installed TanStack Query), with `.catch(noop)` so a failed prefetch never blocks the route.
+27. **Promo and blog images have `alt=""`** (decorative: the card text names them). The card focus ring is the link's own outline around the name; the stretched `::after` carries no outline, so the design-system "every focus stop shows a 2 px outline" test keeps its meaning.
+28. **Pagination "Anterior"** uses the existing `ArrowLeftIcon`; no new icon.

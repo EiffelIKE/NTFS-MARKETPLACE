@@ -1,5 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query'
-import { createRouter } from '@tanstack/react-router'
+import { createRouter, parseSearchWith, stringifySearchWith } from '@tanstack/react-router'
 
 import { NotFound, RouteError } from '@/components/route-states'
 import { session } from '@/features/auth/model/instance'
@@ -16,6 +16,11 @@ export interface RouterContext {
 export const router = createRouter({
   routeTree,
   context: { queryClient, session },
+  // Search params stay plain strings (`?q=123`, `?minPrice=0.20`), never JSON: the default
+  // serializer would quote numeric-looking text (`?q=%22123%22`) and turn `0.20` into `0.2`.
+  // Schemas coerce what they need (spec 05 design §3).
+  parseSearch: parseSearchWith((value) => value),
+  stringifySearch: stringifySearchWith((value) => JSON.stringify(value)),
   defaultPreload: 'intent',
   // Query owns freshness.
   defaultPreloadStaleTime: 0,

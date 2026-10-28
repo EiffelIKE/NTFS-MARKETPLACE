@@ -3,19 +3,18 @@ import { expect, test, type Page } from '@playwright/test'
 import { loginAs } from './support/mock'
 
 const routes = [
-  { path: '/nfts/1', link: 'Detalhes do NFT', heading: 'Detalhes do NFT', private: false },
-  { path: '/cart', link: 'Carrinho', heading: 'Carrinho', private: false },
-  { path: '/checkout', link: 'Finalizar compra', heading: 'Finalizar compra', private: true },
+  { path: '/nfts/1', heading: 'Detalhes do NFT', private: false },
+  { path: '/cart', heading: 'Carrinho', private: false },
+  { path: '/checkout', heading: 'Finalizar compra', private: true },
   {
     path: '/orders/1',
-    link: 'Confirmação do pedido',
     heading: 'Confirmação do pedido',
     private: true,
   },
-  { path: '/login', link: 'Entrar', heading: 'Entrar', private: false },
-  { path: '/signup', link: 'Criar conta', heading: 'Criar conta', private: false },
-  { path: '/profile', link: 'Perfil', heading: 'Perfil', private: true },
-  { path: '/wallets', link: 'Carteiras', heading: 'Carteiras', private: true },
+  { path: '/login', heading: 'Entrar', private: false },
+  { path: '/signup', heading: 'Criar conta', private: false },
+  { path: '/profile', heading: 'Perfil', private: true },
+  { path: '/wallets', heading: 'Carteiras', private: true },
 ] as const
 
 function heading(page: Page, name: string | RegExp) {
@@ -25,26 +24,16 @@ function heading(page: Page, name: string | RegExp) {
 // The sign-up page titles itself differently below `lg` (spec 04 design §7).
 const SIGNUP_HEADING = /^Criar (conta|perfil de colecionador)$/
 
-test('home renders the brand heading, document metadata and a link to every route', async ({
-  page,
-}) => {
+test('home renders its heading and the document metadata', async ({ page }) => {
   await page.goto('/')
-  await expect(heading(page, 'KURIO')).toBeVisible()
-  await expect(page).toHaveTitle('KURIO — Marketplace de NFTs')
+  await expect(heading(page, /^SEJA DONO D/)).toBeVisible()
+  await expect(page).toHaveTitle('Início · KURIO')
   await expect(page.locator('html')).toHaveAttribute('lang', 'pt-BR')
   await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /KURIO/)
   await expect(page.locator('meta[name="viewport"]')).toHaveAttribute(
     'content',
     'width=device-width, initial-scale=1',
   )
-
-  const nav = page.getByRole('navigation', { name: 'Telas' })
-  for (const route of routes) {
-    await expect(nav.getByRole('link', { name: route.link, exact: true })).toHaveAttribute(
-      'href',
-      route.path,
-    )
-  }
 })
 
 for (const route of routes) {
@@ -78,7 +67,7 @@ test('an unknown URL renders the not-found view and links back home', async ({ p
 
   await page.getByRole('link', { name: 'Voltar ao início' }).click()
   await expect(page).toHaveURL('/')
-  await expect(heading(page, 'KURIO')).toBeVisible()
+  await expect(heading(page, /^SEJA DONO D/)).toBeVisible()
 })
 
 test.describe('a route chunk that fails to load', () => {
@@ -87,10 +76,8 @@ test.describe('a route chunk that fails to load', () => {
   async function openBrokenCart(page: Page) {
     await page.goto('/')
     await page.context().route('**/assets/cart-*.js', (route) => route.abort())
-    await page
-      .getByRole('navigation', { name: 'Telas' })
-      .getByRole('link', { name: 'Carrinho', exact: true })
-      .click()
+    // The header cart (desktop) or the tab bar cart (mobile).
+    await page.getByRole('link', { name: 'Carrinho', exact: true }).click()
     await expect(heading(page, 'Algo deu errado')).toBeVisible()
     await page.context().unroute('**/assets/cart-*.js')
   }

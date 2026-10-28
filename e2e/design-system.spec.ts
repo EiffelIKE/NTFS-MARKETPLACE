@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test'
 
 import { expectNoAxeViolations } from './support/a11y'
+import { openHome } from './support/home'
 import { expectNoHorizontalOverflow } from './support/layout'
 import { expect, test } from './support/test'
 
@@ -8,11 +9,6 @@ import { expect, test } from './support/test'
 // other one.
 
 const GALLERY = '/dev/ui-kit'
-
-async function openHome(page: Page) {
-  await page.goto('/')
-  await expect(page.getByRole('heading', { level: 1, name: 'KURIO' })).toBeVisible()
-}
 
 async function openGallery(page: Page) {
   await page.goto(GALLERY)
@@ -53,7 +49,7 @@ test('header: active item, empty cart and the login link (DS-25, DS-28)', async 
   const nav = page.getByRole('navigation', { name: 'Principal' })
   await expect(nav.getByRole('link', { name: 'Início' })).toHaveAttribute('aria-current', 'page')
 
-  // Desktop: header actions; mobile: tab bar. The home placeholder nav has its own cart link.
+  // Desktop: header actions; mobile: tab bar.
   const cart = (isMobile ? nav : page.getByRole('banner')).getByRole('link', {
     name: 'Carrinho',
     exact: true,
@@ -70,22 +66,28 @@ test('header: active item, empty cart and the login link (DS-25, DS-28)', async 
 })
 
 test.describe('unavailable controls (DS-29)', () => {
-  const name = (isMobile: boolean) => (isMobile ? 'Favoritos' : 'Criadores')
+  // Mobile home has no unavailable control any more (the tab bar heart is the favorites list since
+  // spec 05), so there the gallery's "Fora do escopo" section stands in.
+  async function openHost(page: Page, isMobile: boolean) {
+    if (isMobile) await openGallery(page)
+    else await openHome(page)
+    return page.url()
+  }
 
   test('click shows the notice and stays on the page', async ({ page, isMobile }) => {
-    await openHome(page)
+    const url = await openHost(page, isMobile)
     // `force`: the control is `aria-disabled`, which Playwright treats as not clickable.
-    await page.getByRole('link', { name: name(isMobile) }).click({ force: true })
+    await page.getByRole('link', { name: 'Criadores' }).click({ force: true })
     await expect(toasts(page).getByText('Disponível em breve')).toBeVisible()
-    await expect(page).toHaveURL('/')
+    await expect(page).toHaveURL(url)
   })
 
   test('Enter shows the notice and stays on the page', async ({ page, isMobile }) => {
-    await openHome(page)
-    await page.getByRole('link', { name: name(isMobile) }).focus()
+    const url = await openHost(page, isMobile)
+    await page.getByRole('link', { name: 'Criadores' }).focus()
     await page.keyboard.press('Enter')
     await expect(toasts(page).getByText('Disponível em breve')).toBeVisible()
-    await expect(page).toHaveURL('/')
+    await expect(page).toHaveURL(url)
   })
 })
 
@@ -244,6 +246,31 @@ test('content ends above the mobile tab bar (DS-27)', async ({ page, isMobile })
   const tabBar = await page.getByRole('navigation', { name: 'Principal' }).boundingBox()
   expect(last && tabBar).toBeTruthy()
   expect((last?.y ?? 0) + (last?.height ?? 0)).toBeLessThanOrEqual((tabBar?.y ?? 0) + 0.5)
+})
+
+test('catalog cards carry srcset, sizes and intrinsic size (CAT-21, CAT-23)', async ({ page }) => {
+  await openGallery(page)
+  const cards = page.getByTestId('gallery-cards')
+  const images = cards.locator('img')
+  await expect(images).toHaveCount(4)
+  for (const image of await images.all()) {
+    const attributes = await image.evaluate((img: HTMLImageElement) => ({
+      candidates: img.srcset.split(',').filter((candidate) => / \d+w$/.test(candidate.trim()))
+        .length,
+      sizes: img.sizes,
+      width: img.getAttribute('width'),
+      height: img.getAttribute('height'),
+      alt: img.getAttribute('alt'),
+    }))
+    expect(attributes.candidates).toBe(3)
+    expect(attributes.sizes).not.toBe('')
+    expect(attributes.width).toBe('1000')
+    expect(attributes.height).toBe('1000')
+    // The card's link names the artwork, so the image itself is decorative.
+    expect(attributes.alt).toBe('')
+  }
+  await expect(cards.getByText('Esgotado')).toBeVisible()
+  await expect(cards.getByText('Preço anterior:')).toBeAttached()
 })
 
 test('toasts and announcements reach their live regions (DS-19)', async ({ page }) => {

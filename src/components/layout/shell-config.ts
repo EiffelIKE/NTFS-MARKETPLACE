@@ -27,10 +27,18 @@ export const defaultShellConfig: ShellConfig = {
   mobile: { kind: 'tab' },
 }
 
-/** Shell config of the deepest matched route that declares one. */
+/**
+ * Shell config of the deepest matched route that declares one. On the home tab, `?favorites=1`
+ * (spec 05) marks the favorites tab instead.
+ */
 export function useShellConfig(): ShellConfig {
-  return useMatches({
-    select: (matches) =>
-      matches.findLast((match) => match.staticData.shell)?.staticData.shell ?? defaultShellConfig,
+  const match = useMatches({
+    select: (matches) => matches.findLast((candidate) => candidate.staticData.shell),
   })
+  const shell = match?.staticData.shell ?? defaultShellConfig
+  const favorites = (match?.search as { favorites?: unknown } | undefined)?.favorites
+  if (favorites !== undefined && shell.mobile.kind === 'tab' && shell.mobile.tab === 'home') {
+    return { ...shell, mobile: { kind: 'tab', tab: 'favorites' } }
+  }
+  return shell
 }
