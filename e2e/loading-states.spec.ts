@@ -1,7 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 
 import { homeHeading } from './support/home'
-import { mock } from './support/mock'
+import { loginAs, mock } from './support/mock'
 import { expect, test } from './support/test'
 
 // Brief §9 scenario 12: skeletons while loading slowly, failure feedback and recovery after a
@@ -209,6 +209,79 @@ test.describe('details', () => {
       await page.clock.runFor(500)
       await expect(detailsHeading(page)).toHaveText('Emerald Ape #042')
       await expect(page.getByRole('alert').filter({ hasText: 'Não foi possível' })).toHaveCount(0)
+    })
+  })
+})
+
+test.describe('cart', () => {
+  const cartLines = (page: Page) => page.getByTestId('cart-line')
+  const summaryValues = (page: Page) =>
+    ['subtotal', 'discount', 'fee', 'total'].map((row) =>
+      // The slot (`dd`) has a fixed width, so a skeleton and a number share its box.
+      page.getByTestId(`summary-${row}`).locator('..'),
+    )
+
+  test('slow network: line and summary skeletons in a busy region, replaced at the same size (CART-16, CART-23)', async ({
+    page,
+  }) => {
+    await loginAs(page, 'ana')
+    await mock(page).configure({ latency: { kind: 'fixed', ms: 2500 } })
+    await page.clock.install()
+    await page.goto('/cart')
+    // The stored session is checked first (2.5 s), then the cart is read (2.5 s).
+    await page.clock.runFor(2600)
+
+    const region = page
+      .locator('[aria-busy=true]')
+      .filter({ has: page.getByTestId('cart-summary') })
+    await expect(region).toBeVisible()
+    await expect(region.getByRole('status')).toHaveText('Carregando carrinho')
+    await expect(cartLines(page)).toHaveCount(0)
+    await expect(page.locator('[data-slot=skeleton]').first()).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Conectar e finalizar' })).toBeDisabled()
+    const before = await Promise.all(summaryValues(page).map((value) => box(value)))
+
+    await page.clock.runFor(6000)
+    await expect(cartLines(page)).toHaveCount(2)
+    await expect(page.getByTestId('summary-total')).toContainText('3.186')
+    await expect(page.locator('[aria-busy=true]')).toHaveCount(0)
+    const after = await Promise.all(summaryValues(page).map((value) => box(value)))
+
+    for (const [index, rect] of after.entries()) {
+      for (const key of ['x', 'width', 'height'] as const) {
+        expect(
+          Math.abs(rect[key] - (before[index]?.[key] ?? Number.NaN)),
+          `row ${String(index)} ${key} moved`,
+        ).toBeLessThanOrEqual(1)
+      }
+    }
+  })
+
+  test.describe('failures', () => {
+    test.use({
+      allowedConsoleErrors: [
+        /Failed to load resource|Failed to fetch|ERR_|net::|^ApiError: Serviço temporariamente indisponível/i,
+      ],
+    })
+
+    test('503s exhaust the retries, then "Tentar novamente" loads the cart (CART-23)', async ({
+      page,
+    }) => {
+      await page.clock.install()
+      await page.goto('/cart?scenario=errors-then-recover')
+      // Three failures: the first call and its two retries (1 s, then 2 s).
+      await page.clock.runFor(5000)
+
+      const alert = page
+        .getByRole('alert')
+        .filter({ hasText: 'Não foi possível carregar o carrinho' })
+      await expect(alert).toBeVisible()
+      await expect(page.getByTestId('cart-line')).toHaveCount(0)
+
+      await alert.getByRole('button', { name: 'Tentar novamente' }).click()
+      await page.clock.runFor(500)
+      await expect(page.getByRole('heading', { name: 'Seu carrinho está vazio' })).toBeVisible()
+      await expect(alert).toHaveCount(0)
     })
   })
 })

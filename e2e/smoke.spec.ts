@@ -2,8 +2,10 @@ import { expect, test, type Page } from '@playwright/test'
 
 import { loginAs } from './support/mock'
 
+// `title` is the document title's first part when it differs from the `h1` (the cart is
+// "Carrinho · KURIO" with the heading "Carrinho de NFTs", spec 07).
 const routes = [
-  { path: '/cart', heading: 'Carrinho', private: false },
+  { path: '/cart', heading: 'Carrinho de NFTs', title: 'Carrinho', private: false },
   { path: '/checkout', heading: 'Finalizar compra', private: true },
   {
     path: '/orders/1',
@@ -14,7 +16,12 @@ const routes = [
   { path: '/signup', heading: 'Criar conta', private: false },
   { path: '/profile', heading: 'Perfil', private: true },
   { path: '/wallets', heading: 'Carteiras', private: true },
-] as const
+] as readonly {
+  path: string
+  heading: string
+  title?: string
+  private: boolean
+}[]
 
 function heading(page: Page, name: string | RegExp) {
   return page.getByRole('heading', { level: 1, name, exact: typeof name === 'string' })
@@ -36,7 +43,7 @@ test('home renders its heading and the document metadata', async ({ page }) => {
 })
 
 for (const route of routes) {
-  test(`direct access to ${route.path} renders its placeholder`, async ({ page }) => {
+  test(`direct access to ${route.path} renders its screen`, async ({ page }) => {
     // Private routes sit behind the session guard (spec 04): start signed in.
     if (route.private) {
       await page.goto('/')
@@ -46,7 +53,7 @@ for (const route of routes) {
     await expect(
       heading(page, route.path === '/signup' ? SIGNUP_HEADING : route.heading),
     ).toBeVisible()
-    await expect(page).toHaveTitle(`${route.heading} · KURIO`)
+    await expect(page).toHaveTitle(`${route.title ?? route.heading} · KURIO`)
   })
 }
 
@@ -84,13 +91,13 @@ test.describe('a route chunk that fails to load', () => {
   test('recovers with "Tentar novamente"', async ({ page }) => {
     await openBrokenCart(page)
     await page.getByRole('button', { name: 'Tentar novamente' }).click()
-    await expect(heading(page, 'Carrinho')).toBeVisible()
+    await expect(heading(page, 'Carrinho de NFTs')).toBeVisible()
   })
 
   test('recovers with "Recarregar página"', async ({ page }) => {
     await openBrokenCart(page)
     await page.getByRole('button', { name: 'Recarregar página' }).click()
-    await expect(heading(page, 'Carrinho')).toBeVisible()
+    await expect(heading(page, 'Carrinho de NFTs')).toBeVisible()
     await expect(page).toHaveURL('/cart')
   })
 })

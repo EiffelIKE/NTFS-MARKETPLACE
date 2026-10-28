@@ -23,6 +23,11 @@ export interface QuantityStepperProps {
   size?: keyof typeof sizes
   /** Names the group, e.g. "Quantidade de Emerald Ape #042". */
   label?: string
+  /** Names of the two buttons; the cart says which line they act on (spec 07, CART-25). */
+  decreaseLabel?: string
+  increaseLabel?: string
+  /** Id of the element that explains a limit (it describes the group). */
+  describedBy?: string | undefined
   disabled?: boolean
   className?: string
 }
@@ -38,15 +43,23 @@ export function QuantityStepper({
   onChange,
   size = 'md',
   label = 'Quantidade',
+  decreaseLabel = 'Diminuir quantidade',
+  increaseLabel = 'Aumentar quantidade',
+  describedBy,
   disabled = false,
   className,
 }: QuantityStepperProps) {
   const look = sizes[size]
   return (
-    <div role="group" aria-label={label} className={cn('flex items-center', look.gap, className)}>
+    <div
+      role="group"
+      aria-label={label}
+      aria-describedby={describedBy}
+      className={cn('flex items-center', look.gap, className)}
+    >
       <button
         type="button"
-        aria-label="Diminuir quantidade"
+        aria-label={decreaseLabel}
         disabled={disabled || value <= min}
         className={cn(stepClass, look.step)}
         onClick={() => {
@@ -64,7 +77,7 @@ export function QuantityStepper({
       </output>
       <button
         type="button"
-        aria-label="Aumentar quantidade"
+        aria-label={increaseLabel}
         disabled={disabled || value >= max}
         className={cn(stepClass, look.step)}
         onClick={() => {

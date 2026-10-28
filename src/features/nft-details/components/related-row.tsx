@@ -19,9 +19,21 @@ const itemClass = 'w-[min(219px,60vw)] shrink-0 snap-start lg:w-auto'
  * "Mais desta coleção" (DET-04, DET-08): loaded apart from the NFT, with its own skeleton and its
  * own inline retry, so a failure here never takes the page down. Hidden when there is nothing.
  */
-export function RelatedRow({ nftId, className }: { nftId: NftId; className?: string }) {
+export function RelatedRow({
+  nftId,
+  title = 'Mais desta coleção',
+  hideOnError = false,
+  className,
+}: {
+  nftId: NftId
+  /** The cart reuses the row as "Colecionadores também viram" (spec 07). */
+  title?: string
+  /** Decorative rows (the cart's) show nothing when the request fails, instead of an alert. */
+  hideOnError?: boolean
+  className?: string
+}) {
   const { data, isPending, isError, error, refetch } = useQuery(relatedQuery(nftId))
-  if (data?.items.length === 0) return null
+  if (data?.items.length === 0 || (hideOnError && isError)) return null
 
   return (
     <section aria-labelledby="related-title" className={cn('flex flex-col gap-6', className)}>
@@ -29,7 +41,7 @@ export function RelatedRow({ nftId, className }: { nftId: NftId; className?: str
         id="related-title"
         className="border-b border-border pb-1.5 text-body-lg font-bold text-text-accent"
       >
-        Mais desta coleção
+        {title}
       </h2>
       <LoadingRegion loading={isPending} label="Carregando NFTs relacionados">
         {isPending && (

@@ -46,7 +46,7 @@ function Toaster(props: ToasterProps) {
         classNames: {
           toast: 'font-sans! text-body! gap-3!',
           title: 'font-medium!',
-          description: 'text-text-secondary!',
+          description: 'text-text-secondary! whitespace-pre-line',
           actionButton: 'bg-primary! text-ink! font-bold! rounded-sm!',
           closeButton: 'bg-surface-dark! text-foreground! border-border!',
         },

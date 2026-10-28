@@ -1,6 +1,6 @@
 # 07 — Cart · Design
 
-> Status: Ready for review
+> Status: Done
 
 Implements [`requirements.md`](requirements.md). Contracts, operations, error codes and fixtures are spec 02's; this spec adds the cart feature (queries, mutations, guest id, merge), the `/cart` screen and its tests.
 
@@ -43,7 +43,7 @@ type CartOwner = { kind: 'user'; userId: string } | { kind: 'guest' }
 export const cartKeys = {
   all: ['cart'] as const,
   detail: (o: CartOwner) => ['cart', ownerKey(o)] as const,                 // 'user:usr_ana' | 'guest'
-  quote: (o: CartOwner, network: NetworkId, version: number) => ['cart', ownerKey(o), 'quote', network, version] as const,
+  quote: (o: CartOwner, network: NetworkId, version: number) => ['cart', ownerKey(o), 'quote', network, version] as const,  // child of `detail`
 }
 ```
 
@@ -101,7 +101,7 @@ Merge runs before the login redirect resolves, so landing on `/checkout` after `
 
 ## 7. Live changes (CART-19 – CART-22)
 
-- **`use-cart-realtime.ts`:** while `/cart` is mounted (and from spec 09 on, `/checkout`), subscribe through spec 03 to `nft.updated`. When the event's `resource.id` is an `nftId` present in the cached cart, invalidate `cartKeys.detail(owner)`; the quote follows the new version. Spec 03 already drops duplicate and older events; this hook adds nothing on top. The subscription is released on unmount.
+- **`use-cart-realtime.ts`:** while `/cart` is mounted (and from spec 09 on, `/checkout`), subscribe through spec 03 to `nft.updated`. When the event's `resource.id` is an `nftId` present in the cached cart, invalidate `cartKeys.detail(owner)`; the quote is refreshed with it (§13, decision 1). Spec 03 already drops duplicate and older events; this hook adds nothing on top. The subscription is released on unmount.
 - **Notices (`line-notices.ts`):** the line's `status` drives the notice; the server is the only source of truth.
 
   | Status | Notice (pt-BR) | Action |
@@ -204,3 +204,46 @@ Uses fixtures only: Ana's cart is `emerald-ape-042` open × 1 + `golden-beat-207
 - **Estimated fee:** the cart always quotes Ethereum (spec 02 decision 3), labelled "Taxa estimada"; the final fee depends on the network picked at checkout.
 - **Cart state policy:** server-owned; mutations write responses (version-guarded) instead of optimistic updates; the quote is keyed by cart version; live events invalidate, never patch, the cart.
 - **Guest cart:** id in `localStorage`, merged once after login; adjustments are reported, never silent.
+- **Quote refresh:** the quote is keyed by cart version but refreshed by invalidating the cart key on a live change, because the cart version does not move with the NFT (§13, decisions 1–2).
+- **Notice placement:** desktop notices are a row under the line; the limit text shows only at the limit; amounts dim while a new quote loads (§13, decisions 2, 7, 10).
+
+## 13. Implementation decisions (2026-10-28)
+
+Decisions taken while implementing, where the design was silent or had to give way to what the code showed.
+
+**Amendments to earlier specs (applied in those documents):**
+
+| Spec | Change |
+|---|---|
+| 01 | `components/ui/sonner.tsx`: toast descriptions get `whitespace-pre-line`, so the merge toast can list one adjusted line per row. |
+| 01 / 06 | `QuantityStepper` takes `decreaseLabel`, `increaseLabel` and `describedBy` (the cart names the line each button acts on, CART-25). The defaults are the old texts, so details is unchanged. |
+| 06 | `RelatedRow` (`nft-details`) takes `title` and `hideOnError`: the cart reuses it as "Colecionadores também viram" and shows nothing when the request fails. |
+| 00 / 01 | `e2e/smoke.spec.ts`: `/cart` is a real screen now. Its `h1` is "Carrinho de NFTs" and the title stays "Carrinho · KURIO", so the routes table has an optional `title`. |
+| 04 | `app/boot.ts` registers the merge task with `session.onSignedIn` (the hook spec 04 left for it). |
+
+**Cache and live changes**
+1. **The cart `version` does not change when an NFT does.** The mock (and a real API) bumps it only on cart writes, so a quote keyed by `version` alone would stay stale after `nft.updated`. The quote key is still a child of the cart key, and the live hook invalidates `cartKeys.detail(owner)`, which refetches the cart and the current quote. A cart write still opens a new quote entry.
+2. **Quote while the amounts change:** the first load shows skeletons; afterwards the previous amounts of the *same owner* stay (placeholder data checks the owner in the key), dimmed (`opacity-60`, `data-outdated`), and the checkout button stays disabled until the new quote arrives. No skeleton overlays: the amounts do not blink on every click. A refetch in flight (live change, window focus) is treated the same way.
+3. **Stale reads:** `cartQueryOptions` discards a read whose `version` is lower than the cached cart (CART-08), in addition to `applyCart` for mutations. A mutation also cancels the cart read before it writes.
+4. `useQuote` returns the query as is. The summary derives `outdated` itself (`isPlaceholderData || isFetching`).
+
+**Lines and quantity**
+5. **Only one composition is mounted** (`useMediaQuery('(min-width: 1024px)')`, as spec 06 does for the gallery), so every control and test id exists once.
+6. **`QuantityQueue`** gets its callbacks through `bind()` after each render (the lint rule for refs in render forbids closing over them in the constructor) and `reset()` on unmount instead of a final `dispose()`, so StrictMode's mount, unmount, mount cycle leaves a usable queue. A failed request drops the draft (the line shows the server's quantity) and calls `onError`, which offers "Tentar novamente".
+7. **Limit text** ("Máximo por pedido: N" / "Disponíveis: N") shows only while the quantity is at the limit, under the stepper, and describes the group (`aria-describedby`). A `limited` line whose quantity is above its limit shows it too.
+8. **Unavailable lines** keep their price and total, dimmed, the total struck through with a hidden "(não incluído no total)"; the stepper is disabled.
+9. **Line names link to the NFT**, with `?edition=` set to the line's edition.
+10. **Desktop notices** are a `<tr>` of their own right under the line (a `colSpan` cell with a border), not inside the line's row; the mobile card holds its notice under the line. Notice buttons carry the line in their name ("Ajustar quantidade de Golden Beat #207, edição 1/50"), and the notice text has a hidden name prefix, which is also what the E2E tests filter on.
+11. **Announcements:** a notice is announced when its *text* changes (so a second price change is announced, and a refetch with the same text is not). The first cart only sets the baseline. All messages of one cart are joined into one announcement, because the region keeps only the last message of a frame. The dedupe key is `nftId@eventVersion:text`, with the cart version standing in when no event was seen.
+12. **Focus after removal:** the target (next line's remove button, else the previous one, else the `h1`) is recorded before the request and applied once the line is gone from the rendered cart; the hook lives in `CartPage`, so it survives the switch to the empty state.
+
+**Merge and coupons**
+13. **Merge toast:** title "Carrinho ajustado ao entrar" and one description line per adjusted line. The name and edition come from the merged cart; a line that did not make it in is named through the catalog query. "capped" lines read "quantidade ajustada para N" with the *final* line quantity; "unavailable" ones read "indisponível, não foi adicionado". Overlapping runs of the task (restore and sign-in) share one request.
+14. **Coupon form:** the code is upper-cased on submit; a refused code keeps what was typed and the message comes from `fields.code` (`role="alert"`). Applying and removing a coupon are announced ("Cupom KURIO10 aplicado", "… removido"); no toast. The mobile sheet hides the "Código promocional" label visually (Figma shows none) but keeps it for assistive tech.
+15. **Summary rows:** the label "Desconto do lançamento" with the value "(-) 0.00 ETH" (Figma puts the sign in the value column); with a coupon the code is shown under the label. The value slot is a 128 px `dd` with a 24 px minimum height, equal to the skeleton's, so no row moves when the amounts arrive.
+16. **Mobile sheet padding:** the page's bottom padding is the sheet's measured height plus 16 px (CSS variable written by a `ResizeObserver`); at `max-height: 560px` the sheet is static and the padding is 24 px.
+
+**Tests**
+17. **CART-14 in E2E** lowers two prices with `updateNft` until the subtotal falls under COLECAO05's minimum; no fixture coupon expires while an applied coupon exists.
+18. **Guest carts in E2E** are created through `POST /cart/items` and the id is stored under `kurio.guestCartId`, as the details page would; the add-to-cart UI itself is covered by spec 06 (one test here uses it for the first guest add and the reload).
+19. `mocks.spec.ts` ("another browser context starts from the seed") and `nft-details.spec.ts` (share targets) hard-code `http://localhost:4173`; they fail only when the suite runs on another port.
