@@ -2,6 +2,14 @@ import type { Page } from '@playwright/test'
 
 import { eventId, type RealtimeEvent } from '../src/contracts'
 import { expectNoAxeViolations } from './support/a11y'
+import {
+  confirmPurchase,
+  expectFormReady,
+  openCheckout,
+  pending,
+  reviewConnectAndPay,
+  settle,
+} from './support/checkout'
 import { forgetSession, loginAs, mock } from './support/mock'
 import { realtime, waitForConnection } from './support/realtime'
 import { expect, test } from './support/test'
@@ -9,7 +17,8 @@ import { expect, test } from './support/test'
 // Spec 03 design §9 and the first half of brief scenario 10: duplicates, old versions,
 // disconnection and reconnection. Every event reaches the page through the app's own
 // `socket.io-client`; the mock server only decides what to send and to whom. The pending-order
-// half (resume after reload) is added by spec 09.
+// half (spec 09, brief §9 scenario 10) is at the end: a pending order survives a reload and a
+// socket that is down.
 
 const NFT = 'emerald-ape-042'
 
@@ -246,5 +255,68 @@ test.describe('offline scenario', () => {
     await page.clock.runFor(6000)
     await expect(status(page)).toHaveText('Status: conectado')
     expect(await realtime(page).connections()).toHaveLength(1)
+  })
+})
+
+test.describe('a pending order (CHK-29, CHK-30, CHK-33)', () => {
+  /** Ana pays with the settlement held back, and the page shows the order as processing. */
+  async function payAndWait(page: Page) {
+    await openCheckout(page, { scenario: 'payment-manual' })
+    await settle(page)
+    await reviewConnectAndPay(page)
+    await expect(pending(page)).toContainText('ord_000002')
+  }
+
+  test('a reload shows the same pending order, creates no other, and then follows it to the end', async ({
+    page,
+  }) => {
+    await payAndWait(page)
+
+    await mock(page).clearRequests()
+    await page.reload()
+    await expect(pending(page)).toContainText('ord_000002')
+    await expect(confirmPurchase(page)).toHaveCount(0)
+    expect(await mock(page).requests({ op: 'orders.create' })).toEqual([])
+    expect(Object.keys((await mock(page).snapshot()).orders)).toEqual(['ord_000001', 'ord_000002'])
+
+    // The reloaded page is connected again and learns the outcome from the socket.
+    await waitForConnection(page, { userId: 'usr_ana' })
+    await mock(page).settleOrder('ord_000002', 'confirmed')
+    await expect(page).toHaveURL(/\/orders\/ord_000002$/)
+  })
+
+  test('with the socket down the REST fallback still finds the outcome', async ({ page }) => {
+    await payAndWait(page)
+    await realtime(page).drop({ block: true })
+    await expect.poll(() => realtime(page).connections()).toEqual([])
+
+    // Nobody is entitled to the event while the page is cut off, so only the 5 s poll can tell.
+    await mock(page).settleOrder('ord_000002', 'confirmed')
+    await expect(page).toHaveURL(/\/orders\/ord_000002$/, { timeout: 15_000 })
+    expect((await mock(page).requests({ op: 'orders.get' })).length).toBeGreaterThan(0)
+  })
+
+  test('a reconnection reconciles the order that settled while the page was cut off', async ({
+    page,
+  }) => {
+    await page.clock.install()
+    await openCheckout(page, { scenario: 'payment-manual' })
+    await expectFormReady(page)
+    await reviewConnectAndPay(page)
+    await expect(pending(page)).toContainText('ord_000002')
+    await waitForConnection(page, { userId: 'usr_ana' })
+
+    await realtime(page).drop({ block: true })
+    await mock(page).settleOrder('ord_000002', 'declined')
+    await expect(pending(page)).toBeVisible()
+
+    await realtime(page).restore()
+    await page.clock.runFor(5000)
+    await expect(page.getByTestId('order-declined')).toBeVisible()
+    await expect(page.getByTestId('order-declined')).toContainText('Pagamento recusado')
+    // Terminal: a late event with an older version cannot bring the processing state back.
+    await realtime(page).redeliver(1)
+    await expect(page.getByTestId('order-declined')).toBeVisible()
+    await expect(pending(page)).toHaveCount(0)
   })
 })

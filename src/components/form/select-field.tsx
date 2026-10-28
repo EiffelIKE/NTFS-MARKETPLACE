@@ -21,6 +21,7 @@ export interface SelectFieldProps {
   options: readonly { value: string; label: string }[]
   description?: React.ReactNode
   required?: boolean
+  disabled?: boolean
   fieldClassName?: string
   /** Classes of the trigger (the field surface). */
   className?: string
@@ -39,6 +40,7 @@ export function SelectField({
   options,
   description,
   required,
+  disabled,
   fieldClassName,
   className,
   onValueChange,
@@ -54,6 +56,7 @@ export function SelectField({
       </FieldLabel>
       <Select
         value={field.state.value}
+        disabled={disabled}
         onValueChange={(value) => {
           field.handleChange(value)
           clearServerError(field)

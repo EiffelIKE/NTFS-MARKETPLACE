@@ -1,6 +1,6 @@
 # 09 — Checkout & orders · Requirements
 
-> Status: Ready for review
+> Status: Done (2026-10-28)
 
 Turn the cart into an order. The collector fills or confirms their details, picks a registered wallet, a payment network and a wallet provider, connects the wallet (simulated), reviews a fresh API quote, and submits. The order is created idempotently, starts `pending`, and becomes `confirmed` or `declined` through `order.updated` with a REST fallback. The flow survives repeated clicks, timeouts, refreshes, reconnections and session expiry without creating a second order. The receipt itself is spec 10; this spec owns everything up to the moment an order is known to be confirmed, plus the pending and declined states.
 

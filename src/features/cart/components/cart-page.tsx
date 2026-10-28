@@ -1,17 +1,9 @@
-import { Link } from '@tanstack/react-router'
 import * as React from 'react'
 
 import { AlertCircleIcon } from '@/components/icons'
+import { PageBreadcrumb } from '@/components/layout/page-breadcrumb'
 import { LoadingRegion } from '@/components/loading-region'
 import { Alert, AlertAction, AlertDescription } from '@/components/ui/alert'
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb'
 import { Button } from '@/components/ui/button'
 import type { Cart } from '@/contracts'
 import { useSession } from '@/features/auth/model/use-session'
@@ -53,7 +45,7 @@ export function CartPage() {
         Carrinho de NFTs
       </h1>
 
-      {wide && <CartBreadcrumb />}
+      {wide && <PageBreadcrumb current="Carrinho" />}
 
       {cart.isError && cart.data === undefined ? (
         <Alert className="mt-6">
@@ -81,32 +73,6 @@ export function CartPage() {
         <MobileCart cart={cart.data} quote={quote} signedIn={signedIn} onRemoved={onRemoved} />
       )}
     </LoadingRegion>
-  )
-}
-
-function CartBreadcrumb() {
-  return (
-    <Breadcrumb className="mb-4">
-      <BreadcrumbList className="text-body-lg font-bold">
-        <BreadcrumbItem>
-          <BreadcrumbLink asChild className="text-foreground">
-            <Link to="/">Início</Link>
-          </BreadcrumbLink>
-        </BreadcrumbItem>
-        <BreadcrumbSeparator />
-        <BreadcrumbItem>
-          <BreadcrumbLink asChild className="text-foreground">
-            <Link to="/" hash="mercado">
-              Mercado
-            </Link>
-          </BreadcrumbLink>
-        </BreadcrumbItem>
-        <BreadcrumbSeparator />
-        <BreadcrumbItem>
-          <BreadcrumbPage>Carrinho</BreadcrumbPage>
-        </BreadcrumbItem>
-      </BreadcrumbList>
-    </Breadcrumb>
   )
 }
 

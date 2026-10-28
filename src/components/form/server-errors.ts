@@ -21,7 +21,7 @@ export function applyServerErrors(
   const messages = new Map<string, string>()
   for (const [path, list] of Object.entries(error.fields ?? {})) {
     const message = list[0]
-    if (message && path in (form.state.values as object)) messages.set(path, message)
+    if (message && form.getFieldMeta(path) !== undefined) messages.set(path, message)
   }
   const mapped = error.code ? codeToField[error.code] : undefined
   if (mapped && !messages.has(mapped)) messages.set(mapped, error.message)
@@ -59,6 +59,8 @@ export function clearServerErrors(form: AnyFormApi): void {
     form.setErrorMap({ onServer: undefined })
   }
   for (const name of Object.keys(form.state.values as object)) {
+    // A value without an input of its own (checkout's `walletId`) has no meta to clean.
+    if (form.getFieldMeta(name) === undefined) continue
     form.setFieldMeta(name, (meta) =>
       (meta.errorMap as ErrorMap).onServer === undefined
         ? meta

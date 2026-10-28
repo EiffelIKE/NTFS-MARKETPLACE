@@ -30,12 +30,17 @@ export const cartQueryOptions = (owner: CartOwner) =>
 
 /**
  * The summary's amounts (CART-15, CART-16). Keyed by cart version; the previous amounts stay on
- * screen, marked as outdated, while the next version's quote loads.
+ * screen, marked as outdated, while the next version's quote loads. Checkout (spec 09) asks for the
+ * payment network the user chose; the cart screen keeps Ethereum.
  */
-export const quoteQueryOptions = (owner: CartOwner, version: number) =>
+export const quoteQueryOptions = (
+  owner: CartOwner,
+  version: number,
+  network: NetworkId = QUOTE_NETWORK,
+) =>
   queryOptions({
-    queryKey: cartKeys.quote(owner, QUOTE_NETWORK, version),
-    queryFn: ({ signal }) => cartApi.quote(QUOTE_NETWORK, { signal }),
+    queryKey: cartKeys.quote(owner, network, version),
+    queryFn: ({ signal }) => cartApi.quote(network, { signal }),
     // Never another owner's amounts: the page stays mounted across a sign-out or a user switch.
     placeholderData: (previous, previousQuery) =>
       previousQuery?.queryKey[1] === ownerKey(owner) ? previous : undefined,

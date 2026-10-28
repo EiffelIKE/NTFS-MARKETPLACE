@@ -7,6 +7,7 @@ import { PasswordField } from './password-field'
 import { SelectField } from './select-field'
 import { SubmitButton } from './submit-button'
 import { TextField } from './text-field'
+import { TextareaField } from './textarea-field'
 
 /**
  * The shared form layer (spec 04 design §8; reused by specs 08 and 09): TanStack Form with the
@@ -16,6 +17,6 @@ import { TextField } from './text-field'
 export const { useAppForm } = createFormHook({
   fieldContext,
   formContext,
-  fieldComponents: { TextField, PasswordField, SelectField, EnsField },
+  fieldComponents: { TextField, TextareaField, PasswordField, SelectField, EnsField },
   formComponents: { SubmitButton, FormAlert },
 })

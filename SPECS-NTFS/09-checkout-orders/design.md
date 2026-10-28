@@ -1,6 +1,6 @@
 # 09 — Checkout & orders · Design
 
-> Status: Ready for review
+> Status: Done (2026-10-28)
 
 Implements [`requirements.md`](requirements.md). Contracts, operations, error codes, fixtures and scenarios are spec 02's; nothing here adds an endpoint.
 
@@ -262,3 +262,44 @@ function useOrderStatus(orderId: OrderId): { order: Order | undefined; status: '
 - **Idempotency key lifecycle:** one key per attempt, persisted before sending, replayed after refresh; `ARCHITECTURE.md` explains why a timeout never creates a second order.
 - **Pending tracking uses events plus 5 s polling** as a fallback; the poll stops at a terminal state.
 - **Checkout draft in `sessionStorage`, attempt in `localStorage`**, both per user and cleared on logout; they hold collector details of fictitious users only.
+
+## 14. Implementation decisions (2026-10-28)
+
+Decisions taken while implementing, where the design was silent or had to give way to what the code showed.
+
+**Amendments to earlier specs (applied in those documents or in the code they own):**
+
+| Spec | Change |
+|---|---|
+| 07 | `quoteQueryOptions(owner, version, network = QUOTE_NETWORK)` takes the network, so checkout asks for the chosen network's quote (the cart keeps Ethereum). The cart's breadcrumb moved to the shared `components/layout/page-breadcrumb.tsx` (`PageBreadcrumb`), which checkout also uses. |
+| 01 / form layer | `components/form/` gains `TextareaField` (counter near the limit) and `SelectField` takes `disabled`. `applyServerErrors` and `clearServerErrors` skip keys the form has no field for (an API `fields` entry such as `quoteId` or a form value without an input made them throw). |
+| 04 | `app/boot.ts` clears the checkout draft and attempt of the previous user on `logout` and `other-tab` (an expiry keeps them: the flow resumes, CHK-28). |
+| 03 | `app/boot.ts` also registers one `order.updated` listener: a terminal status invalidates the cart and the order lists, wherever the user is. Spec 03's appliers are unchanged. |
+| 00 / 01 | `e2e/smoke.spec.ts` needed no change: `/checkout` kept its title and `h1`. |
+
+**Environment and tests**
+1. **No DOM test environment** (Vitest runs in `node`), so the component tests of §11 (`review-dialog.test.tsx`, `use-create-order.test.tsx`) are replaced by E2E tests of the same behavior, and the logic is in pure modules with unit tests: `form.test.ts`, `attempt-store.test.ts`, `quote-review.test.ts`, `place-order.test.ts` (msw/node), `use-order-status.test.ts`.
+2. **The 5 s poll is proven in the browser.** TanStack Query ignores `refetchInterval` outside a browser (`isServer`), so the unit test checks the interval the hook passes, and `realtime-resilience.spec.ts` blocks the socket and waits for the poll.
+3. **A server-side 422 is not reachable from the UI with the mock** (the API validates what the client schema already checks; failure rules cannot carry `fields`). The field mapping is covered by `mapServerFields` tests, and the visible path (message and focus) by the client validation test.
+
+**Form and layout**
+4. **TanStack Form instead of a reducer.** The model is a flat Zod schema (`CheckoutFormSchema`) built from `CollectorDetails.shape`, plus pure helpers; state, validation and focus come from the shared form layer.
+5. **The confirm button lives outside the `<form>`** (it is in the summary column on desktop and in the fixed bar on mobile) and submits it with the `form` attribute. The coupon form (spec 07) sits outside too: forms cannot nest.
+6. **The draft stores values only.** What a wallet suggests is recomputed from the wallet (`walletBaseline`), so an edited field is the one that differs from it; the draft write is debounced (300 ms), skipped while the values equal the baseline, and flushed on unmount only while the user is still signed in.
+7. **Mobile heading "Carteira"**, not Figma's "Carteira conectada": the wallet is chosen before it is connected (the connection happens in the review). The registered wallets list primary first. The collapsed "Dados do colecionador" section is the one addition to the frame (open question 3), and it opens by itself on a validation error.
+8. **Desktop network select** is filtered by the wallet's family; a switch to a wallet that cannot use the edited network resets it to the wallet's own (`walletSwitchPatch`).
+
+**Review, connection and order creation**
+9. **The user accepts a quote.** `ReviewBody` asks for the current quote on mount (joining a fetch in flight) and keeps it as `accepted`; `reviewPhase` compares its `id` with the one the cache holds: `changed` shows the diff and "Aceitar novos valores", `blocked` shows the shortages. Payment is also off while the quote is refetching or a placeholder, so an outdated `quoteId` can never be sent. A `QUOTE_CHANGED` answer seeds the quote cache with `details.quote`, which makes the same path run.
+10. **Wallet connection** (`use-wallet-connection.ts`) lists connections with `staleTime: 0` and matches wallet, provider and network, so any change of the three shows "Carteira desconectada" (CHK-17). A session error during connect is left to spec 04 and does not show as a wallet error. `WALLET_NOT_CONNECTED` marks the cached connection disconnected and keeps the review open.
+11. **The attempt is a small state machine**, `phase: 'sent' | 'rejected'` plus an optional `orderId`: written before the request, `rejected` after a definite refusal (so a login after a 401 never replays by itself), `sent` while the result is unknown. `prepareAttempt` reuses the key for the same canonical body (or whenever the order is already known) and mints a new one when the body changes.
+12. **Replay once, also on this page.** The replay runs when checkout opens with an unanswered attempt, and again when the cart empties while an attempt is unanswered: an order that settles while its answer is lost empties the cart under the open review, and without this the page said "Seu carrinho está vazio" for an order that was paid (found by the `order-timeout` E2E).
+13. **Focus return.** The review is opened by a submit, not a Radix trigger, so `onCloseAutoFocus` returns focus to the form's submit button when it still exists.
+14. **A declined order reopens the form** (`valuesFromOrder` → draft → `reviewOnMount`) with a new attempt; "Voltar ao carrinho" acknowledges it (`release`). The pending list (`['orders','list',{status:'pending'}]`) is patched locally so a settled order does not come back as pending.
+15. **Confirmed navigates with `replace`**, so Back never returns to the form of an order that was paid. The `/orders/$orderId` page is still spec 10's stub: `purchase.spec.ts` stops at the URL and the stub heading, with a `TODO(spec 10)`.
+
+**Visual check (2026-10-28, browser, side by side with `figma_tokens/screenshots/`)**
+- Desktop 1440 ("Pagamento"): grid `1fr + 405`, field rhythm, summary card, "Carteira e rede" list and the confirm button match. Differences: the review step (not drawn), the form-level alert area, the "Taxa estimada" caption under the fee.
+- Mobile 390 ("Pagamento com carteira"): top bar, wallet cards with the ⋮ menu, provider rows and the gradient pill in the fixed bar match; the "Total:" row sits above the bar. Differences: heading "Carteira" (decision 7), the collapsed collector section, and wallet card line 3 "Rede <name>" on both cards.
+
+**For spec 10:** `features/orders/` exports `orderKeys`, `orderQueryOptions`, `useOrderStatus` and the two panels; the receipt page should read the order from `['orders','detail',id]` (checkout seeds it) and replace the stub in `routes/orders.$orderId.tsx`.
