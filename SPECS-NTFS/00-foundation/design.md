@@ -353,6 +353,6 @@ Pending changes collected when specs 03–14 were drafted; each is applied by th
 |---|---|
 | 03 | `VITE_REALTIME_URL` in `lib/env.ts` and `.env.example` — **applied in spec 03** |
 | 04 | `RouterContext.session`; the root route waits for the session check; `reason` search param on `/login` and `/signup`; auth interceptors on the Axios instance — **applied in spec 04** (design §14) |
-| 12 | Playwright projects/config for visual tests; scripts `test:visual`, `test:visual:update` |
+| 12 | `snapshotPathTemplate` and `toHaveScreenshot` defaults in the Playwright config; scripts `test:visual`, `test:visual:update` — **applied in spec 12** (design §2, §6) |
 | 13 | Script `lighthouse:deployed`; `public/robots.txt` (the SPA rewrite would answer it with HTML); `kurio-build` meta tag with the commit id |
 | 14 | Script `docs`; Vitest also collects `scripts/**/*.test.ts` |

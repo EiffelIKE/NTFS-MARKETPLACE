@@ -17,6 +17,8 @@
     "format:check": "prettier . --check",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "test:visual": "playwright test --grep @visual",
+    "test:visual:update": "playwright test --grep @visual --update-snapshots",
     "test:e2e:report": "playwright show-report",
     "lighthouse": "pnpm build && lhci autorun --config=lighthouse/desktop.json && lhci autorun --config=lighthouse/mobile.json"
   },

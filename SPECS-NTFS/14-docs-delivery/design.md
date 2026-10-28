@@ -56,7 +56,7 @@ Generated sections sit between `<!-- generated:operations -->` … `<!-- /genera
    | Wallet rejects connection | `?scenario=wallet-reject` |
 
 7. **Commands**: table from spec 00 §2 plus `test:visual`, `test:visual:update` (spec 12), `lighthouse`, `lighthouse:deployed` (spec 13), with outputs (`playwright-report/`, `reports/lighthouse/`, `docs/lighthouse/`).
-8. **Tests**: how to run one project, open the report and a trace; visual tests need Podman or Docker.
+8. **Tests**: how to run one project, open the report and a trace; `test:visual` and `test:visual:update`; baselines are Linux-only (spec 12 design §6).
 9. **Deploy**: Vercel settings (spec 00 §12), `ENABLE_EXPERIMENTAL_COREPACK=1`, Node 24, checking `<meta name="kurio-build">`.
 10. **Known limitations**: short list linking to `ARCHITECTURE.md`.
 
