@@ -1,6 +1,9 @@
 import type { NftSummary } from '@/contracts'
 import { cn } from '@/lib/utils'
 
+import { CardCartAction } from '@/features/cart/components/card-cart-action'
+import { FavoriteButton } from '@/features/favorites/components/favorite-button'
+
 import { CardSkeleton } from './card-skeleton'
 import { DetailsAction, ProductCard } from './product-card'
 
@@ -14,7 +17,17 @@ export function ProductGrid({ items }: { items: NftSummary[] }) {
     <ul className={gridClass}>
       {items.map((nft) => (
         <li key={nft.id}>
-          <ProductCard nft={nft} actions={<DetailsAction nft={nft} />} />
+          <ProductCard
+            nft={nft}
+            cornerAction={<FavoriteButton nft={nft} variant="card-mobile" />}
+            actions={
+              <>
+                <CardCartAction nft={nft} />
+                <FavoriteButton nft={nft} variant="card-desktop" />
+                <DetailsAction nft={nft} />
+              </>
+            }
+          />
         </li>
       ))}
     </ul>

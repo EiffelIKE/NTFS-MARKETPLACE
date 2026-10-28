@@ -6,6 +6,10 @@ export const IMAGE_SIZES = {
   promo: '290px',
   blog: '268px',
   compact: '(min-width: 1024px) 212px, 40vw',
+  // Details gallery (spec 06 design §6): the main image is the LCP, so its candidate must be tight.
+  gallery: '(min-width: 1024px) 404px, calc(100vw - 48px)',
+  thumb: '100px',
+  zoom: 'min(90vw, 1000px)',
 } as const
 
 export type ImageSlot = keyof typeof IMAGE_SIZES

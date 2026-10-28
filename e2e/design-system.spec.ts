@@ -233,6 +233,10 @@ test('no horizontal overflow at 320 / 390 / 768 / 1440 (DS-31)', async ({ page }
     await expectNoHorizontalOverflow(page)
     await openGallery(page)
     await expectNoHorizontalOverflow(page)
+    // The details screen too (DET-26): the long contract line wraps, nothing is wider than 320.
+    await page.goto('/nfts/emerald-ape-042')
+    await expect(page.getByRole('heading', { level: 1, name: 'Emerald Ape #042' })).toBeVisible()
+    await expectNoHorizontalOverflow(page)
   }
 })
 

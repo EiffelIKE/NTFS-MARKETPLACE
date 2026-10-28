@@ -10,6 +10,8 @@ import type { ShellSession } from '@/components/layout/session'
 import { useShellConfig } from '@/components/layout/shell-config'
 import { SkipLink } from '@/components/layout/skip-link'
 import { UserMenu } from '@/features/auth/components/user-menu'
+import { useCartCount } from '@/features/cart/model/use-cart'
+import { RouteFavorite } from '@/features/favorites/components/route-favorite'
 import { SearchDialog } from '@/features/catalog/components/search-dialog'
 import { useMediaQuery } from '@/hooks/use-media-query'
 import { useSession } from '@/features/auth/model/use-session'
@@ -17,8 +19,8 @@ import type { SessionState } from '@/features/auth/model/session'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
-// The only place specs plug data into the shell (DS-28): session (04), search (05) and cart count
-// (07). The cart still renders its empty state.
+// The only place specs plug data into the shell (DS-28): session (04), search (05), cart count (06)
+// and the details favorite in the mobile top bar (06).
 function shellSession(state: SessionState): ShellSession {
   return state.status === 'authenticated'
     ? { status: 'user', name: state.user.displayName, avatarUrl: state.user.avatarUrl ?? undefined }
@@ -33,7 +35,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const shell = useShellConfig()
   const state = useSession()
   const session = shellSession(state)
-  const cartCount = 0
+  const cartCount = useCartCount()
   const { mobile } = shell
 
   // Search (CAT-25): on the mobile home the catalog's own field takes focus; everywhere else,
@@ -67,7 +69,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         }
         onSearch={onSearch}
       />
-      {mobile.kind === 'inner' && <MobileTopBar className="lg:hidden" title={mobile.title} />}
+      {mobile.kind === 'inner' && (
+        <MobileTopBar
+          className="lg:hidden"
+          title={mobile.title}
+          trailing={mobile.trailing === 'favorite' ? <RouteFavorite /> : undefined}
+        />
+      )}
       <main
         id="conteudo"
         tabIndex={-1}

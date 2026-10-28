@@ -1,4 +1,5 @@
 import { session } from '@/features/auth/model/instance'
+import { getGuestCartId } from '@/features/cart/model/guest-cart-id'
 import { http } from '@/lib/http/client'
 import { realtime } from '@/lib/realtime'
 
@@ -16,5 +17,5 @@ let booted = false
 export function bootApp() {
   if (booted) return
   booted = true
-  installSessionBridge({ session, queryClient, router, realtime, http })
+  installSessionBridge({ session, queryClient, router, realtime, http, getGuestCartId })
 }

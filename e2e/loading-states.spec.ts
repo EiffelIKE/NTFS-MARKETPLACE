@@ -88,7 +88,12 @@ test.describe('catalog', () => {
 
   test.describe('failures', () => {
     // The browser logs every failed request; the app's feedback is what these tests check.
-    test.use({ allowedConsoleErrors: [/Failed to load resource|Failed to fetch|ERR_|net::/i] })
+    // The router itself reports a loader error it hands to the error component.
+    test.use({
+      allowedConsoleErrors: [
+        /Failed to load resource|Failed to fetch|ERR_|net::|^ApiError: Serviço temporariamente indisponível/i,
+      ],
+    })
 
     test('503s exhaust the retries, then "Tentar novamente" recovers; the hero retries on its own (CAT-18)', async ({
       page,
@@ -145,6 +150,65 @@ test.describe('catalog', () => {
       await expect(cards(page).first()).toContainText('Crown Relic #999')
       await expect(panel.getByRole('alert')).toHaveCount(0)
       await expect(results(page)).not.toHaveAttribute('data-outdated')
+    })
+  })
+})
+
+test.describe('details', () => {
+  const detailsHeading = (page: Page) => page.getByRole('heading', { level: 1 })
+
+  test('slow network: the layout skeleton in a busy region, replaced by the page at the same size (DET-03)', async ({
+    page,
+  }) => {
+    await page.clock.install()
+    await page.goto('/nfts/emerald-ape-042?scenario=slow')
+    // The router waits 150 ms before it shows the pending component.
+    await page.clock.runFor(400)
+
+    const region = page
+      .locator('[aria-busy=true]')
+      .filter({ has: page.getByTestId('gallery-main') })
+    await expect(region).toBeVisible()
+    await expect(region.getByRole('status')).toHaveText('Carregando NFT')
+    await expect(detailsHeading(page)).toHaveCount(0)
+    const before = await box(page.getByTestId('gallery-main'))
+
+    await page.clock.runFor(4000)
+    await expect(detailsHeading(page)).toHaveText('Emerald Ape #042')
+    await expect(page.locator('[aria-busy=true]')).toHaveCount(0)
+    const after = await box(page.getByTestId('gallery-main'))
+
+    for (const key of ['x', 'y', 'width', 'height'] as const) {
+      expect(Math.abs(after[key] - before[key]), `${key} moved`).toBeLessThanOrEqual(1)
+    }
+  })
+
+  test.describe('failures', () => {
+    // The router itself reports a loader error it hands to the error component.
+    test.use({
+      allowedConsoleErrors: [
+        /Failed to load resource|Failed to fetch|ERR_|net::|^ApiError: Serviço temporariamente indisponível/i,
+      ],
+    })
+
+    test('503s exhaust the retries, then "Tentar novamente" loads the page without a reload (DET-03)', async ({
+      page,
+    }) => {
+      await page.clock.install()
+      await page.goto('/nfts/emerald-ape-042?scenario=errors-then-recover')
+      // Three failures: the first call and its two retries (1 s, then 2 s).
+      await page.clock.runFor(5000)
+
+      await expect(
+        page.getByRole('alert').filter({ hasText: 'Não foi possível carregar este NFT.' }),
+      ).toBeVisible()
+      await expect(detailsHeading(page)).toHaveText('NFT')
+      await expect(page.getByRole('link', { name: 'Voltar ao mercado' })).toBeVisible()
+
+      await page.getByRole('button', { name: 'Tentar novamente' }).click()
+      await page.clock.runFor(500)
+      await expect(detailsHeading(page)).toHaveText('Emerald Ape #042')
+      await expect(page.getByRole('alert').filter({ hasText: 'Não foi possível' })).toHaveCount(0)
     })
   })
 })

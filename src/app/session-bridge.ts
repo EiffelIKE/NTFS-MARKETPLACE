@@ -15,7 +15,7 @@ export interface SessionBridgeDeps {
   router: Pick<AnyRouter, 'state' | 'navigate' | 'invalidate' | 'getMatchedRoutes'>
   realtime: Pick<RealtimeManager, 'setSession'>
   http: typeof httpClient
-  /** Spec 07 passes the guest cart id; `null` until then. */
+  /** The guest cart id (spec 06's store), sent as `X-Guest-Cart-Id` while nobody is signed in. */
   getGuestCartId?: () => string | null
 }
 

@@ -1,7 +1,8 @@
 import { keepPreviousData, queryOptions } from '@tanstack/react-query'
 
 import { catalogApi } from '@/api'
-import type { NftListQuery, NftListResponse } from '@/contracts'
+import type { NftId, NftListQuery, NftListResponse } from '@/contracts'
+import { isRetryable } from '@/lib/http/errors'
 
 import { catalogKeys } from './keys'
 
@@ -62,4 +63,27 @@ export const highlightsQuery = () =>
   queryOptions({
     queryKey: catalogKeys.highlights,
     queryFn: ({ signal }) => catalogApi.highlights({ signal }),
+  })
+
+/** Same transient-failure policy as the app default (spec 00 §6), stated here because the details
+ *  route loads this query through the router, which does not apply the client's retry default. */
+const retryTransient = (failureCount: number, error: Error) =>
+  failureCount < 2 && isRetryable(error)
+
+/**
+ * One NFT with its editions and reviews (spec 06). Spec 03's appliers patch this entry on
+ * `nft.updated`, so a screen that reads it follows price and stock without a request.
+ */
+export const nftDetailQuery = (id: NftId) =>
+  queryOptions({
+    queryKey: catalogKeys.detail(id),
+    queryFn: ({ signal }) => catalogApi.get(id, { signal }),
+    retry: retryTransient,
+  })
+
+/** "Mais desta coleção": up to five related NFTs, loaded apart from the NFT itself (DET-04). */
+export const relatedQuery = (id: NftId) =>
+  queryOptions({
+    queryKey: catalogKeys.related(id),
+    queryFn: ({ signal }) => catalogApi.related(id, { signal }),
   })

@@ -1,6 +1,7 @@
 import * as React from 'react'
 
 import { ArrowRightIcon, CartIcon, FilterIcon, HeartIcon, SearchIcon } from '@/components/icons'
+import { QuantityStepper } from '@/components/quantity-stepper'
 import { Unavailable } from '@/components/layout/unavailable'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -161,6 +162,29 @@ export function ChoiceSection() {
       </FieldSet>
 
       <FieldSet>
+        <FieldLegend>Edição (detalhes do NFT)</FieldLegend>
+        <RadioGroup
+          defaultValue="1/10"
+          aria-label="Edição (variante outline)"
+          className="flex flex-wrap gap-1.5"
+        >
+          {['1/1', '1/10', '1/50', 'ABERTA'].map((value) => (
+            <RadioGroupChip key={value} variant="outline" value={value}>
+              {value}
+            </RadioGroupChip>
+          ))}
+          <RadioGroupChip variant="outline" value="esgotada" disabled>
+            1/5
+          </RadioGroupChip>
+        </RadioGroup>
+      </FieldSet>
+
+      <FieldSet>
+        <FieldLegend>Quantidade</FieldLegend>
+        <StepperDemo />
+      </FieldSet>
+
+      <FieldSet>
         <FieldLegend>Carteira</FieldLegend>
         <RadioGroup defaultValue="metamask" aria-label="Carteira">
           {['MetaMask', 'Coinbase Wallet', 'WalletConnect'].map((label) => (
@@ -206,5 +230,22 @@ export function UnavailableSection() {
       <Unavailable className="text-body-lg text-foreground">Criadores</Unavailable>
       <Unavailable className="text-body text-foreground">Central de ajuda</Unavailable>
     </Section>
+  )
+}
+
+function StepperDemo() {
+  const [value, setValue] = React.useState(2)
+  return (
+    <div className="flex flex-wrap items-center gap-8">
+      <QuantityStepper value={value} min={1} max={5} onChange={setValue} label="Quantidade (md)" />
+      <QuantityStepper
+        size="sm"
+        value={value}
+        min={1}
+        max={5}
+        onChange={setValue}
+        label="Quantidade (sm)"
+      />
+    </div>
   )
 }

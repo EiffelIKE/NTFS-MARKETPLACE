@@ -3,7 +3,6 @@ import { expect, test, type Page } from '@playwright/test'
 import { loginAs } from './support/mock'
 
 const routes = [
-  { path: '/nfts/1', heading: 'Detalhes do NFT', private: false },
   { path: '/cart', heading: 'Carrinho', private: false },
   { path: '/checkout', heading: 'Finalizar compra', private: true },
   {
@@ -52,11 +51,11 @@ for (const route of routes) {
 }
 
 test('reloading a deep link keeps the route and URL', async ({ page }) => {
-  await page.goto('/nfts/abc')
-  await expect(heading(page, 'Detalhes do NFT')).toBeVisible()
+  await page.goto('/nfts/emerald-ape-042')
+  await expect(heading(page, 'Emerald Ape #042')).toBeVisible()
   await page.reload()
-  await expect(heading(page, 'Detalhes do NFT')).toBeVisible()
-  await expect(page).toHaveURL('/nfts/abc')
+  await expect(heading(page, 'Emerald Ape #042')).toBeVisible()
+  await expect(page).toHaveURL('/nfts/emerald-ape-042')
 })
 
 test('an unknown URL renders the not-found view and links back home', async ({ page }) => {

@@ -1,6 +1,6 @@
 # 06 — NFT details · Requirements
 
-> Status: Ready for review
+> Status: Done
 
 Build the NFT details screen at `/nfts/$nftId`: gallery, price and rating, edition selection, quantity limits, add to cart, favorites, the details and reviews tabs, and the related row. The screen opens directly, shows a dedicated 404 and follows live `nft.updated` changes. This spec also owns two features that the catalog cards reuse: the favorites toggle (optimistic with rollback) and add to cart.
 

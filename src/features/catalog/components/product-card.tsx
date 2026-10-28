@@ -23,7 +23,8 @@ const compactMediaClass = `relative overflow-hidden bg-surface-card ${compactMed
 export const cardArtworkClass =
   'aspect-square w-[calc(100%-8px)] rounded-artwork-mobile object-cover lg:rounded-artwork'
 
-const actionClass =
+/** The 34 px square buttons of the desktop hover row (Figma); spec 06's heart and cart reuse it. */
+export const actionClass =
   'flex size-8.5 cursor-pointer items-center justify-center rounded-sm border border-border-soft bg-ink text-foreground hover:bg-surface-dark [&_svg]:size-4'
 
 /** The "Ver detalhes" action of the desktop hover row; spec 06 adds the heart and the cart. */

@@ -37,7 +37,7 @@ export function MobileTopBar({ title, trailing, className, ...props }: MobileTop
         <p aria-hidden="true" className="truncate text-center text-title text-foreground">
           {title}
         </p>
-        <div className="flex justify-end">{trailing}</div>
+        <div className="flex justify-center">{trailing}</div>
       </PageContainer>
     </header>
   )
