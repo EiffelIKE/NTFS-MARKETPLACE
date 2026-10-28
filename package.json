@@ -20,7 +20,9 @@
     "test:visual": "playwright test --grep @visual",
     "test:visual:update": "playwright test --grep @visual --update-snapshots",
     "test:e2e:report": "playwright show-report",
-    "lighthouse": "pnpm build && lhci autorun --config=lighthouse/desktop.json && lhci autorun --config=lighthouse/mobile.json"
+    "lighthouse": "node scripts/lighthouse-run.ts",
+    "lighthouse:publish": "node scripts/lighthouse-run.ts --publish",
+    "lighthouse:deployed": "node scripts/lighthouse-run.ts --deployed"
   },
   "dependencies": {
     "@fontsource-variable/roboto-mono": "^5.3.0",
@@ -68,6 +70,7 @@
     "prettier-plugin-tailwindcss": "^0.8.1",
     "shadcn": "4.22.1",
     "tailwindcss": "^4.3.3",
+    "tldts-experimental": "7.4.19",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.72.0",
     "vite": "^8.3.4",

@@ -138,6 +138,9 @@ importers:
       tailwindcss:
         specifier: ^4.3.3
         version: 4.3.3
+      tldts-experimental:
+        specifier: 7.4.19
+        version: 7.4.19
       typescript:
         specifier: ~6.0.3
         version: 6.0.3
@@ -4602,6 +4605,9 @@ packages:
 
   tldts-core@7.4.19:
     resolution: {integrity: sha512-goNXV6Ho9TIOfpJZanTd6CKG5DyYgYAL+k+22T0SLh8l6+KHIfBUPFuePuSZv05UttIaaLmI9tb7TmGIdK5AkQ==}
+
+  tldts-experimental@7.4.19:
+    resolution: {integrity: sha512-GaXrBbI3uP7tpIi+HGuD+pQXILEAQqk+z+uqc4xRt/d0hm6mP/eG6QkdruZjCWVEh8ZVCJVtWJoBLZLAji0Z1Q==}
 
   tldts-icann@6.1.86:
     resolution: {integrity: sha512-NFxmRT2lAEMcCOBgeZ0NuM0zsK/xgmNajnY6n4S1mwAKocft2s2ise1O3nQxrH3c+uY6hgHUV9GGNVp7tUE4Sg==}
@@ -9982,6 +9988,10 @@ snapshots:
   tldts-core@6.1.86: {}
 
   tldts-core@7.4.19: {}
+
+  tldts-experimental@7.4.19:
+    dependencies:
+      tldts-core: 7.4.19
 
   tldts-icann@6.1.86:
     dependencies:

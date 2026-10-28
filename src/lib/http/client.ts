@@ -1,5 +1,6 @@
 import axios from 'axios'
 
+import { backendReady } from '@/lib/backend-ready'
 import { env } from '@/lib/env'
 
 import { toApiError } from './errors'
@@ -16,7 +17,9 @@ export const http = axios.create({
 
 // Let the runtime set `multipart/form-data` with its boundary: Axios' default urlencoded header
 // would otherwise survive in non-browser runtimes (Node, where the contract tests run).
-http.interceptors.request.use((config) => {
+http.interceptors.request.use(async (config) => {
+  // The mock worker may still be starting while the shell renders (`lib/backend-ready.ts`).
+  await backendReady()
   if (config.data instanceof FormData) config.headers.setContentType(false)
   return config
 })

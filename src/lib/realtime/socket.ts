@@ -1,3 +1,4 @@
+import { backendReady } from '@/lib/backend-ready'
 import { env } from '@/lib/env'
 
 // The only place that loads `socket.io-client`. The import is dynamic, so the library lands in its
@@ -30,6 +31,8 @@ export type SocketFactory = (options: SocketOptions) => Promise<SocketLike>
 export const RECONNECTION = { delay: 1000, delayMax: 5000 } as const
 
 export const createSocket: SocketFactory = async ({ url = env.VITE_REALTIME_URL, token }) => {
+  // The mock Socket.IO server rides on the worker's WebSocket interception.
+  await backendReady()
   const { io } = await import('socket.io-client')
   return io(url, {
     // MSW intercepts WebSocket; HTTP long-polling would be a plain request to a host that does

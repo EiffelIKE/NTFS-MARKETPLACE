@@ -393,3 +393,4 @@ Decisions taken while implementing, where the design was silent or had to give w
 > Amended by spec 05 (2026-10-28): the favorites guard calls `requireAuth` from `beforeLoad` only when `favorites` is set, and the mobile tab bar heart now links to `/?favorites=1` as well as the footer link.
 
 > Amended by spec 11 (2026-10-28): the header account menu is `DropdownMenu modal={false}` (a modal menu hides a focusable page with `aria-hidden`, which axe reports as `aria-hidden-focus`); `Tab` closes it. In-app navigation to another path focuses the new page's `h1` (`app/use-route-focus.ts`).
+> Amended by spec 13 (2026-10-28): `main.tsx` no longer waits for the mock worker before rendering. `bootApp()` still runs once, but the ordering it needed (no request before the worker) is now enforced by `lib/backend-ready.ts`, which the Axios request interceptor and the socket factory await, so the `auth.session` restore cannot miss the worker.

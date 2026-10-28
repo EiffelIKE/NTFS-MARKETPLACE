@@ -12,8 +12,9 @@ const sources = import.meta.glob<string>(['/src/**/*.{ts,tsx,css}', '!/src/**/*.
 // colors (spec 02 amendment).
 const ALLOWED = new Set(['/src/styles/theme.css', '/src/mocks/fixtures/catalog.ts'])
 
+// A `#` right after a word and a space is an NFT number (`Emerald Ape #042`), not a color.
 const patterns: [string, RegExp][] = [
-  ['hex color', /#[0-9a-f]{3,8}\b/gi],
+  ['hex color', /(?<!\w )#[0-9a-f]{3,8}\b/gi],
   ['rgb()/hsl()/oklch()', /\b(?:rgba?|hsla?|oklch|oklab|lab|lch)\(/gi],
   ['arbitrary color class', /-\[#/g],
 ]

@@ -517,4 +517,5 @@ Visual baselines of the shells are spec 12.
 | 06 | `components/quantity-stepper.tsx` (reused by spec 07) |
 | 04 | `DesktopHeader` `userMenu` slot; `ShellSession` user variant; guest "Entrar" carries the `redirect` on auth pages — **applied in spec 04** (design §14) |
 | 09 | shadcn `textarea` for "Observação do colecionador" (spec 09 T01) |
+| 13 | The chunk-size warning is gone (spec 13, PERF-16): vendor `codeSplitting` groups and `tldts` aliased to `tldts-experimental` in `vite.config.ts` |
 | 11 | Spec 11 (2026-10-28): `ui/sonner.tsx` toasts at the top on phones (§11, item 19); `ui/button.tsx` passes a caller's `aria-busy` through; `hooks/use-bottom-bar-inset.ts` is used by the tab bar and by every fixed action bar, and `base.css` sets `scroll-padding-bottom` from it; `app/use-route-focus.ts` moves focus to the new page's `h1` after an in-app navigation. |

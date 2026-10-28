@@ -908,7 +908,7 @@ Pending changes collected when specs 03–14 were drafted. Apply them in the own
 | 03 | Lint boundaries for `socket.io-client` (app only) and `@mswjs/socket.io-binding` (mocks only) | **applied in spec 03** (design §13) |
 | 04 | `loginAs` also writes the app session (`kurio.session`) to `localStorage` | **applied in spec 04** (design §14): it also waits for `__mock`, and `forgetSession` was added |
 | 08 | `contracts/wallets.ts` exports `addressMatchesNetwork(address, network)` and refines `WalletFields` with "Endereço inválido para a rede selecionada."; the wallet handler parses with the same schema | **applied early in spec 02** (§16); spec 08 T-task only has to use it |
-| 13 | Optional: render the shell before the worker is ready, if the MSW start cost misses the LCP target (changes §3 bootstrap order) | spec 13 analysis |
+| 13 | Optional: render the shell before the worker is ready, if the MSW start cost misses the LCP target (changes §3 bootstrap order) | **applied in spec 13** (design §5): `main.tsx` starts the mocks without awaiting them and `lib/backend-ready.ts` holds every request until `startMocks()` resolves; `takeUrlParams` moved to `mocks/url-params.ts` and runs before the first render; `startMocks(params)` takes its result |
 
 ## 16. Implementation decisions (2026-10-28)
 
@@ -955,3 +955,5 @@ Decisions taken while implementing, where the design was silent or had to give w
 - Vitest fake timers use `shouldAdvanceTime: true`: MSW's interceptors schedule their own 0 ms timers and would hang otherwise.
 - **Browser limit:** a page-side abort never reaches the service worker, so in the browser the request log shows the final status (`200`) instead of `aborted`. Cancellation in the UI must be proved from the page side. Node tests do see `aborted`.
 - Reset (`?reset=1`, `useScenario`) clears sessions, so E2E tests log in again afterwards.
+
+> Amended by spec 13 (2026-10-28): the `prepare()` snippet in §3 is replaced by `startBackend()` in `main.tsx`: the app renders at once, the mock chunk is `modulepreload`ed from the HTML, and the Axios request interceptor and the Socket.IO factory await `lib/backend-ready.ts`. Step 1 of the `startMocks()` order (URL params) now runs in `main.tsx` through `takeMockUrlParams()` before the first render; the other steps are unchanged. A worker that fails to start still replaces the app with `BootError`.
