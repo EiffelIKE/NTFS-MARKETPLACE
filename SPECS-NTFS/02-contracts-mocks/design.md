@@ -906,7 +906,7 @@ Pending changes collected when specs 03–14 were drafted. Apply them in the own
 | 03 | `MockConfig.realtime = { available, deliveryDelayMs }`; the `offline` scenario sets `available: false`; panel checkbox "Tempo real indisponível" | **applied in spec 03** (design §13) |
 | 03 | `window.__mock.realtime` (connections, drop/restore, redeliver, inject, log); `contracts/events.ts`; realtime handler in `createHandlers` and `startMocks` | **applied in spec 03** (design §13) |
 | 03 | Lint boundaries for `socket.io-client` (app only) and `@mswjs/socket.io-binding` (mocks only) | **applied in spec 03** (design §13) |
-| 04 | `loginAs` also writes the app session (`kurio.session`) to `localStorage` | spec 04 tasks (spec 02's `e2e/support/mock.ts` `loginAs` returns the token only) |
+| 04 | `loginAs` also writes the app session (`kurio.session`) to `localStorage` | **applied in spec 04** (design §14): it also waits for `__mock`, and `forgetSession` was added |
 | 08 | `contracts/wallets.ts` exports `addressMatchesNetwork(address, network)` and refines `WalletFields` with "Endereço inválido para a rede selecionada."; the wallet handler parses with the same schema | **applied early in spec 02** (§16); spec 08 T-task only has to use it |
 | 13 | Optional: render the shell before the worker is ready, if the MSW start cost misses the LCP target (changes §3 bootstrap order) | spec 13 analysis |
 

@@ -1,3 +1,3 @@
-/** Session as the shell sees it; spec 04 provides the real value. */
+/** Session as the shell sees it (spec 04 maps the real session to this). */
 export type ShellSession =
-  { status: 'guest' } | { status: 'user'; name: string; avatarUrl?: string }
+  { status: 'guest' } | { status: 'user'; name: string; avatarUrl?: string | undefined }

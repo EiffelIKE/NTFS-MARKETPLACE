@@ -6,6 +6,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 
 import { App } from '@/app/app'
+import { bootApp } from '@/app/boot'
 import { BootError } from '@/app/boot-error'
 
 const container = document.getElementById('root')
@@ -21,6 +22,7 @@ async function prepare() {
 }
 
 function renderApp(root: HTMLElement) {
+  bootApp()
   createRoot(root).render(
     <StrictMode>
       <App />

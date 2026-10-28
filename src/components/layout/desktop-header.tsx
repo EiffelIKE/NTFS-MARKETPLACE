@@ -2,7 +2,6 @@ import { Link, useLocation } from '@tanstack/react-router'
 import type * as React from 'react'
 
 import { CartIcon, LogoutIcon, SearchIcon } from '@/components/icons'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -23,6 +22,8 @@ export interface DesktopHeaderProps extends React.ComponentProps<'header'> {
   divider: boolean
   cartCount: number
   session: ShellSession
+  /** The signed-in control (spec 04's menu); the shell passes it so the header stays presentational. */
+  userMenu?: React.ReactNode
   onSearch?: (() => void) | undefined
 }
 
@@ -32,12 +33,16 @@ export function DesktopHeader({
   divider,
   cartCount,
   session,
+  userMenu,
   onSearch,
   className,
   ...props
 }: DesktopHeaderProps) {
   const location = useLocation()
-  const redirect = location.href
+  // On the auth pages the redirect in the URL is carried over, so the link never nests it.
+  const onAuthPage = location.pathname === '/login' || location.pathname === '/signup'
+  const current = (location.search as { redirect?: unknown }).redirect
+  const redirect = onAuthPage ? (typeof current === 'string' ? current : undefined) : location.href
 
   return (
     <header className={cn('pt-6', className)} {...props}>
@@ -118,18 +123,13 @@ export function DesktopHeader({
 
             {session.status === 'guest' ? (
               <Button asChild size="sm" className="w-25 gap-1 px-0">
-                <Link to="/login" search={location.pathname === '/login' ? {} : { redirect }}>
+                <Link to="/login" search={{ redirect }}>
                   <LogoutIcon data-icon="inline-start" />
                   Entrar
                 </Link>
               </Button>
             ) : (
-              <Link to="/profile" aria-label={`Perfil de ${session.name}`} className="rounded-full">
-                <Avatar>
-                  {session.avatarUrl && <AvatarImage src={session.avatarUrl} alt="" />}
-                  <AvatarFallback>{session.name.slice(0, 1).toUpperCase()}</AvatarFallback>
-                </Avatar>
-              </Link>
+              userMenu
             )}
           </div>
         </div>

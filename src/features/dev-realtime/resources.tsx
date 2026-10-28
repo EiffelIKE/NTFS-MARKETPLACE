@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import { catalogApi, ordersApi } from '@/api'
+import { useSession } from '@/features/auth/model/use-session'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { formatEth } from '@/lib/money'
-import { http } from '@/lib/http/client'
 
 import { Section } from '../ui-kit/section'
 
@@ -63,26 +63,16 @@ export function NftSection() {
   )
 }
 
-/** The cache entry spec 09 will use (`['orders', 'detail', id]`). Needs the test token. */
-export function OrderSection({ token }: { token: string | null }) {
+/** The cache entry spec 09 will use (`['orders', 'detail', id]`). Needs a signed-in session. */
+export function OrderSection() {
   const [id, setId] = useState('')
-
-  // Until spec 04's interceptor exists, the page sends the test token itself.
-  useEffect(() => {
-    if (!token) return
-    const interceptor = http.interceptors.request.use((config) => {
-      config.headers.set('Authorization', `Bearer ${token}`)
-      return config
-    })
-    return () => {
-      http.interceptors.request.eject(interceptor)
-    }
-  }, [token])
+  const session = useSession()
+  const signedIn = session.status === 'authenticated'
 
   const order = useQuery({
     queryKey: ['orders', 'detail', id],
     queryFn: ({ signal }) => ordersApi.get(id, { signal }),
-    enabled: id.trim() !== '' && token !== null,
+    enabled: id.trim() !== '' && signedIn,
     retry: false,
   })
 
@@ -99,8 +89,8 @@ export function OrderSection({ token }: { token: string | null }) {
           }}
         />
       </Field>
-      {token === null && <p className="text-body text-text-secondary">Conecte com um token.</p>}
-      {token !== null && id === '' && (
+      {!signedIn && <p className="text-body text-text-secondary">Entre para ver um pedido.</p>}
+      {signedIn && id === '' && (
         <p className="text-body text-text-secondary">Informe o ID de um pedido.</p>
       )}
       {order.isError && <p role="alert">Não foi possível carregar o pedido.</p>}

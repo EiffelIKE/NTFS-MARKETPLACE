@@ -514,4 +514,5 @@ Visual baselines of the shells are spec 12.
 | From | Change |
 |---|---|
 | 06 | `components/quantity-stepper.tsx` (reused by spec 07) |
+| 04 | `DesktopHeader` `userMenu` slot; `ShellSession` user variant; guest "Entrar" carries the `redirect` on auth pages — **applied in spec 04** (design §14) |
 | 09 | shadcn `textarea` for "Observação do colecionador" (spec 09 T01) |

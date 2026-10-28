@@ -356,3 +356,5 @@ Decisions taken while implementing, where the design was silent or had to give w
 - Every E2E test waits for the NFT to be on screen before changing it. A change committed while the first REST read is in flight is a real race (design §12, "Known race"), and without the wait the test would be flaky on a loaded machine.
 - In Playwright, `test.use({ allowedConsoleErrors: [a, b] })` reads a two-element array as a fixture `[value, options]` tuple. Use one regular expression instead.
 - `page.clock.install()` before `goto` keeps time flowing and lets `runFor` accelerate it: the reconnect and heartbeat tests use that.
+
+**Applied by spec 04 (design §14):** the guest `setSession` in `App`'s effect and the temporary bearer interceptor on `/dev/realtime` are gone. The session bridge sets the identity after the restore and on every change, and the developer page and its E2E tests use the real session (`loginAs` plus a navigation).

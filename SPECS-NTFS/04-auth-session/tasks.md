@@ -1,6 +1,6 @@
 # 04 — Auth & session · Tasks
 
-> Status: Ready for review
+> Status: Done
 
 Implements [`requirements.md`](requirements.md) following [`design.md`](design.md). Work top to bottom; check a task only when its proof passes. Commands run inside the mise toolchain.
 
@@ -15,64 +15,74 @@ None. The Figma auth screens are in `figma_tokens/screenshots/`.
 
 ## Tasks
 
-- [ ] **T01 — Form layer** · AUTH-01, AUTH-02, AUTH-04, AUTH-05
+- [x] **T01 — Form layer** · AUTH-01, AUTH-02, AUTH-04, AUTH-05
   - `pnpm add @tanstack/react-form@^1.33.5`.
   - `components/form/`:
     - `app-form.ts` (`createFormHook`);
     - `TextField`, `PasswordField`, `SubmitButton`, `FormAlert`;
     - `server-errors.ts`.
   - Confirm the dynamic-validation API (`onDynamic` + `revalidateLogic`) in 1.33.5. If it differs, use the fallback in design §8 and update the design.
-  - **Proof:** `server-errors.test.ts`. A form section added to `/dev/ui-kit` (spec 01 gallery) shows blur, submit and change-after-submit timing.
+  - **Proof:** `server-errors.test.ts` (13 tests: server errors, clearing, validation timing, `submitForm`); the `/dev/ui-kit` "Formulários" section and its E2E test show blur, submit and change-after-submit timing. The dynamic-validation API matched the design, so the fallback was not needed.
 
-- [ ] **T02 — Session controller and storage** · AUTH-06, AUTH-07, AUTH-08, AUTH-10, AUTH-13, AUTH-17, AUTH-18
+- [x] **T02 — Session controller and storage** · AUTH-06, AUTH-07, AUTH-08, AUTH-10, AUTH-13, AUTH-17, AUTH-18
   - `features/auth/model/session-storage.ts` and `session.ts` (design §3), with `useSession()`.
-  - **Proof:** `session.test.ts`.
+  - **Proof:** `session.test.ts` (41 tests).
 
-- [ ] **T03 — HTTP interceptors** · AUTH-09, AUTH-13
+- [x] **T03 — HTTP interceptors** · AUTH-09, AUTH-13
   - `lib/http/auth.ts` with `installAuthInterceptors` and `isSessionError`.
-  - **Proof:** `auth.test.ts`.
+  - **Proof:** `auth.test.ts` (11 tests).
 
-- [ ] **T04 — Bridge and router context** · AUTH-08, AUTH-14, AUTH-15, AUTH-17
+- [x] **T04 — Bridge and router context** · AUTH-08, AUTH-14, AUTH-15, AUTH-17
   - `app/session-bridge.ts` (design §5).
   - `RouterContext.session`, and the root `beforeLoad` awaits `ready`.
   - Replace spec 03's temporary guest `setSession`.
-  - **Proof:** `session.test.ts` bridge cases with a fake `QueryClient`, realtime and router (clear and reset order; the public-route toast). The spec 00 smoke E2E still passes.
+  - **Proof:** `session-bridge.test.ts` (11 tests: clear and reset order, public-route toast, protected-route navigation, logout, other tab, guard-triggered expiry). The spec 00 smoke E2E passes with private routes behind `loginAs`.
 
-- [ ] **T05 — Guards and auth routes** · AUTH-11, AUTH-12
+- [x] **T05 — Guards and auth routes** · AUTH-11, AUTH-12
   - `model/redirects.ts`.
   - Add `requireAuth` and `staticData.requiresAuth` to `checkout`, `orders/$orderId`, `profile` and `wallets`.
   - Add `authSearch` and `redirectIfAuthenticated` to `login` and `signup`.
   - Update the spec 00 smoke test where a private placeholder is now behind the guard: sign in first with `loginAs`.
-  - **Proof:** `redirects.test.ts`; E2E protected-redirect test.
+  - **Proof:** `redirects.test.ts` (9 tests) and `auth-search.test.ts`; E2E protected-redirect, every-private-route and close-target tests.
 
-- [ ] **T06 — Auth page frame** · AUTH-19, AUTH-20, AUTH-22
+- [x] **T06 — Auth page frame** · AUTH-19, AUTH-20, AUTH-22
   - `AuthPage`: desktop panel, mobile bare page, tabs, close, single `h1`, titles, footer links.
   - `SocialLoginButtons`, and "Esqueceu a senha?" as `UnavailableLink`.
-  - **Proof:** E2E unavailable-actions and keyboard/axe tests; a visual check against both screenshots at 1440 and 390.
+  - **Proof:** E2E unavailable-actions, keyboard-order, h1/title and axe tests in both projects; visual check in design §14.
 
-- [ ] **T07 — Login form** · AUTH-03, AUTH-04, AUTH-05, AUTH-06, AUTH-07, AUTH-12, AUTH-14
+- [x] **T07 — Login form** · AUTH-03, AUTH-04, AUTH-05, AUTH-06, AUTH-07, AUTH-12, AUTH-14
   - `login-form.tsx` and `use-login.ts`: the expired notice, the credential-failure handling, the `announce` on success and the redirect navigation.
-  - **Proof:** E2E login, offline and triple-click tests.
+  - **Proof:** E2E wrong password, empty submit, triple click, offline and password-storage tests.
 
-- [ ] **T08 — Sign-up form** · AUTH-01, AUTH-02, AUTH-05, AUTH-06, AUTH-07
+- [x] **T08 — Sign-up form** · AUTH-01, AUTH-02, AUTH-05, AUTH-06, AUTH-07
   - `signup-form.tsx` and `use-signup.ts`: the confirm refine, the password hint, the conflict mapping and the success toast.
-  - **Proof:** E2E sign-up tests.
+  - **Proof:** E2E sign-up success, empty and mismatch, and conflict tests.
 
-- [ ] **T09 — Header user menu and logout** · AUTH-16, AUTH-21
+- [x] **T09 — Header user menu and logout** · AUTH-16, AUTH-21
   - `user-menu.tsx` connected to the spec 01 header `session` input.
   - `use-logout.ts`.
   - The guest "Entrar" redirect carry-over on auth pages.
-  - **Proof:** E2E logout test; menu keyboard navigation (arrows, `Esc` returns focus).
+  - **Proof:** E2E logout and menu keyboard tests (desktop; the mobile project has no menu, see design §14).
 
-- [ ] **T10 — E2E suite and helper** · AUTH-24
+- [x] **T10 — E2E suite and helper** · AUTH-24
   - Amend `loginAs` in `e2e/support/mock.ts` to seed `kurio.session`.
   - `e2e/auth.spec.ts` with every test in design §10.
-  - **Proof:** `pnpm test:e2e` green in both projects.
+  - **Proof:** `pnpm test:e2e`: 163 passed, 7 skipped by design, in both projects.
 
-- [ ] **T11 — Docs hand-off**
+- [x] **T11 — Docs hand-off**
   - Append design §13 to the spec 14 notes list.
-  - README: the fixture credentials table, plus how `session-short` and `expireSessions()` reproduce expiry.
-  - **Proof:** spec 14 checklist entry exists.
+  - README (owned by spec 14): the fixture credentials table, plus how `session-short` and `expireSessions()` reproduce expiry.
+  - **Proof:** Spec 14 design §3 lists the spec 04 notes; its README outline (§2) already has the credentials table and the expiry rows (`session-short`, `expireSessions()`).
+
+## Run log (2026-10-28)
+
+- Gate: `pnpm typecheck`, `pnpm lint` (0 warnings), `pnpm format:check`, `pnpm test` (**494 unit tests** in 32 files), `pnpm build` and `pnpm test:e2e` (**163 passed, 7 skipped** by design, in `desktop-chromium` and `mobile-chromium`) all exit 0. `auth.spec.ts` has 36 tests per project; 5 skip on mobile because they need the header menu (logout, user switch, menu keyboard and update, the close button).
+- **Open warning:** `pnpm build` still reports one chunk over 500 kB, owned by spec 13. It is now the mock layer (`browser-*.js`, 511 kB, demo code), because the form and auth code split out of the entry: `index-*.js` is 450 kB (it was 661 kB in spec 01's run).
+- **Bug found by the E2E run:** the restore started when `app.tsx` was imported, before the mock worker was ready, so `auth.session` got a 404 and the stored session stayed unverified. It now starts in `bootApp()` after the worker (design §14).
+- **Library behavior found by the unit tests:** `handleSubmit` refuses a first submit that carries a stale blur error the user has already fixed. `submitForm` re-validates first (design §14).
+- The 401 of restoring a dead session is logged by the browser, so tests that `?reset=1` while a session is seeded call `forgetSession` first (`mocks.spec.ts`, `realtime-resilience.spec.ts`).
+- Spec 03's `/dev/realtime` tests were rewritten to sign in with `loginAs` and a navigation. The temporary bearer interceptor is deleted.
+- No negative proofs needed beyond the unit tests: the stale-token, `INVALID_CREDENTIALS` and concurrent-401 cases fail if the interceptor or `expire` is changed.
 
 ## Coverage
 

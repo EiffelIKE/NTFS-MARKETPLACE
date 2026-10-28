@@ -1,0 +1,19 @@
+import { createFormHook } from '@tanstack/react-form'
+
+import { fieldContext, formContext } from './form-context'
+import { FormAlert } from './form-alert'
+import { PasswordField } from './password-field'
+import { SubmitButton } from './submit-button'
+import { TextField } from './text-field'
+
+/**
+ * The shared form layer (spec 04 design §8; reused by specs 08 and 09): TanStack Form with the
+ * project's field components. Validate with a Zod schema through `validators.onDynamic` and
+ * `validationLogic: formValidation()` (blur first, then on change once a submit failed).
+ */
+export const { useAppForm } = createFormHook({
+  fieldContext,
+  formContext,
+  fieldComponents: { TextField, PasswordField },
+  formComponents: { SubmitButton, FormAlert },
+})

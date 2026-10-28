@@ -60,15 +60,50 @@ export async function apiFetch<T = unknown>(
   ) as Promise<ApiResponse<T>>
 }
 
-/** Logs in with a fixture user through the API and returns the bearer token. */
-export async function loginAs(page: Page, name: CredentialName): Promise<string> {
+/** The app's own storage key for the session (spec 04), so the next navigation starts signed in. */
+export const SESSION_STORAGE_KEY = 'kurio.session'
+
+/**
+ * Logs in with a fixture user through the API and returns the bearer token. It also writes the
+ * session payload where the app keeps it (spec 04 amendment), so the next navigation starts signed
+ * in: `await loginAs(page, 'ana'); await page.goto('/profile')`. The page that is already open
+ * does not notice, because a tab never gets a `storage` event for its own writes. Pass
+ * `{ seed: false }` for a token only.
+ */
+export async function loginAs(
+  page: Page,
+  name: CredentialName,
+  { seed = true }: { seed?: boolean } = {},
+): Promise<string> {
+  // `apiFetch` needs a page the service worker controls.
+  if (page.url() === 'about:blank') await page.goto('/')
+  // Right after `goto` the worker may not have started yet; `__mock` appears once it has.
+  await page.waitForFunction(() => '__mock' in window)
   const { email, password } = CREDENTIALS[name]
   const { status, body } = await apiFetch<{ token: string }>(page, '/auth/login', {
     method: 'POST',
     body: { email, password },
   })
   if (status !== 200) throw new Error(`Login as ${name} failed with ${String(status)}`)
+  if (seed) {
+    await page.evaluate(
+      ([key, payload]) => {
+        localStorage.setItem(key, payload)
+      },
+      [SESSION_STORAGE_KEY, JSON.stringify(body)] as const,
+    )
+  }
   return body.token
+}
+
+/**
+ * Drops the app's stored session. A `?reset=1` or scenario switch clears the mock's sessions, so a
+ * session left in storage would be refused (and logged as a 401) when the app restores it.
+ */
+export async function forgetSession(page: Page): Promise<void> {
+  await page.evaluate((key) => {
+    localStorage.removeItem(key)
+  }, SESSION_STORAGE_KEY)
 }
 
 export const bearer = (token: string) => ({ Authorization: `Bearer ${token}` })

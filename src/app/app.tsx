@@ -25,8 +25,6 @@ function whenIdle(task: () => void): () => void {
 export function App() {
   // One socket per tab for the life of the app (spec 03, RT-19). It loads after the first render.
   useEffect(() => {
-    // Spec 04 replaces this with the restored session's identity.
-    realtime.setSession({ key: 'guest', token: null })
     const cancel = whenIdle(() => {
       realtime.start({ queryClient })
     })

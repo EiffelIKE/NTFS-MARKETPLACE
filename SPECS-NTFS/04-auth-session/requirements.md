@@ -1,6 +1,6 @@
 # 04 — Auth & session · Requirements
 
-> Status: Ready for review
+> Status: Done
 
 Build sign-up, login and logout on spec 02's auth operations, and the client session around them:
 - token storage and restore after a refresh;

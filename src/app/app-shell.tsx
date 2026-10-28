@@ -8,12 +8,19 @@ import { MobileTopBar } from '@/components/layout/mobile-top-bar'
 import type { ShellSession } from '@/components/layout/session'
 import { useShellConfig } from '@/components/layout/shell-config'
 import { SkipLink } from '@/components/layout/skip-link'
+import { UserMenu } from '@/features/auth/components/user-menu'
+import { useSession } from '@/features/auth/model/use-session'
+import type { SessionState } from '@/features/auth/model/session'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
-// The only place later specs plug data into the shell (DS-28): session (04), search (05) and cart
-// count (07). Until then the shell renders the guest / empty state.
-const GUEST: ShellSession = { status: 'guest' }
+// The only place specs plug data into the shell (DS-28): session (04), search (05) and cart count
+// (07). Search and cart still render their empty state.
+function shellSession(state: SessionState): ShellSession {
+  return state.status === 'authenticated'
+    ? { status: 'user', name: state.user.displayName, avatarUrl: state.user.avatarUrl ?? undefined }
+    : { status: 'guest' }
+}
 
 /**
  * Both compositions stay in the DOM and switch at `lg` with CSS (`display: none` also removes the
@@ -21,7 +28,8 @@ const GUEST: ShellSession = { status: 'guest' }
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
   const shell = useShellConfig()
-  const session = GUEST
+  const state = useSession()
+  const session = shellSession(state)
   const cartCount = 0
   const onSearch = undefined
   const { mobile } = shell
@@ -35,6 +43,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         divider={shell.headerDivider}
         cartCount={cartCount}
         session={session}
+        userMenu={
+          session.status === 'user' && (
+            <UserMenu name={session.name} avatarUrl={session.avatarUrl} />
+          )
+        }
         onSearch={onSearch}
       />
       {mobile.kind === 'inner' && <MobileTopBar className="lg:hidden" title={mobile.title} />}

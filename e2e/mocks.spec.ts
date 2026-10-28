@@ -2,7 +2,7 @@ import type { Page } from '@playwright/test'
 
 import { NftListResponse } from '../src/contracts'
 import { expectNoAxeViolations } from './support/a11y'
-import { apiFetch, bearer, loginAs, mock } from './support/mock'
+import { apiFetch, bearer, forgetSession, loginAs, mock } from './support/mock'
 import { expect, test } from './support/test'
 
 // Spec 02 design §13 E2E table: the service worker, URL params, persistence, scenarios, the fake
@@ -63,6 +63,7 @@ test('data persists across reloads and ?reset=1 restores the seed (API-36, API-4
   const after = await apiFetch<{ nftIds: string[] }>(page, '/favorites', { headers })
   expect(after.body.nftIds).toContain(nftId)
 
+  await forgetSession(page)
   await open(page, '/?reset=1')
   expect(new URL(page.url()).search).toBe('')
   // The reset also drops sessions, so the old token is gone.

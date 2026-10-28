@@ -140,11 +140,14 @@ Placeholder copy is temporary and gets replaced by Figma copy in each owner spec
 ### Router instance (`app/router.ts`)
 
 ```ts
-export interface RouterContext { queryClient: QueryClient }
+export interface RouterContext {
+  queryClient: QueryClient
+  session: SessionController // spec 04
+}
 
 export const router = createRouter({
   routeTree,
-  context: { queryClient },
+  context: { queryClient, session },
   defaultPreload: 'intent',
   defaultPreloadStaleTime: 0,          // Query owns freshness
   scrollRestoration: true,
@@ -164,7 +167,7 @@ The root route is `createRootRouteWithContext<RouterContext>()`, which gives eve
 
 ### Search params (FND-13)
 
-Routes declare `validateSearch: someZodSchema` (Zod 4, Standard Schema, no adapter). Convention for later specs: every field is optional or has `.catch(<default>)`, so a malformed URL degrades to defaults instead of throwing. Spec 00 proves the mechanism on `/login` with the param spec 04 needs:
+Routes declare `validateSearch: someZodSchema` (Zod 4, Standard Schema, no adapter). Convention for later specs: every field is optional or has `.catch(<default>)`, so a malformed URL degrades to defaults instead of throwing. Spec 00 proved the mechanism on `/login` with the param spec 04 needs:
 
 ```ts
 const loginSearch = z.object({
@@ -172,7 +175,7 @@ const loginSearch = z.object({
 })
 ```
 
-Only same-origin paths survive, so there is no open redirect. Spec 04 adds the behavior.
+Only same-origin paths survive, so there is no open redirect. Spec 04 added the behavior: the schema is now `authSearchSchema` in `features/auth/model/auth-search.ts`, shared by `/login` and `/signup` with a `reason: 'expired'` field.
 
 ## 6. Server state and HTTP (FND-14 – FND-18)
 
@@ -349,7 +352,7 @@ Pending changes collected when specs 03–14 were drafted; each is applied by th
 | From | Change |
 |---|---|
 | 03 | `VITE_REALTIME_URL` in `lib/env.ts` and `.env.example` — **applied in spec 03** |
-| 04 | `RouterContext.session`; the root route waits for the session check; `reason` search param on `/login` and `/signup`; auth interceptors on the Axios instance |
+| 04 | `RouterContext.session`; the root route waits for the session check; `reason` search param on `/login` and `/signup`; auth interceptors on the Axios instance — **applied in spec 04** (design §14) |
 | 12 | Playwright projects/config for visual tests; scripts `test:visual`, `test:visual:update` |
 | 13 | Script `lighthouse:deployed`; `public/robots.txt` (the SPA rewrite would answer it with HTML); `kurio-build` meta tag with the commit id |
 | 14 | Script `docs`; Vitest also collects `scripts/**/*.test.ts` |

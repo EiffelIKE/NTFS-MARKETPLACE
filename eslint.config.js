@@ -79,6 +79,24 @@ export default defineConfig(
     files: ['src/components/ui/**', 'src/routes/**'],
     rules: { 'react-refresh/only-export-components': 'off' },
   },
+  {
+    // `throw redirect()` is TanStack Router's control flow for guards, not an error.
+    files: ['src/**/*.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/only-throw-error': [
+        'error',
+        {
+          allow: [
+            {
+              from: 'package',
+              package: '@tanstack/router-core',
+              name: ['Redirect', 'NotFoundError'],
+            },
+          ],
+        },
+      ],
+    },
+  },
   jsxA11y.flatConfigs.strict,
   pluginQuery.configs['flat/recommended'],
   pluginRouter.configs['flat/recommended'],

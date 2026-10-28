@@ -2,7 +2,7 @@ import type { Page } from '@playwright/test'
 
 import { eventId, type RealtimeEvent } from '../src/contracts'
 import { expectNoAxeViolations } from './support/a11y'
-import { loginAs, mock } from './support/mock'
+import { forgetSession, loginAs, mock } from './support/mock'
 import { realtime, waitForConnection } from './support/realtime'
 import { expect, test } from './support/test'
 
@@ -27,9 +27,10 @@ async function loadOrder(page: Page, orderId: string) {
   await page.getByLabel('ID do pedido').fill(orderId)
 }
 
-async function connectWith(page: Page, token: string) {
-  await page.getByLabel('Token de teste').fill(token)
-  await page.getByRole('button', { name: 'Conectar com token' }).click()
+/** Starts the app signed in as `name`: the next navigation restores the seeded session (spec 04). */
+async function openAs(page: Page, name: 'ana' | 'bruno', url = '/dev/realtime') {
+  await loginAs(page, name)
+  await open(page, url)
 }
 
 /** The page has loaded the NFT over REST, so a later change can only arrive as an event. */
@@ -151,22 +152,21 @@ test('an idle connection survives the Engine.IO ping timeout thanks to the mock 
   expect(open_.map((c) => c.id)).toEqual([first?.id])
 })
 
-test('switching accounts leaves one connection, owned by the new user (RT-18)', async ({
+test('a restored session connects as its user, and a new one replaces it (RT-18)', async ({
   page,
 }) => {
   await open(page)
-  await waitForConnection(page)
-  const ana = await loginAs(page, 'ana')
-  const bruno = await loginAs(page, 'bruno')
+  await waitForConnection(page, { userId: null })
 
-  await connectWith(page, ana)
+  await openAs(page, 'ana')
   await waitForConnection(page, { userId: 'usr_ana' })
-  await connectWith(page, bruno)
 
+  await openAs(page, 'bruno')
   await expect
     .poll(async () => (await realtime(page).connections()).map((c) => c.userId))
     .toEqual(['usr_bruno'])
   expect(await realtime(page).connections()).toHaveLength(1)
+  // The live switch, with no reload, is covered in `auth.spec.ts`.
 })
 
 // Bruno asks for Ana's order with his token on the developer page, so the browser logs the 403.
@@ -174,14 +174,14 @@ test.describe("another collector's order", () => {
   test.use({ allowedConsoleErrors: [/status of 403/] })
 
   test('order.updated reaches only the owner (RT-07, RT-08, RT-14)', async ({ page }) => {
+    // The scenario reseeds the mock and drops its sessions, so Bruno signs in after it.
     await open(page, '/dev/realtime?scenario=pending-order')
     await waitForConnection(page)
-    const bruno = await loginAs(page, 'bruno')
-
-    // Bruno is connected: the settlement of Ana's order is not for him.
-    await connectWith(page, bruno)
+    await openAs(page, 'bruno')
     await loadOrder(page, 'ord_000002')
     await waitForConnection(page, { userId: 'usr_bruno' })
+
+    // Bruno is connected: the settlement of Ana's order is not for him.
     await realtime(page).clearLog()
     await mock(page).settleOrder('ord_000002', 'confirmed')
     await expect
@@ -192,9 +192,9 @@ test.describe("another collector's order", () => {
     await expect(page.getByText('Não foi possível carregar o pedido.')).toBeVisible()
 
     // A fresh start, with Ana connected: she sees it settle without asking REST again.
+    await forgetSession(page)
     await open(page, '/dev/realtime?reset=1')
-    await waitForConnection(page)
-    await connectWith(page, await loginAs(page, 'ana'))
+    await openAs(page, 'ana')
     await waitForConnection(page, { userId: 'usr_ana' })
     await loadOrder(page, 'ord_000002')
     await expect(orderData(page)).toContainText('Status do pedido: pendente')

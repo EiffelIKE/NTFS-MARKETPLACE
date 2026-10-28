@@ -1,19 +1,29 @@
 import { expect, test, type Page } from '@playwright/test'
 
+import { loginAs } from './support/mock'
+
 const routes = [
-  { path: '/nfts/1', link: 'Detalhes do NFT', heading: 'Detalhes do NFT' },
-  { path: '/cart', link: 'Carrinho', heading: 'Carrinho' },
-  { path: '/checkout', link: 'Finalizar compra', heading: 'Finalizar compra' },
-  { path: '/orders/1', link: 'Confirmação do pedido', heading: 'Confirmação do pedido' },
-  { path: '/login', link: 'Entrar', heading: 'Entrar' },
-  { path: '/signup', link: 'Criar conta', heading: 'Criar conta' },
-  { path: '/profile', link: 'Perfil', heading: 'Perfil' },
-  { path: '/wallets', link: 'Carteiras', heading: 'Carteiras' },
+  { path: '/nfts/1', link: 'Detalhes do NFT', heading: 'Detalhes do NFT', private: false },
+  { path: '/cart', link: 'Carrinho', heading: 'Carrinho', private: false },
+  { path: '/checkout', link: 'Finalizar compra', heading: 'Finalizar compra', private: true },
+  {
+    path: '/orders/1',
+    link: 'Confirmação do pedido',
+    heading: 'Confirmação do pedido',
+    private: true,
+  },
+  { path: '/login', link: 'Entrar', heading: 'Entrar', private: false },
+  { path: '/signup', link: 'Criar conta', heading: 'Criar conta', private: false },
+  { path: '/profile', link: 'Perfil', heading: 'Perfil', private: true },
+  { path: '/wallets', link: 'Carteiras', heading: 'Carteiras', private: true },
 ] as const
 
-function heading(page: Page, name: string) {
-  return page.getByRole('heading', { level: 1, name, exact: true })
+function heading(page: Page, name: string | RegExp) {
+  return page.getByRole('heading', { level: 1, name, exact: typeof name === 'string' })
 }
+
+// The sign-up page titles itself differently below `lg` (spec 04 design §7).
+const SIGNUP_HEADING = /^Criar (conta|perfil de colecionador)$/
 
 test('home renders the brand heading, document metadata and a link to every route', async ({
   page,
@@ -39,8 +49,15 @@ test('home renders the brand heading, document metadata and a link to every rout
 
 for (const route of routes) {
   test(`direct access to ${route.path} renders its placeholder`, async ({ page }) => {
+    // Private routes sit behind the session guard (spec 04): start signed in.
+    if (route.private) {
+      await page.goto('/')
+      await loginAs(page, 'ana')
+    }
     await page.goto(route.path)
-    await expect(heading(page, route.heading)).toBeVisible()
+    await expect(
+      heading(page, route.path === '/signup' ? SIGNUP_HEADING : route.heading),
+    ).toBeVisible()
     await expect(page).toHaveTitle(`${route.heading} · KURIO`)
   })
 }
