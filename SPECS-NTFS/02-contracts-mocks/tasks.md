@@ -34,7 +34,7 @@ None. The artworks were delivered on 2026-10-27 in `src/assets/NFTs/{250,750,100
 
 - [x] **T04 — Resource contracts and operation table** · API-01, API-02, API-06
   - Schemas for auth, catalog, favorites, cart, quote, orders, profile, wallets and networks (design §4), with pt-BR messages.
-  - `contracts/operations.ts`: the `OperationId` union plus method and path for each of the 34 operations.
+  - `contracts/operations.ts`: the `OperationId` union plus method and path for each of the 34 operations (35 with `explorer.getTransaction`, spec 10 amendment).
   - **Proof:** `contracts.test.ts` passes. `pnpm typecheck` is clean. A type-level test (`expectTypeOf`) shows `Eth` fields are `string` and quantities are `number`.
 
 - [x] **T05 — `request()` and endpoint modules** · API-03, API-04, API-05

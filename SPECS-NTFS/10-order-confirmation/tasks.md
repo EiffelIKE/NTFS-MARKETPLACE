@@ -38,6 +38,12 @@ None. The page-vs-modal and mobile questions were decided on 2026-10-28 (require
   - `src/assets/favicon.ico` moved to `public/favicon.ico`; `index.html` links it (`<link rel="icon" href="/favicon.ico" sizes="any">`, replacing `href="data:,"`).
   - **Proof:** `dist/favicon.ico` after `pnpm build`; `curl -I /favicon.ico` on `pnpm preview` answers 200; the console-error fixture stays clean in the full E2E run. Vercel serves static files before the SPA rewrite.
 
+- [x] **T07 — Simulated in-app block explorer (amendment, 2026-10-28)** · RCPT-11, RCPT-17 – RCPT-21
+  - Contract `contracts/explorer.ts`, operation `explorer.getTransaction` (35th), `api/explorer.ts`, mock domain and handler (`mocks/domain/explorer.ts`, `mocks/handlers/explorer.ts`), in-app `explorerTxUrl` in the mock fixtures, `SCHEMA_VERSION` 2.
+  - Route `/explorer/$network/tx/$txHash` and `features/explorer/` (queries, `explorerView`, page, skeleton, not-found and error states).
+  - Receipt: `explorerTarget` in the view model, router `Link` for an internal address (same tab), adapted caption; E2E and spec docs updated (design §12).
+  - **Proof:** `explorer.contract.test.ts` (6), `explorer.test.ts` (3), `receipt.test.ts` (+1); `explorer.spec.ts` (14 tests, 24 runs; 4 skipped by viewport); `a11y.spec.ts` matrix with two explorer screens; `receipt.spec.ts` and `purchase.spec.ts` assert the in-app `href`; browser check at 1440 and 390.
+
 ## Run log (2026-10-28)
 
 - Gate: `pnpm typecheck`, `pnpm lint` (0 warnings), `pnpm format:check`, `pnpm test` (**663 unit tests** in 58 files, 8 new in `features/receipt`), `pnpm build` and the full `pnpm test:e2e` (**485 passed, 29 skipped** by design, in `desktop-chromium` and `mobile-chromium`; the 2 `smoke.spec.ts` failures of that run were fixed and `smoke`, `purchase` and `receipt` re-run: 62 passed, 2 skipped) all exit 0. The new `receipt.spec.ts` has 11 tests (20 runs, 2 skipped by viewport).
@@ -72,3 +78,23 @@ None. The page-vs-modal and mobile questions were decided on 2026-10-28 (require
 | RCPT-14 | T04 | `receipt.spec.ts` mobile layout |
 | RCPT-15 | T03, T04 | `receipt.spec.ts` focus on in-place settle, table headers, axe; `purchase.spec.ts` focus after checkout |
 | RCPT-16 | T03 | `receipt.spec.ts` close and "Continuar explorando" |
+
+## Run log: simulated explorer amendment (2026-10-28)
+
+- Gate: `pnpm typecheck`, `pnpm lint` (0 warnings), `pnpm format:check`, `pnpm test` (**682 unit tests** in 62 files; 10 of them new: 6 contract, 3 view-model and 1 `explorerTarget`) and `pnpm build` pass. The full `pnpm test:e2e` ran twice on the final code: **775 passed, 36 skipped, 1 failed** and then **774 passed, 36 skipped, 2 failed**; every failure is `favorites.spec.ts:176` "three rapid clicks end on, in the cache and on the server" (DET-21).
+- **That test is flaky and not caused by this change:** on a clean worktree of `HEAD` (no explorer code) it failed 3 of 15 runs in `mobile-chromium`; it fails under load in both projects. Left as it is (spec 06 / 11 territory).
+- The visual baselines (spec 12) are untouched: the screenshot specs pass with no baseline change.
+- Found while building:
+  - `contracts.test.ts` pins the operation table at 34 entries; it is 35 now.
+  - Persisted mock databases hold orders with the old external `explorerUrl`; `SCHEMA_VERSION` 2 makes the store reseed them (design §12, 6).
+  - In E2E, `receipt-row-fee` includes its label, so the explorer comparison reads its `dd`; the header names the signed-in user, so the "no private data" check reads `main` only.
+- Amended earlier specs: 02 design (operation table, settlement, networks, 35 operations) and tasks, 14 design (demo table row), README.
+
+| Requirement | Tasks | Proof |
+|---|---|---|
+| RCPT-11 (amended) | T07 | `receipt.spec.ts` and `purchase.spec.ts` in-app `href`, same tab; `receipt.test.ts` `explorerTarget` |
+| RCPT-17 | T07 | `explorer.contract.test.ts`; `explorer.spec.ts` receipt to explorer |
+| RCPT-18 | T07 | `explorer.contract.test.ts` no private data; `explorer.spec.ts` no private data |
+| RCPT-19 | T07 | `explorer.spec.ts` banner on the page and on the not-found state |
+| RCPT-20 | T07 | `explorer.spec.ts` unknown hash, other network, unknown network, 503 and retry |
+| RCPT-21 | T07 | `explorer.spec.ts` direct access, refresh, 390 / 768 / 1440; `a11y.spec.ts` matrix |

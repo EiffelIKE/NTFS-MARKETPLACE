@@ -263,7 +263,7 @@ describe('settlement', () => {
     expect(settled.version).toBe(2)
     expect(settled.transaction?.hash).toMatch(/^0x[0-9a-f]{64}$/)
     expect(settled.transaction?.explorerUrl).toBe(
-      `https://explorer.kurio.example/ethereum/tx/${settled.transaction?.hash ?? ''}`,
+      `/explorer/ethereum/tx/${settled.transaction?.hash ?? ''}`,
     )
     expect(settled.transaction?.explorerName).toBe('Etherscan')
     expect(settled.settledAt).not.toBeNull()

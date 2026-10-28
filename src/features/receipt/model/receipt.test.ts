@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { Order } from '@/contracts'
 
-import { isReceiptOrder, receiptView } from './receipt'
+import { explorerTarget, isReceiptOrder, receiptView } from './receipt'
 
 const IMAGE = {
   url: '/x.webp',
@@ -57,7 +57,7 @@ const order: Order = {
   note: null,
   transaction: {
     hash: `0x${'ab12cd34'.repeat(8)}`,
-    explorerUrl: 'https://explorer.kurio.example/polygon/tx/0xabc',
+    explorerUrl: '/explorer/polygon/tx/0xabc',
     explorerName: 'Polygonscan',
   },
   declineReason: null,
@@ -126,7 +126,23 @@ describe('receiptView (RCPT-08 – RCPT-11)', () => {
     )
     expect(view.explorer).toEqual({
       name: 'Polygonscan',
-      url: 'https://explorer.kurio.example/polygon/tx/0xabc',
+      target: { kind: 'internal', network: 'polygon', hash: '0xabc' },
     })
+  })
+
+  it('routes the in-app explorer path and leaves every other address external', () => {
+    expect(explorerTarget('/explorer/solana/tx/0xabc')).toEqual({
+      kind: 'internal',
+      network: 'solana',
+      hash: '0xabc',
+    })
+    for (const url of [
+      'https://explorer.kurio.example/ethereum/tx/0xabc',
+      '/explorer/bitcoin/tx/0xabc',
+      '/explorer/ethereum/tx/',
+      '/explorer/ethereum/tx/0xabc/extra',
+    ]) {
+      expect(explorerTarget(url)).toEqual({ kind: 'external', url })
+    }
   })
 })

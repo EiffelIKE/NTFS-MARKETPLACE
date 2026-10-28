@@ -12,7 +12,7 @@ export const PaymentNetwork = z.object({
   fee: Eth,
   walletFamily: WalletFamily,
   explorerName: z.string(),
-  /** Template ending in `/tx/`; append the transaction hash. */
+  /** Template ending in `/tx/`; append the transaction hash. An in-app path (spec 10 amendment). */
   explorerTxUrl: z.string(),
 })
 export type PaymentNetwork = z.infer<typeof PaymentNetwork>

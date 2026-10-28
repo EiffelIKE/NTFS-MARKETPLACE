@@ -1,4 +1,4 @@
-import { NETWORK_LABELS, WALLET_PROVIDER_LABELS, type Order } from '@/contracts'
+import { NETWORK_LABELS, NetworkId, WALLET_PROVIDER_LABELS, type Order } from '@/contracts'
 import { eth, formatEth } from '@/lib/money'
 
 import { formatOrderDate, shortHash } from './format'
@@ -19,6 +19,24 @@ export interface ReceiptTotalRow {
   value: string
 }
 
+/**
+ * Where the explorer action goes. The simulated explorer is a page of this app, so its link is
+ * routed (`internal`, with the params the router needs); any other address keeps being a plain
+ * external link.
+ */
+export type ExplorerTarget =
+  { kind: 'internal'; network: NetworkId; hash: string } | { kind: 'external'; url: string }
+
+const EXPLORER_PATH = /^\/explorer\/([a-z]+)\/tx\/([^/?#]+)$/
+
+export function explorerTarget(url: string): ExplorerTarget {
+  const match = EXPLORER_PATH.exec(url)
+  const network = NetworkId.safeParse(match?.[1])
+  return match?.[2] && network.success
+    ? { kind: 'internal', network: network.data, hash: match[2] }
+    : { kind: 'external', url }
+}
+
 export interface ReceiptView {
   hash: string
   shortHash: string
@@ -28,7 +46,7 @@ export interface ReceiptView {
   lines: ReceiptLineView[]
   totals: ReceiptTotalRow[]
   note: string
-  explorer: { name: string; url: string }
+  explorer: { name: string; target: ExplorerTarget }
 }
 
 /** An order that is not confirmed has no receipt: the page never builds one (RCPT-05). */
@@ -79,6 +97,9 @@ export function receiptView(
     })),
     totals,
     note: `Transação confirmada na ${NETWORK_LABELS[order.network]}. A propriedade foi transferida para sua carteira conectada e registrada na rede.`,
-    explorer: { name: order.transaction.explorerName, url: order.transaction.explorerUrl },
+    explorer: {
+      name: order.transaction.explorerName,
+      target: explorerTarget(order.transaction.explorerUrl),
+    },
   }
 }

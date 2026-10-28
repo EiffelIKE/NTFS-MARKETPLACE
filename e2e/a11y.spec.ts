@@ -25,6 +25,7 @@ import {
   reviewDialog,
 } from './support/checkout'
 import { expectNoHorizontalOverflow } from './support/layout'
+import { ANA_TX_PATH } from './support/explorer'
 import { loginAs, mock } from './support/mock'
 import { realtime, waitForConnection } from './support/realtime'
 import { expect, test } from './support/test'
@@ -80,6 +81,8 @@ const SCREENS: Screen[] = [
   { name: 'checkout', url: '/checkout', as: 'ana' },
   { name: 'receipt', url: '/orders/ord_000001', as: 'ana' },
   { name: 'receipt of another user', url: '/orders/ord_000001', as: 'bruno' },
+  { name: 'explorer, transaction', url: ANA_TX_PATH },
+  { name: 'explorer, unknown transaction (404)', url: `/explorer/ethereum/tx/0x${'0'.repeat(64)}` },
   { name: 'login', url: '/login' },
   { name: 'sign-up', url: '/signup' },
   { name: 'profile', url: '/profile', as: 'ana' },

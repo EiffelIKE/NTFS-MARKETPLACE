@@ -2,7 +2,7 @@
 
 > Status: Final (2026-10-28)
 
-Implements [`requirements.md`](requirements.md). Uses spec 02's `orders.get` and `Order`, and spec 09's `features/orders/` (query options, `useOrderStatus`, pending and declined panels). No new endpoint or field.
+Implements [`requirements.md`](requirements.md). Uses spec 02's `orders.get` and `Order`, and spec 09's `features/orders/` (query options, `useOrderStatus`, pending and declined panels). No new field on `Order`. The explorer amendment (§12, 2026-10-28) adds one public operation, `explorer.getTransaction`, and a route.
 
 ## 1. Dependencies
 
@@ -72,7 +72,7 @@ Card `max-w-[580px]` centered, top margin per screens.md (166 from the top of th
    - Subtotal cell: `lineTotal` in `accent` bold.
 4. **Totals** (right-aligned rows, `<dl>`): "Subtotal", "Desconto (<code>)" only when `discount` is non-zero, "Taxa de rede", "Total" in `accent`. Rule below.
 5. **Note** (`text-secondary`, centered): RCPT-10 copy with the network name.
-6. **Actions:** primary "Ver no <explorerName>" as `<a target="_blank" rel="noopener noreferrer">` with a visually hidden "(abre em nova aba)"; caption below "Link de demonstração: o explorador é simulado." (11, `text-secondary`); text link "Continuar explorando" → `/`.
+6. **Actions:** primary "Ver no <explorerName>" as a router `Link` to the in-app explorer (§12), same tab; caption below "Explorador simulado, dentro do KURIO." (11, `text-secondary`, the link's description); text link "Continuar explorando" → `/`. (Originally an `<a target="_blank">` to a reserved external domain and the caption "Link de demonstração: o explorador é simulado.")
 7. **Bottom bar:** 10 px `primary`.
 
 Focus (RCPT-15): the `h1` is focusable (`tabIndex=-1`, no outline). It takes focus when the receipt appears after checkout's navigation (router `state.fromCheckout`) or when it replaces the processing panel in place; on direct access focus stays at the document start.
@@ -109,13 +109,14 @@ Vitest runs in `node` (no DOM), so the component test planned in the draft is re
 
 | File · test | Proves |
 |---|---|
-| `purchase.spec.ts` · end of the full purchase (spec 09): receipt heading focused, band shows the short hash, total equals the quote total, items and fee, "Ver no Etherscan" href under `explorer.kurio.example` | RCPT-05, RCPT-08 – RCPT-11, RCPT-15 |
+| `purchase.spec.ts` · end of the full purchase (spec 09): receipt heading focused, band shows the short hash, total equals the quote total, items and fee, "Ver no Etherscan" href is the in-app `/explorer/ethereum/tx/<hash>` | RCPT-05, RCPT-08 – RCPT-11, RCPT-15 |
 | `purchase.spec.ts` · after confirmation `updateNft` changes a bought item's price; reload and the cart-to-receipt amounts are unchanged | RCPT-12 |
 | `receipt.spec.ts` · Ana opens `/orders/ord_000001` directly → receipt (discount row with code); `requests()` contains no `nfts.*` operation | RCPT-08 |
 | `receipt.spec.ts` · `updateNft` raises the price of an `ord_000001` line, reload → same amounts | RCPT-12 |
 | `receipt.spec.ts` · guest → login → back to the order; Bruno → "Você não tem acesso a este pedido." and no order data; `/orders/ord_999999` → "Página não encontrada" | RCPT-01 – RCPT-03 |
 | `receipt.spec.ts` · `orders.get` 503 → inline error and "Tentar novamente" | RCPT-04 |
 | `receipt.spec.ts` · Ana opens the pending `ord_000002` → processing panel; `settleOrder('ord_000002', 'confirmed')` → receipt in place without reload; a declined variant → declined panel with the message, "Tentar novamente" to `/checkout` and "Voltar ao carrinho" to `/cart` | RCPT-05 – RCPT-07 |
+| `explorer.spec.ts` (amendment, §12) | RCPT-11, RCPT-17 – RCPT-21 |
 | `receipt.spec.ts` · mobile project: no horizontal scroll at 390, explorer action in the fixed bottom area; axe zero serious or critical (both projects) | RCPT-13, RCPT-14, RCPT-15 |
 | `receipt.spec.ts` · × and "Continuar explorando" go to `/` | RCPT-16 |
 
@@ -130,7 +131,7 @@ Vitest runs in `node` (no DOM), so the component test planned in the draft is re
 - **Transaction id:** Figma shows a wallet-like value (`0xA91F…E82C`); the receipt shows the shortened simulated transaction hash.
 - **Date:** pt-BR `Intl` format instead of Figma's "29 Jul, 2026".
 - **Subtotal and discount rows** added to the totals; the edition label added under the token id.
-- **Explorer link** points to a reserved, non-resolving domain (`explorer.kurio.example`) and says so on the page.
+- **Explorer link** opens a simulated, KURIO-styled block explorer inside the app (§12) instead of a non-resolving external domain. Spec 14: it is an internal page, not an external link; the page says it is simulated.
 - **Mobile layout** is a proposal (§6), no frame.
 - **Pending and declined** orders at this route reuse spec 09's panels; confirmation is shown only for `confirmed` (brief §3.3).
 
@@ -151,3 +152,35 @@ Decisions taken while finalizing and implementing, where the draft was silent or
 **Visual check (2026-10-28, browser, against `figma_tokens/screenshots/desktop/Confirmação de Pedido.png`):** at 1440 the card (580 wide, centered), illustration, heading, band with rules, table, totals, note, primary button and bottom bar match. Differences: the shell header above the card (page, not modal), the added "Subtotal" / "Desconto" rows, the edition line, the 12 px band text, the simulated-explorer caption and "Continuar explorando". Mobile 390 has no frame; checked for no overflow and the fixed bottom action.
 
 **Amended by spec 11 (2026-10-28):** the receipt's mobile action bar publishes its height through `useBottomBarInset` and the page pads its bottom with it (it was a fixed 8.5 rem).
+
+## 12. Amendment: simulated in-app block explorer (2026-10-28)
+
+**Problem.** The receipt linked to `https://explorer.kurio.example/<network>/tx/<hash>`. The host is reserved and does not resolve, so a click opened a browser error page. Brief §3.3 says "transaction references and explorer links are simulated" and §3 asks that external links behave coherently. The owner decided that the link opens a simulated explorer inside the app.
+
+**Decisions.**
+
+1. **Route.** Public `/explorer/$network/tx/$txHash` (`src/routes/explorer/$network/tx/$txHash.tsx`), no `requiresAuth`: a chain is public. Shell `nav: market`, mobile `inner` "Transação". Loader: a `network` that is not a `NetworkId` is `notFound()` without asking the API; `queryClient.query({ ...explorerTxQuery, staleTime: 'static' })`; `NOT_FOUND` becomes `notFound()`; `pendingComponent` `ExplorerSkeleton`; `notFoundComponent` `TransactionNotFound`; `errorComponent` `ExplorerError` ("Tentar novamente"). The title comes from the component (`Transação 0x364f9aa1… · KURIO`).
+2. **Data flow.** No data in components (brief §6):
+   - contract `src/contracts/explorer.ts` (`ExplorerTransaction`: `hash, network, explorerName, status, blockNumber, timestamp, from, to, value, networkFee, items[]`);
+   - endpoint `src/api/explorer.ts` (`explorerApi.getTransaction(network, hash)`);
+   - operation `explorer.getTransaction`: `GET /explorer/:network/tx/:txHash`, auth `none` (spec 02's table: 35 operations now, was 34);
+   - MSW handler `src/mocks/handlers/explorer.ts` over `src/mocks/domain/explorer.ts`, which looks the hash up across **all** orders (public, whoever owns it) and projects it.
+3. **Only public data.** The projection carries the payer wallet address, the fictitious marketplace contract (`MARKETPLACE_CONTRACTS` in `fixtures/networks.ts`), value (`total - networkFee`, via `eth.sub`), the fee and the items. It never carries the collector, e-mail, nickname, ENS name, order id or coupon (`explorer.contract.test.ts` checks the body for each). Block number is `first block of the network + (first 32 bits of the hash mod 500 000)` and the timestamp is `settledAt`: deterministic and stable across reloads.
+4. **Status.** The contract allows `confirmed | pending | declined` as the owner asked, but the mock records a hash only when an order is confirmed, so a lookup can only ever return `confirmed`; a pending or declined order has nothing to find (tested: the hash a pending order *will* get is a 404 until it settles). The page already labels the other two.
+5. **Lookup rules.** Hash compared case-insensitively; the order's network must equal the path's network, otherwise 404 (`details: { resource: 'transaction' }`). An unknown network in the URL never reaches the API.
+6. **Mock base.** `PAYMENT_NETWORKS[*].explorerTxUrl` is now the in-app path `/explorer/<id>/tx/`, so `Order.transaction.explorerUrl` is `/explorer/ethereum/tx/<hash>` (the seeded order and settlement use the same template). **`SCHEMA_VERSION` is 2:** persisted databases from before hold orders with the old external URL, and the store already discards a state of another version and reseeds (sessions included: a returning browser signs in again once).
+7. **Receipt link.** `receiptView` turns `explorerUrl` into an `ExplorerTarget` (`explorerTarget`): a path matching `/explorer/<NetworkId>/tx/<hash>` is `internal` and rendered with the router `Link` and typed `params`; anything else stays an `<a target="_blank" rel="noopener noreferrer">` whose accessible name ends "(abre em nova aba)".
+8. **Same tab, not a new one.** The explorer is a page of this app. In a new tab it would load and boot the whole app (bundle, service worker, mock database) again for one page, and the user would lose the Back path to the receipt. Same-tab keeps the SPA navigation, the history entry and the focus flow; no hidden "(abre em nova aba)" text is needed because nothing opens elsewhere.
+9. **Caption.** "Link de demonstração: o explorador é simulado." became "Explorador simulado, dentro do KURIO." (still the link's `aria-describedby`); the page itself carries the full banner.
+10. **Identity.** A KURIO page with design-system tokens (`Alert` `info` for the banner, `surface-card` cards, `text-accent` for amounts, the table pattern of the receipt). The simulated names "Etherscan", "Polygonscan" and "Solscan" appear only as labels the order already carried (Figma: "Ver no Etherscan"); no logo, color or layout of a real service is imitated, and the banner says so.
+
+**Page content.** Banner "Explorador simulado — ambiente de demonstração" (role `status`), eyebrow "<explorer> · <network>", `h1` "Detalhes da transação", a `<dl>` (Hash da transação, Status with icon and text, Rede, Bloco, Data e hora, De (carteira pagadora), Para (contrato do marketplace), Valor, Taxa de rede), then "Itens transferidos" as a table (Token with token id / Edição / Qtd.; below `lg` the rows become cards, with the headers kept for readers) and "Voltar ao mercado". Long hashes and addresses wrap (`overflow-wrap: anywhere`).
+
+**Tests.**
+
+| File | Proves |
+|---|---|
+| `src/api/explorer.contract.test.ts` | public access (guest, other user, stale bearer), the projection and its schema, no private data, derived block number, case-insensitive hash, 404 for unknown hash / other network / unknown network, pending order has nothing and is found once settled, `explorerUrl` of a settled order |
+| `src/features/explorer/model/explorer.test.ts`, `receipt.test.ts` | view formatting; `explorerTarget` internal vs external |
+| `e2e/explorer.spec.ts` | receipt → link → same tab, same hash, fee and total; no private data; direct access with no session and refresh; another user; unknown hash, other network, unknown network (no API call), 503 then retry; 390 / 768 / 1440 with no overflow and no axe violation |
+| `e2e/a11y.spec.ts` (spec 11 matrix) | the explorer and its 404 added to the axe and overflow matrices |

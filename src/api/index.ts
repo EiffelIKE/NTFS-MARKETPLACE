@@ -1,6 +1,7 @@
 export { authApi } from './auth'
 export { cartApi } from './cart'
 export { catalogApi } from './catalog'
+export { explorerApi } from './explorer'
 export { favoritesApi } from './favorites'
 export { networksApi } from './networks'
 export { ordersApi } from './orders'

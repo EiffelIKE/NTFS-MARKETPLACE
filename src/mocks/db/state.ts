@@ -145,7 +145,7 @@ export interface HighlightsRecord {
   featured: { nftId: NftId; title: string; subtitle: string; artwork: ArtworkKey } | null
 }
 
-export const SCHEMA_VERSION = 1
+export const SCHEMA_VERSION = 2
 
 export interface MockState {
   schemaVersion: typeof SCHEMA_VERSION

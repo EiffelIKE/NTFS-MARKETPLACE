@@ -2,7 +2,7 @@
 
 > Status: Final (2026-10-28) — decisions in the Decisions section
 
-Show the receipt of a confirmed order at `/orders/$orderId`. The receipt is rendered only from the order snapshot returned by `orders.get`, so later catalog changes never alter it. It shows the result, simulated transaction id, date, total, wallet, purchased lines, network fee and an explorer link that is visibly simulated. Pending and declined orders reuse spec 09's panels; confirmation is never shown for an order the simulation has not confirmed.
+Show the receipt of a confirmed order at `/orders/$orderId`. The receipt is rendered only from the order snapshot returned by `orders.get`, so later catalog changes never alter it. It shows the result, simulated transaction id, date, total, wallet, purchased lines, network fee and an explorer link that opens a simulated block explorer inside the app (amendment, 2026-10-28). Pending and declined orders reuse spec 09's panels; confirmation is never shown for an order the simulation has not confirmed.
 
 Brief coverage: §3 (Order confirmation screen, mobile without frame), §3.3 (confirmation only for confirmed orders; receipt from the snapshot; simulated references), §4 (direct access, per-user isolation), §9 scenario 6 (with spec 09).
 
@@ -33,8 +33,18 @@ Brief coverage: §3 (Order confirmation screen, mobile without frame), §3.3 (co
 - **RCPT-08** — THE SYSTEM SHALL render the receipt from the `Order` response only: lines (image, name, token id, edition label, quantity, line total), subtotal, discount when non-zero, network fee and total, all formatted with spec 02's `formatEth`. It SHALL NOT request catalog data to render it.
 - **RCPT-09** — THE SYSTEM SHALL show the summary band with "ID da transação" (shortened hash, full hash available to assistive technology and as a tooltip), "Data" (`settledAt`, pt-BR date), "Total" and "Carteira" (provider label).
 - **RCPT-10** — THE SYSTEM SHALL show the note "Transação confirmada na <network name>. A propriedade foi transferida para sua carteira conectada e registrada na rede." using the order's network.
-- **RCPT-11** — THE SYSTEM SHALL render "Ver no <explorerName>" as a link to `transaction.explorerUrl` opening in a new tab, with text stating that the explorer is simulated.
+- **RCPT-11** — THE SYSTEM SHALL render "Ver no <explorerName>" as a link to `transaction.explorerUrl`, which is an in-app path (`/explorer/<network>/tx/<hash>`). It opens in the same tab through the router, with text stating that the explorer is simulated. An address outside the app keeps opening in a new tab, announced in the link's accessible name.
+
+_Amended 2026-10-28: it was an external link to a reserved domain that does not resolve, which opened a browser error page._
 - **RCPT-12** — WHEN catalog prices or availability change after the order was confirmed, THE SYSTEM SHALL show the same amounts on every later visit.
+
+### Simulated explorer (amendment, 2026-10-28)
+
+- **RCPT-17** — THE SYSTEM SHALL serve a public page at `/explorer/$network/tx/$txHash` (no session needed) that renders, from `explorer.getTransaction` only: hash, network and explorer name, status, block number, date and time, the payer address ("De"), a fictitious marketplace contract ("Para"), value and network fee as decimal-string ETH, and the transferred items (name, token id, edition, quantity).
+- **RCPT-18** — THE SYSTEM SHALL NOT show or return the collector's name, e-mail, profile data, wallet nickname, order id, coupon or any other private data on that page or in that response.
+- **RCPT-19** — THE SYSTEM SHALL show on the page, always, the banner "Explorador simulado — ambiente de demonstração".
+- **RCPT-20** — WHEN the hash is unknown, belongs to another network, or the network does not exist, THE SYSTEM SHALL render a not-found state with the URL unchanged; WHEN the request fails for another reason, an inline error with "Tentar novamente".
+- **RCPT-21** — THE SYSTEM SHALL keep the page usable by direct access and after a refresh, and without horizontal scroll at 390, 768 and 1440 px.
 
 ### Layout and accessibility
 
@@ -56,6 +66,6 @@ Taken on 2026-10-28; the reasons are in `design.md` §2 and §11.
 ## Out of scope
 
 - Order history list, downloads, sharing or printing the receipt.
-- A real block explorer; the link targets the reserved `explorer.kurio.example` domain.
+- A real block explorer; the explorer is a simulated page of this app (RCPT-17 – RCPT-21). It does not list addresses, blocks or other transactions.
 - Copy-to-clipboard for the transaction id (not drawn).
 - Creating or tracking orders (spec 09); this spec reuses its tracking hook and panels.

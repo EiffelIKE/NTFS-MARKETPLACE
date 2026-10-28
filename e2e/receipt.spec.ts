@@ -79,15 +79,11 @@ test.describe('the receipt of a confirmed order (RCPT-08 – RCPT-11, RCPT-13)',
       'Transação confirmada na Ethereum. A propriedade foi transferida para sua carteira conectada e registrada na rede.',
     )
 
-    // The explorer is simulated and says so (RCPT-11).
-    const explorer = page.getByRole('link', { name: /^Ver no Etherscan/ })
-    await expect(explorer).toHaveAttribute(
-      'href',
-      `https://explorer.kurio.example/ethereum/tx/${hash}`,
-    )
-    await expect(explorer).toHaveAttribute('target', '_blank')
-    await expect(explorer).toHaveAttribute('rel', /noopener/)
-    await expect(page.getByText('Link de demonstração: o explorador é simulado.')).toBeVisible()
+    // The explorer is simulated, lives in the app and says so (RCPT-11; `explorer.spec.ts` opens it).
+    const explorer = page.getByRole('link', { name: 'Ver no Etherscan' })
+    await expect(explorer).toHaveAttribute('href', `/explorer/ethereum/tx/${hash}`)
+    await expect(explorer).not.toHaveAttribute('target', '_blank')
+    await expect(page.getByText('Explorador simulado, dentro do KURIO.')).toBeVisible()
 
     // Direct access does not rely on the catalog (RCPT-08).
     const requests = await mock(page).requests()

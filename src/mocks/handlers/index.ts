@@ -7,6 +7,7 @@ import { realtimeHandler } from '../realtime/handler'
 import { authOps } from './auth'
 import { cartOps } from './cart'
 import { catalogOps } from './catalog'
+import { explorerOps } from './explorer'
 import { favoriteOps } from './favorites'
 import { networkOps } from './networks'
 import { orderOps } from './orders'
@@ -18,6 +19,7 @@ import { walletOps } from './wallets'
 const OPS: Record<OperationId, AnyOp> = {
   ...authOps,
   ...catalogOps,
+  ...explorerOps,
   ...favoriteOps,
   ...networkOps,
   ...cartOps,

@@ -187,6 +187,7 @@ Base `VITE_API_BASE_URL` (`/api`). "Owner" means another user's id-addressed res
 | `nfts.related` | `GET /nfts/:nftId/related` | — | — | 200 `{ items: NftSummary[] }` (≤ 5) | 404 |
 | `highlights.get` | `GET /highlights` | — | — | 200 `Highlights` | — |
 | `networks.list` | `GET /networks` | — | — | 200 `{ items: PaymentNetwork[] }` | — |
+| `explorer.getTransaction` | `GET /explorer/:network/tx/:txHash` | — | — | 200 `ExplorerTransaction` (public, on-chain data only) | 404 |
 | `favorites.list` | `GET /favorites` | bearer | — | 200 `{ nftIds: NftId[] }` | 401 |
 | `favorites.add` | `PUT /favorites/:nftId` | bearer | — | 204 | 401, 404 |
 | `favorites.remove` | `DELETE /favorites/:nftId` | bearer | — | 204 | 401 |
@@ -517,7 +518,7 @@ Publishers are any write that changes an NFT's price or an edition's availabilit
 - **Which orders:** only pending orders with `settleAt ≤ now`, and only when `config.payment.outcome` is not `manual`.
 - **Confirmed:**
   - `transaction.hash = '0x' + sha256(id + createdAt)` (64 hex);
-  - `explorerUrl` = the network's `explorerTxUrl` + hash, under the reserved `explorer.kurio.example` domain, which is simulated and never resolves;
+  - `explorerUrl` = the network's `explorerTxUrl` + hash, an in-app path (`/explorer/<network>/tx/<hash>`) served by the simulated explorer (spec 10 amendment; it used to be the non-resolving `explorer.kurio.example`);
   - for each order line, decrement that quantity in the user's current cart line with the same NFT and edition, removing the line at ≤ 0, and bump `cart.version`.
 - **Declined:**
   - `declineReason = { code: 'PAYMENT_DECLINED', message: 'A carteira recusou o pagamento.' }`;
@@ -670,7 +671,7 @@ Any other code is invalid.
 | Polygon | 0.002 | EVM |
 | Solana | 0.001 | Solana |
 
-Explorer names are Etherscan, Polygonscan and Solscan (Figma: "Ver no Etherscan"); URLs follow `https://explorer.kurio.example/<id>/tx/`, a reserved domain, so the link is visibly simulated.
+Explorer names are Etherscan, Polygonscan and Solscan (Figma: "Ver no Etherscan"); `explorerTxUrl` is the in-app path `/explorer/<id>/tx/` of the simulated explorer (spec 10 amendment); `explorer.getTransaction` serves it from the mock database, projecting only public data.
 
 **Highlights:**
 - 3 hero slides. Slide 1 is the anchor (artwork 03), with the Figma copy:

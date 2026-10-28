@@ -20,6 +20,7 @@ import { Route as DevRealtimeRouteImport } from './routes/dev/realtime'
 import { Route as DevUiKitRouteImport } from './routes/dev/ui-kit'
 import { Route as NftsNftIdRouteImport } from './routes/nfts/$nftId'
 import { Route as OrdersOrderIdRouteImport } from './routes/orders/$orderId'
+import { Route as ExplorerNetworkTxTxHashRouteImport } from './routes/explorer/$network/tx/$txHash'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -76,6 +77,11 @@ const OrdersOrderIdRoute = OrdersOrderIdRouteImport.update({
   path: '/orders/$orderId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ExplorerNetworkTxTxHashRoute = ExplorerNetworkTxTxHashRouteImport.update({
+  id: '/explorer/$network/tx/$txHash',
+  path: '/explorer/$network/tx/$txHash',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -89,6 +95,7 @@ export interface FileRoutesByFullPath {
   '/dev/ui-kit': typeof DevUiKitRoute
   '/nfts/$nftId': typeof NftsNftIdRoute
   '/orders/$orderId': typeof OrdersOrderIdRoute
+  '/explorer/$network/tx/$txHash': typeof ExplorerNetworkTxTxHashRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -102,6 +109,7 @@ export interface FileRoutesByTo {
   '/dev/ui-kit': typeof DevUiKitRoute
   '/nfts/$nftId': typeof NftsNftIdRoute
   '/orders/$orderId': typeof OrdersOrderIdRoute
+  '/explorer/$network/tx/$txHash': typeof ExplorerNetworkTxTxHashRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -116,6 +124,7 @@ export interface FileRoutesById {
   '/dev/ui-kit': typeof DevUiKitRoute
   '/nfts/$nftId': typeof NftsNftIdRoute
   '/orders/$orderId': typeof OrdersOrderIdRoute
+  '/explorer/$network/tx/$txHash': typeof ExplorerNetworkTxTxHashRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -131,6 +140,7 @@ export interface FileRouteTypes {
     | '/dev/ui-kit'
     | '/nfts/$nftId'
     | '/orders/$orderId'
+    | '/explorer/$network/tx/$txHash'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -144,6 +154,7 @@ export interface FileRouteTypes {
     | '/dev/ui-kit'
     | '/nfts/$nftId'
     | '/orders/$orderId'
+    | '/explorer/$network/tx/$txHash'
   id:
     | '__root__'
     | '/'
@@ -157,6 +168,7 @@ export interface FileRouteTypes {
     | '/dev/ui-kit'
     | '/nfts/$nftId'
     | '/orders/$orderId'
+    | '/explorer/$network/tx/$txHash'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -171,6 +183,7 @@ export interface RootRouteChildren {
   DevUiKitRoute: typeof DevUiKitRoute
   NftsNftIdRoute: typeof NftsNftIdRoute
   OrdersOrderIdRoute: typeof OrdersOrderIdRoute
+  ExplorerNetworkTxTxHashRoute: typeof ExplorerNetworkTxTxHashRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -252,6 +265,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrdersOrderIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/explorer/$network/tx/$txHash': {
+      id: '/explorer/$network/tx/$txHash'
+      path: '/explorer/$network/tx/$txHash'
+      fullPath: '/explorer/$network/tx/$txHash'
+      preLoaderRoute: typeof ExplorerNetworkTxTxHashRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -267,6 +287,7 @@ const rootRouteChildren: RootRouteChildren = {
   DevUiKitRoute: DevUiKitRoute,
   NftsNftIdRoute: NftsNftIdRoute,
   OrdersOrderIdRoute: OrdersOrderIdRoute,
+  ExplorerNetworkTxTxHashRoute: ExplorerNetworkTxTxHashRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -136,7 +136,7 @@ describe('operations table', () => {
   it('lists unique method and path pairs', () => {
     const keys = Object.values(OPERATIONS).map((op) => `${op.method} ${op.path}`)
     expect(new Set(keys).size).toBe(keys.length)
-    expect(keys).toHaveLength(34)
+    expect(keys).toHaveLength(35)
   })
 
   it('keeps ids and paths well formed', () => {

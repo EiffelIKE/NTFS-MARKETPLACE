@@ -63,6 +63,49 @@ function SummaryBand({ view }: { view: ReceiptView }) {
 }
 
 /**
+ * "Ver no <explorer>" (RCPT-11). The simulated explorer is a page of this app, so it opens in the
+ * same tab through the router: a new tab would reload and boot the whole app for a page that is
+ * part of it, and the Back button brings the receipt back. An address outside the app (a stored
+ * order from before the explorer existed) still leaves in a new tab and says so.
+ */
+function ExplorerLink({
+  explorer,
+  describedBy,
+  ...props
+}: { explorer: ReceiptView['explorer']; describedBy: string } & Omit<
+  React.ComponentProps<'a'>,
+  'href' | 'target' | 'rel'
+>) {
+  const { target, name } = explorer
+  if (target.kind === 'internal') {
+    return (
+      <Link
+        {...props}
+        data-testid="explorer-link"
+        to="/explorer/$network/tx/$txHash"
+        params={{ network: target.network, txHash: target.hash }}
+        aria-describedby={describedBy}
+      >
+        Ver no {name}
+      </Link>
+    )
+  }
+  return (
+    <a
+      {...props}
+      data-testid="explorer-link"
+      href={target.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-describedby={describedBy}
+    >
+      Ver no {name}
+      <span className="sr-only"> (abre em nova aba)</span>
+    </a>
+  )
+}
+
+/**
  * The receipt (RCPT-08 – RCPT-16), built from `receiptView` alone. From `lg` it is the Figma modal
  * as a centered card (close button, accent bar); below it is a full-width page with the explorer
  * action in a fixed bottom bar, in the style of checkout. `focusOnMount` is for the moment the
@@ -127,20 +170,11 @@ export function ReceiptCard({ view, focusOnMount }: { view: ReceiptView; focusOn
             asChild
             className="h-12 px-8 max-lg:mx-auto max-lg:h-15 max-lg:w-full max-lg:max-w-150 max-lg:rounded-full max-lg:bg-primary-soft"
           >
-            <a
-              data-testid="explorer-link"
-              href={view.explorer.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-describedby={captionId}
-            >
-              Ver no {view.explorer.name}
-              <span className="sr-only"> (abre em nova aba)</span>
-            </a>
+            <ExplorerLink explorer={view.explorer} describedBy={captionId} />
           </Button>
         </div>
         <p id={captionId} className="text-center text-caption-sm text-text-secondary">
-          Link de demonstração: o explorador é simulado.
+          Explorador simulado, dentro do KURIO.
         </p>
         <Link to="/" className="text-body-lg text-text-accent underline-offset-4 hover:underline">
           Continuar explorando

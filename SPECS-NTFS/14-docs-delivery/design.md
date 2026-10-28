@@ -45,6 +45,7 @@ Generated sections sit between `<!-- generated:operations -->` … `<!-- /genera
    | 5xx with retry recovery | `?scenario=errors-then-recover` |
    | Server down | `?scenario=server-down` |
    | Session expiry with resume | `?scenario=session-short`, or `__mock.expireSessions()` mid-checkout |
+   | Simulated block explorer | open Ana's receipt `/orders/ord_000001` → "Ver no Etherscan" (public page `/explorer/<network>/tx/<hash>`, in-app; no external link is involved) |
    | Unauthorized / forbidden | open `/profile` signed out; Bruno opens `/orders/ord_000001` |
    | Sign-up conflict, validation | sign up with `ana@kurio.example`; submit empty forms |
    | Invalid / expired coupon | `NAOEXISTE`, `VERAO25` |

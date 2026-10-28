@@ -102,11 +102,9 @@ test.describe('the purchase (CHK-01, CHK-06, CHK-14, CHK-18, CHK-29, CHK-31)', (
       `${hash.slice(0, 8)}…${hash.slice(-4)}`,
     )
     const explorer = page.getByRole('link', { name: /^Ver no Etherscan/ })
-    await expect(explorer).toHaveAttribute(
-      'href',
-      `https://explorer.kurio.example/ethereum/tx/${hash}`,
-    )
-    await expect(page.getByText('o explorador é simulado')).toBeVisible()
+    // The simulated explorer is a page of the app (spec 10 amendment): an in-app address.
+    await expect(explorer).toHaveAttribute('href', `/explorer/ethereum/tx/${hash}`)
+    await expect(page.getByText('Explorador simulado, dentro do KURIO.')).toBeVisible()
     await expectNoHorizontalOverflow(page)
 
     const state = await mock(page).snapshot()

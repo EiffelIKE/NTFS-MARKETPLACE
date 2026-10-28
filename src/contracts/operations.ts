@@ -28,6 +28,7 @@ export const OPERATIONS = {
   'nfts.related': { method: 'GET', path: '/nfts/:nftId/related', auth: 'none' },
   'highlights.get': { method: 'GET', path: '/highlights', auth: 'none' },
   'networks.list': { method: 'GET', path: '/networks', auth: 'none' },
+  'explorer.getTransaction': { method: 'GET', path: '/explorer/:network/tx/:txHash', auth: 'none' },
   'favorites.list': { method: 'GET', path: '/favorites', auth: 'required' },
   'favorites.add': { method: 'PUT', path: '/favorites/:nftId', auth: 'required' },
   'favorites.remove': { method: 'DELETE', path: '/favorites/:nftId', auth: 'required' },
