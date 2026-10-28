@@ -11,6 +11,11 @@ const positiveInt = z.coerce
 export const envSchema = z.object({
   VITE_API_BASE_URL: z.string().min(1, { error: 'expected non-empty string' }).default('/api'),
   VITE_API_TIMEOUT_MS: positiveInt.default(10_000),
+  // Spelled out on purpose: a typo such as `1` fails fast instead of silently disabling mocks.
+  VITE_ENABLE_MOCKS: z
+    .enum(['true', 'false'], { error: 'expected "true" or "false"' })
+    .default('true')
+    .transform((value) => value === 'true'),
 })
 
 export type Env = z.infer<typeof envSchema>

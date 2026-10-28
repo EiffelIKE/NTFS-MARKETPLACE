@@ -6,12 +6,33 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 
 import { App } from '@/app/app'
+import { BootError } from '@/app/boot-error'
 
 const container = document.getElementById('root')
 if (!container) throw new Error('Missing #root element')
 
-createRoot(container).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
+// `vite.config.ts` writes the parsed flag back as a literal, so with `VITE_ENABLE_MOCKS=false`
+// this branch folds away and no mocks/ chunk is emitted (spec 02 §3).
+async function prepare() {
+  if (import.meta.env.VITE_ENABLE_MOCKS === 'true') {
+    const { startMocks } = await import('@/mocks/browser')
+    await startMocks()
+  }
+}
+
+function renderApp(root: HTMLElement) {
+  createRoot(root).render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  )
+}
+
+prepare().then(
+  () => {
+    renderApp(container)
+  },
+  (error: unknown) => {
+    createRoot(container).render(<BootError error={error} />)
+  },
 )

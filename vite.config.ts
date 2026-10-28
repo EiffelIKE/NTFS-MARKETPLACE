@@ -11,7 +11,7 @@ import { parseEnv } from './src/lib/env-schema.ts'
 
 export default defineConfig(({ mode }) => {
   // Fail the build (and dev server) early on an invalid environment.
-  parseEnv(loadEnv(mode, process.cwd(), 'VITE_'))
+  const env = parseEnv(loadEnv(mode, process.cwd(), 'VITE_'))
 
   return {
     plugins: [
@@ -32,6 +32,11 @@ export default defineConfig(({ mode }) => {
         svgrOptions: { icon: true, svgProps: { 'aria-hidden': 'true', focusable: 'false' } },
       }),
     ],
+    // Write the parsed flag back so its default also applies here: `main.tsx` then compares a
+    // literal, and with `VITE_ENABLE_MOCKS=false` Rollup drops the whole mocks/ chunk (spec 02 §3).
+    define: {
+      'import.meta.env.VITE_ENABLE_MOCKS': JSON.stringify(String(env.VITE_ENABLE_MOCKS)),
+    },
     resolve: {
       alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
     },
@@ -39,6 +44,8 @@ export default defineConfig(({ mode }) => {
     preview: { port: 4173, strictPort: true },
     test: {
       environment: 'node',
+      // Contract tests call the real Axios client against `msw/node`, which needs an absolute URL.
+      env: { VITE_API_BASE_URL: 'http://api.test/api' },
       include: ['src/**/*.test.ts'],
       // Vitest blanks CSS by default; `?raw` imports (token tests) need the real file contents.
       css: { include: [/\.css\?raw$/] },

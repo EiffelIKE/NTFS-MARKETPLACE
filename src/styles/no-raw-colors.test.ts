@@ -8,7 +8,9 @@ const sources = import.meta.glob<string>(['/src/**/*.{ts,tsx,css}', '!/src/**/*.
   eager: true,
 })
 
-const ALLOWED = new Set(['/src/styles/theme.css'])
+// The mock catalog is prose: NFT names and descriptions such as `Golden Beat #207` look like hex
+// colors (spec 02 amendment).
+const ALLOWED = new Set(['/src/styles/theme.css', '/src/mocks/fixtures/catalog.ts'])
 
 const patterns: [string, RegExp][] = [
   ['hex color', /#[0-9a-f]{3,8}\b/gi],

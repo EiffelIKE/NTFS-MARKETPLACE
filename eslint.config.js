@@ -19,10 +19,17 @@ const lucideRestriction = {
   message: 'Use icons from @/components/icons (AGENTS.md).',
 }
 
+// Test files and the shared helpers the contract tests import.
+const testFiles = ['src/**/*.test.ts', 'src/**/*-kit.ts']
+
+const mocksMessage = 'Mock code is only reachable from the bootstrap (API-35).'
+const mocksClientMessage = "Mocks implement the server; they don't use the client."
+
 export default defineConfig(
   globalIgnores([
     'dist',
     'src/routeTree.gen.ts',
+    'public/mockServiceWorker.js',
     'playwright-report',
     'test-results',
     'reports',
@@ -37,7 +44,7 @@ export default defineConfig(
     },
   },
   {
-    files: ['**/*.js'],
+    files: ['**/*.{js,mjs}'],
     extends: [tseslint.configs.disableTypeChecked],
     languageOptions: { globals: globals.node },
   },
@@ -58,7 +65,22 @@ export default defineConfig(
   pluginQuery.configs['flat/recommended'],
   pluginRouter.configs['flat/recommended'],
   {
+    // Mock code is reachable only from the bootstrap's dynamic import (spec 02 §12, API-35).
     files: ['src/**/*.{ts,tsx}'],
+    ignores: ['src/mocks/**', 'src/main.tsx', ...testFiles],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [axiosRestriction, lucideRestriction],
+          patterns: [{ group: ['@/mocks', '@/mocks/*', '**/mocks/**'], message: mocksMessage }],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/main.tsx', ...testFiles],
+    ignores: ['src/mocks/**', 'src/contracts/**'],
     rules: {
       'no-restricted-imports': ['error', { paths: [axiosRestriction, lucideRestriction] }],
     },
@@ -66,7 +88,60 @@ export default defineConfig(
   {
     files: ['src/lib/http/**'],
     rules: {
-      'no-restricted-imports': ['error', { paths: [lucideRestriction] }],
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [lucideRestriction],
+          patterns: [{ group: ['@/mocks', '@/mocks/*', '**/mocks/**'], message: mocksMessage }],
+        },
+      ],
+    },
+  },
+  {
+    // Contracts depend only on zod and the money module.
+    files: ['src/contracts/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            axiosRestriction,
+            lucideRestriction,
+            { name: 'msw', message: 'Contracts depend only on zod and money.' },
+            { name: 'react', message: 'Contracts depend only on zod and money.' },
+          ],
+          patterns: [
+            {
+              // Only `@/contracts/*` and `@/lib/money` may be imported through the alias.
+              regex: '^@/(?!contracts/|lib/money$)',
+              message: 'Contracts depend only on zod and money.',
+            },
+            { group: ['../*'], message: 'Contracts depend only on zod and money.' },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // Mocks implement the server; they never use the client.
+    files: ['src/mocks/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            axiosRestriction,
+            lucideRestriction,
+            { name: '@/api', message: mocksClientMessage },
+          ],
+          patterns: [
+            {
+              group: ['@/api/*', '@/lib/http/*', '@/features/*', '@/routes/*'],
+              message: mocksClientMessage,
+            },
+          ],
+        },
+      ],
     },
   },
   {
@@ -80,6 +155,11 @@ export default defineConfig(
         },
       ],
     },
+  },
+  {
+    // Contract tests probe the raw HTTP surface (unmatched routes, headers) next to Axios.
+    files: testFiles,
+    rules: { 'no-restricted-globals': 'off' },
   },
   prettier,
 )

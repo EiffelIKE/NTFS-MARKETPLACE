@@ -204,7 +204,7 @@ test.describe('fallback font metrics (DS-10)', () => {
     }
 
     const loaded = await sampleHeight()
-    await page.route('**/*.woff2', (route) => route.abort())
+    await page.context().route('**/*.woff2', (route) => route.abort())
     await page.reload()
     const fallback = await sampleHeight()
     expect(

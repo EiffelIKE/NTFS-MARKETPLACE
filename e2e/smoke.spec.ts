@@ -69,13 +69,13 @@ test.describe('a route chunk that fails to load', () => {
   // attempt surfaces the error view.
   async function openBrokenCart(page: Page) {
     await page.goto('/')
-    await page.route('**/assets/cart-*.js', (route) => route.abort())
+    await page.context().route('**/assets/cart-*.js', (route) => route.abort())
     await page
       .getByRole('navigation', { name: 'Telas' })
       .getByRole('link', { name: 'Carrinho', exact: true })
       .click()
     await expect(heading(page, 'Algo deu errado')).toBeVisible()
-    await page.unroute('**/assets/cart-*.js')
+    await page.context().unroute('**/assets/cart-*.js')
   }
 
   test('recovers with "Tentar novamente"', async ({ page }) => {

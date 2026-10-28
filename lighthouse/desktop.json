@@ -3,7 +3,7 @@
     "collect": {
       "startServerCommand": "pnpm preview --port 4173 --strictPort",
       "startServerReadyPattern": "Local",
-      "url": ["http://localhost:4173/", "http://localhost:4173/nfts/1"],
+      "url": ["http://localhost:4173/", "http://localhost:4173/nfts/emerald-ape-042"],
       "numberOfRuns": 3,
       "settings": {
         "preset": "desktop"

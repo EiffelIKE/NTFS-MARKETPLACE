@@ -901,6 +901,51 @@ Pending changes collected when specs 03–14 were drafted. Apply them in the own
 | 03 | `MockConfig.realtime = { available, deliveryDelayMs }`; the `offline` scenario sets `available: false`; panel checkbox "Tempo real indisponível" | spec 03 tasks |
 | 03 | `window.__mock.realtime` (connections, drop/restore, redeliver, inject, log); `contracts/events.ts`; realtime handler in `createHandlers` and `startMocks` | spec 03 tasks |
 | 03 | Lint boundaries for `socket.io-client` (app only) and `@mswjs/socket.io-binding` (mocks only) | spec 03 tasks |
-| 04 | `loginAs` also writes the app session (`kurio.session`) to `localStorage` | spec 04 tasks |
-| 08 | `contracts/wallets.ts` exports `addressMatchesNetwork(address, network)` and refines `WalletFields` with "Endereço inválido para a rede selecionada."; the wallet handler parses with the same schema | spec 08 tasks |
+| 04 | `loginAs` also writes the app session (`kurio.session`) to `localStorage` | spec 04 tasks (spec 02's `e2e/support/mock.ts` `loginAs` returns the token only) |
+| 08 | `contracts/wallets.ts` exports `addressMatchesNetwork(address, network)` and refines `WalletFields` with "Endereço inválido para a rede selecionada."; the wallet handler parses with the same schema | **applied early in spec 02** (§16); spec 08 T-task only has to use it |
 | 13 | Optional: render the shell before the worker is ready, if the MSW start cost misses the LCP target (changes §3 bootstrap order) | spec 13 analysis |
+
+## 16. Implementation decisions (2026-10-28)
+
+Decisions taken while implementing, where the design was silent or had to give way to what the code showed.
+
+**Amendments to earlier specs (applied here, in these documents):**
+
+| Spec | Change |
+|---|---|
+| 00 | `lib/http/client.ts` also has a request interceptor that clears the `Content-Type` of `FormData` bodies (`headers.setContentType(false)`), because the fetch adapter in Node otherwise sends urlencoded and the multipart upload answered 422. |
+| 00 | `tsconfig.app.json` adds `"node"` to `types` (`fixtures.test.ts` reads WebP headers with `node:fs`); `tsconfig.node.json` adds `paths` for `@/*` so `e2e/` can import contracts. |
+| 00, 01 | E2E: `smoke.spec.ts` ("a route chunk that fails to load") and `design-system.spec.ts` (fallback font) use `page.context().route()`, because Playwright's `page.route()` does not see requests that go through a service worker. Both suites pass again. |
+| 01 | `styles/no-raw-colors.test.ts` skips `src/mocks/fixtures/catalog.ts`: NFT names such as `Golden Beat #207` match the hex pattern. |
+| 08 | `addressMatchesNetwork`, `addressFamily`, `networkFamily` and the `superRefine` on `WalletFields` were applied in `contracts/wallets.ts` now (§15). |
+
+**Contracts and errors**
+- `AuthMode` has a fifth value, `'lenient'`, for `auth.logout`: it accepts a missing or expired token and still answers 204.
+- `INSUFFICIENT_AVAILABILITY.details.lines[].available` is the line limit `min(available, maxPerOrder)`, which is what the user can actually take.
+- A `details` object that does not match its code's schema turns the whole error into code `UNKNOWN` (the client does not narrow on a broken contract). A bad envelope also gives `UNKNOWN`.
+- Client `ApiError` messages are pt-BR per kind (`network`, `timeout`, `cancelled`, `contract`, `unknown`) and one generic pt-BR text for HTTP errors without a valid envelope.
+- `z.config(z.locales.ptBR())` is set in the mock pipeline so server-side validation messages are pt-BR; client forms keep their own messages.
+- Prices are normalized strings (`'12.3'` becomes `'12.30'`) in `toRecord`, `updateNft` and the cart status compare (`eth.cmp`), so string equality never decides a price change.
+
+**Mock behavior**
+- Multi-word search: every word must match somewhere in name, collection, creator or attributes.
+- The `sell-out` checkout trigger zeroes the first cart line's own edition (the first version only zeroed a limited edition, which left open editions untouched).
+- A guest cart id the server does not know is treated as no cart. On merge the user's cart keeps its own coupon and otherwise inherits the guest cart's.
+- A `timeout` failure rule is evaluated before latency, so it never waits first.
+- Avatar checks run in the order MIME (415), magic bytes (415), size (413).
+- The `empty-catalog` seed has no NFTs, favorites, cart lines or highlights, but still contains Ana's seeded order: orders are self-contained snapshots, so they need no catalog.
+- `createHandlers(runtime)` and `createMockServer()` returning `{ server, runtime, control }` are the public factories; there is no module-level singleton.
+
+**Panel**
+- Files are `mount.tsx` and `mock-panel.tsx` (they contain JSX), not `.ts`.
+- Payment has two buttons for pending orders, "Confirmar pedidos pendentes" and "Recusar pedidos pendentes", instead of one "Liquidar".
+- The README mention in the panel footer is plain text (no link: the panel has no README route).
+- The launcher flag is a `sessionStorage` key, `kurio.mock.panel`.
+
+**Test and tooling**
+- `useMockApi` was renamed `serveMockApi` (the `use` prefix tripped `react-hooks/rules-of-hooks`). Test helpers `*-kit.ts` and `*.test.ts` share one ESLint override (mocks allowed, `fetch` allowed, to probe raw HTTP).
+- The Abort case uses `queryClient.query()`: `fetchQuery` is deprecated in TanStack Query 5.104.
+- TanStack's `cancelQueries()` rejects with its own `CancelledError`, not an `ApiError`. The test asserts the rejection plus the `aborted` log entry, and checks `kind: 'cancelled'` with a direct `AbortController`.
+- Vitest fake timers use `shouldAdvanceTime: true`: MSW's interceptors schedule their own 0 ms timers and would hang otherwise.
+- **Browser limit:** a page-side abort never reaches the service worker, so in the browser the request log shows the final status (`200`) instead of `aborted`. Cancellation in the UI must be proved from the page side. Node tests do see `aborted`.
+- Reset (`?reset=1`, `useScenario`) clears sessions, so E2E tests log in again afterwards.
