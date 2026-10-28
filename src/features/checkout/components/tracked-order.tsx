@@ -14,6 +14,7 @@ import { orderKeys } from '@/features/orders/api/order-queries'
 import { useOrderStatus } from '@/features/orders/api/use-order-status'
 import { OrderDeclinedPanel } from '@/features/orders/components/order-declined-panel'
 import { OrderPendingPanel } from '@/features/orders/components/order-pending-panel'
+import { CHECKOUT_ARRIVAL } from '@/features/receipt/model/arrival'
 import { isApiError } from '@/lib/http/errors'
 
 import { attemptStore } from '../model/attempt-store'
@@ -53,7 +54,12 @@ export function TrackedOrder({ orderId, fresh, onRetry, onGone, onLeave }: Track
       if (userId) attemptStore.clear(userId)
       void queryClient.invalidateQueries({ queryKey: cartKeys.detail(owner) })
       void queryClient.invalidateQueries({ queryKey: orderKeys.all, exact: false })
-      void navigate({ to: '/orders/$orderId', params: { orderId }, replace: true })
+      void navigate({
+        to: '/orders/$orderId',
+        params: { orderId },
+        state: CHECKOUT_ARRIVAL,
+        replace: true,
+      })
     } else if (status === 'declined') {
       // Released stock changes availability, so the cart looks again.
       void queryClient.invalidateQueries({ queryKey: cartKeys.detail(owner) })

@@ -1,6 +1,6 @@
 # 10 — Order confirmation · Requirements
 
-> Status: Draft — see Open questions
+> Status: Final (2026-10-28) — decisions in the Decisions section
 
 Show the receipt of a confirmed order at `/orders/$orderId`. The receipt is rendered only from the order snapshot returned by `orders.get`, so later catalog changes never alter it. It shows the result, simulated transaction id, date, total, wallet, purchased lines, network fee and an explorer link that is visibly simulated. Pending and declined orders reuse spec 09's panels; confirmation is never shown for an order the simulation has not confirmed.
 
@@ -26,7 +26,7 @@ Brief coverage: §3 (Order confirmation screen, mobile without frame), §3.3 (co
 
 - **RCPT-05** — THE SYSTEM SHALL render the receipt only WHEN the order's `status` is `confirmed`.
 - **RCPT-06** — WHEN the order is `pending`, THE SYSTEM SHALL render spec 09's processing panel and track the order (events plus polling); WHEN it becomes `confirmed`, THE SYSTEM SHALL replace the panel by the receipt in place.
-- **RCPT-07** — WHEN the order is `declined`, THE SYSTEM SHALL render spec 09's declined panel with `declineReason.message` and links "Voltar ao carrinho" and "Ir para o pagamento".
+- **RCPT-07** — WHEN the order is `declined`, THE SYSTEM SHALL render spec 09's declined panel with `declineReason.message`, "Tentar novamente" (back to the payment screen) and "Voltar ao carrinho".
 
 ### Receipt content
 
@@ -38,18 +38,20 @@ Brief coverage: §3 (Order confirmation screen, mobile without frame), §3.3 (co
 
 ### Layout and accessibility
 
-- **RCPT-13** — THE SYSTEM SHALL render the desktop composition of the Figma "Confirmação de Pedido" frame (centered card ~580 wide, thank-you illustration, primary rules and bottom bar) from `lg`.
-- **RCPT-14** — Below `lg`, THE SYSTEM SHALL render a single-column composition of the same content (proposal in `design.md` §6), usable at 390 px without horizontal scroll.
+- **RCPT-13** — THE SYSTEM SHALL render, from `lg`, the Figma "Confirmação de Pedido" modal as the content of the routed page: a centered card ~580 wide with the thank-you illustration, primary rules, close button and bottom bar, inside the normal app shell (no `Dialog`, no scrim).
+- **RCPT-14** — Below `lg` (390 and 768), THE SYSTEM SHALL render a full-width single-column page of the same content (`design.md` §6), usable at 390 px without horizontal scroll, with the explorer action in a fixed bottom area.
 - **RCPT-15** — THE SYSTEM SHALL give the page one `h1` (the Figma heading "Seus NFTs agora estão na sua carteira"), move focus to it when arriving from checkout, and expose the lines as a table with column headers.
 - **RCPT-16** — THE SYSTEM SHALL offer a close action ("Fechar", the Figma ×) that navigates to the catalog, and a "Continuar explorando" link.
 
-## Open questions
+## Decisions
 
-1. **Route or modal.** Figma draws the confirmation as a modal over an empty page. *Default:* a route `/orders/$orderId` whose page renders the modal-styled card centered, inside the normal shell, not a Radix `Dialog` (reasons in `design.md` §2).
-2. **Mobile layout.** No frame. *Default:* the proposal in `design.md` §6. This is why the spec is a draft; confirm when spec 09 is done.
-3. **Date format.** Figma writes "29 Jul, 2026". *Default:* `Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })` → "29 de jul. de 2026".
-4. **Discount and subtotal rows.** The Figma receipt shows only fee and total. *Default:* add "Subtotal" and, when non-zero, "Desconto (<code>)" above the fee, so the total is explainable.
-5. **Forbidden vs not found.** Spec 02 returns 403 for another user's order. *Default:* a distinct "sem acesso" message (RCPT-03) that reveals nothing about the order.
+Taken on 2026-10-28; the reasons are in `design.md` §2 and §11.
+
+1. **Route, not modal.** The receipt is a real route page at `/orders/$orderId` (orchestrator decision): it needs direct access, refresh and recovery (brief §3.3, §4). From `lg` the page renders the Figma modal as a centered card (the approach of spec 04 for login and sign-up); below `lg` the same content is a full-width page.
+2. **Mobile layout.** There is no frame; `design.md` §6 follows the mobile style of the cart and checkout (390 / 768). It is recorded as a Figma deviation for spec 14.
+3. **Date format.** `Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })` instead of Figma's "29 Jul, 2026".
+4. **Subtotal and discount rows** are added to the totals ("Subtotal", and "Desconto (<code>)" only when non-zero), so the total is explainable.
+5. **Forbidden vs not found.** A distinct "sem acesso" view for 403 (RCPT-03), revealing nothing about the order.
 
 ## Out of scope
 

@@ -3,13 +3,14 @@ import { expect, test, type Page } from '@playwright/test'
 import { loginAs } from './support/mock'
 
 // `title` is the document title's first part when it differs from the `h1` (the cart is
-// "Carrinho · KURIO" with the heading "Carrinho de NFTs", spec 07).
+// "Carrinho · KURIO" with the heading "Carrinho de NFTs", spec 07; the receipt is "Pedido confirmado", spec 10).
 const routes = [
   { path: '/cart', heading: 'Carrinho de NFTs', title: 'Carrinho', private: false },
   { path: '/checkout', heading: 'Finalizar compra', private: true },
   {
-    path: '/orders/1',
-    heading: 'Confirmação do pedido',
+    path: '/orders/ord_000001',
+    heading: 'Seus NFTs agora estão na sua carteira',
+    title: 'Pedido confirmado',
     private: true,
   },
   { path: '/login', heading: 'Entrar', private: false },

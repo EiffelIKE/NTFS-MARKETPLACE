@@ -21,9 +21,8 @@ import { expectNoHorizontalOverflow } from './support/layout'
 import { apiFetch, bearer, loginAs, mock } from './support/mock'
 import { expect, test } from './support/test'
 
-// Spec 09 design §12 (brief §9 scenario 6): the purchase from the cart to a confirmed order, and
-// the gates in front of it. The receipt is spec 10's: the purchase test stops at the navigation to
-// `/orders/$orderId`.
+// Specs 09 and 10 (brief §9 scenario 6): the purchase from the cart to the confirmed receipt at
+// `/orders/$orderId`, and the gates in front of it.
 
 const summaryLines = (page: Page) => page.getByTestId('checkout-summary').getByTestId('quote-line')
 
@@ -54,6 +53,8 @@ test.describe('the purchase (CHK-01, CHK-06, CHK-14, CHK-18, CHK-29, CHK-31)', (
     if (!isMobile) {
       await expect(summaryLines(page)).toHaveCount(2)
       await expect(page.getByTestId('quote-total')).toContainText(eth('3.186'))
+      // A dimmed (outdated) figure is mid-transition and fails contrast: wait for it to settle.
+      await expect(page.getByTestId('quote-total')).not.toHaveAttribute('data-outdated', 'true')
       await expectNoAxeViolations(page)
     }
     await expectNoHorizontalOverflow(page)
@@ -74,10 +75,40 @@ test.describe('the purchase (CHK-01, CHK-06, CHK-14, CHK-18, CHK-29, CHK-31)', (
 
     // The default scenario settles after 3 s: the page follows the order to its page.
     await expect(page).toHaveURL(/\/orders\/ord_000002$/, { timeout: 15_000 })
-    // TODO(spec 10): replace this stub assertion with the receipt (items, totals, transaction).
-    await expect(
-      page.getByRole('heading', { level: 1, name: 'Confirmação do pedido' }),
-    ).toBeVisible()
+    // The receipt: only for the confirmed order, from its snapshot (spec 10, RCPT-05, RCPT-08 - RCPT-11).
+    const receiptHeading = page.getByRole('heading', {
+      level: 1,
+      name: 'Seus NFTs agora estão na sua carteira',
+    })
+    await expect(receiptHeading).toBeVisible()
+    await expect(receiptHeading).toBeFocused()
+    await expect(page).toHaveTitle('Pedido confirmado · KURIO')
+    const lines = page.getByTestId('receipt-line')
+    await expect(lines).toHaveCount(2)
+    await expect(lines.nth(0)).toContainText('Emerald Ape #042')
+    await expect(lines.nth(0)).toContainText('(x 1)')
+    await expect(lines.nth(0)).toContainText(eth('1.19'))
+    await expect(lines.nth(1)).toContainText('Golden Beat #207')
+    await expect(lines.nth(1)).toContainText('(x 2)')
+    await expect(lines.nth(1)).toContainText(eth('1.98'))
+    await expect(page.getByTestId('receipt-row-subtotal')).toContainText(eth('3.17'))
+    await expect(page.getByTestId('receipt-row-discount')).toHaveCount(0)
+    await expect(page.getByTestId('receipt-row-fee')).toContainText(eth('0.016'))
+    await expect(page.getByTestId('receipt-row-total')).toContainText(eth('3.186'))
+    await expect(page.getByTestId('receipt-summary')).toContainText(eth('3.186'))
+    await expect(page.getByTestId('receipt-summary')).toContainText('MetaMask')
+    const hash = (await mock(page).snapshot()).orders.ord_000002?.transaction?.hash ?? ''
+    expect(hash).toMatch(/^0x[0-9a-f]{64}$/)
+    await expect(page.getByTestId('receipt-hash')).toContainText(
+      `${hash.slice(0, 8)}…${hash.slice(-4)}`,
+    )
+    const explorer = page.getByRole('link', { name: /^Ver no Etherscan/ })
+    await expect(explorer).toHaveAttribute(
+      'href',
+      `https://explorer.kurio.example/ethereum/tx/${hash}`,
+    )
+    await expect(page.getByText('o explorador é simulado')).toBeVisible()
+    await expectNoHorizontalOverflow(page)
 
     const state = await mock(page).snapshot()
     expect(Object.values(state.orders).map((order) => [order.id, order.status])).toEqual([
@@ -85,6 +116,13 @@ test.describe('the purchase (CHK-01, CHK-06, CHK-14, CHK-18, CHK-29, CHK-31)', (
       ['ord_000002', 'confirmed'],
     ])
     expect(await mock(page).requests({ op: 'orders.create' })).toHaveLength(1)
+
+    // The catalog moves on after the purchase; the receipt does not (RCPT-12).
+    const before = await page.getByTestId('receipt').innerText()
+    await mock(page).updateNft('emerald-ape-042', { price: '9.99' })
+    await page.reload()
+    await expect(receiptHeading).toBeVisible()
+    expect(await page.getByTestId('receipt').innerText()).toBe(before)
 
     // What was bought left the cart (CHK-34).
     await page.goto('/cart')
