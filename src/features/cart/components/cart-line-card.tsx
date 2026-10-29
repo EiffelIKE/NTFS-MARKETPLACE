@@ -12,7 +12,7 @@ import { LineImage, LineName, LineNotice, LineStepper, RemoveButton } from './li
  */
 export function CartLineCards({ cart, actions }: { cart: Cart; actions: CartActions }) {
   return (
-    <ul aria-label="Itens do carrinho" className="flex flex-col gap-4">
+    <ul aria-label="Itens do carrinho" className="flex flex-col gap-5">
       {cart.items.map((item) => {
         const unavailable = item.status === 'unavailable'
         return (
@@ -30,7 +30,9 @@ export function CartLineCards({ cart, actions }: { cart: Cart; actions: CartActi
               <div className="relative flex min-w-0 flex-1 flex-col justify-between gap-2 py-3 pr-3 pl-4">
                 <div className="pr-10">
                   <LineName item={item} className="line-clamp-2" />
-                  <p className="text-caption text-text-secondary">Edição: {item.editionLabel}</p>
+                  <p className="text-body font-normal text-text-secondary">
+                    Edição: {item.editionLabel}
+                  </p>
                 </div>
                 <RemoveButton item={item} actions={actions} className="absolute top-1 right-1" />
                 <div className="flex items-end justify-between gap-2">

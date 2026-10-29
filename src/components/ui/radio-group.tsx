@@ -44,7 +44,7 @@ const chipVariants = {
     'h-7 min-w-6 rounded-sm border border-border-soft bg-surface-dark px-3 text-caption font-normal text-text-secondary not-disabled:hover:text-foreground disabled:cursor-not-allowed disabled:text-disabled data-checked:border-primary data-checked:bg-primary data-checked:font-bold data-checked:text-ink',
   // Pill with a primary border and accent text when selected (the details editions, Figma).
   outline:
-    'h-7 min-w-6 rounded-full border border-border-soft px-3 text-caption font-normal text-text-secondary not-disabled:hover:text-foreground disabled:cursor-not-allowed disabled:text-disabled disabled:line-through data-checked:border-primary data-checked:font-bold data-checked:text-text-accent',
+    'h-7 min-w-6 rounded-full border border-border-soft px-2 text-caption-sm font-normal text-text-secondary not-disabled:hover:text-foreground disabled:cursor-not-allowed disabled:text-disabled disabled:line-through data-checked:border-primary data-checked:font-bold data-checked:text-text-accent',
 } as const
 
 /**

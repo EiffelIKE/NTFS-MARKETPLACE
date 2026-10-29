@@ -22,7 +22,8 @@
     "test:e2e:report": "playwright show-report",
     "lighthouse": "node scripts/lighthouse-run.ts",
     "lighthouse:publish": "node scripts/lighthouse-run.ts --publish",
-    "lighthouse:deployed": "node scripts/lighthouse-run.ts --deployed"
+    "lighthouse:deployed": "node scripts/lighthouse-run.ts --deployed",
+    "docs:update": "UPDATE_DOCS=1 vitest run scripts/docs.test.ts"
   },
   "dependencies": {
     "@fontsource-variable/roboto-mono": "^5.3.0",

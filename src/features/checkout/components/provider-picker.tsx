@@ -67,7 +67,7 @@ export function ProviderPicker({
                 )}
                 <Label
                   htmlFor={id}
-                  className="flex-1 cursor-pointer text-body-lg font-normal text-foreground"
+                  className="flex-1 cursor-pointer text-body font-normal text-foreground lg:text-body-md"
                 >
                   {WALLET_PROVIDER_LABELS[provider]}
                 </Label>

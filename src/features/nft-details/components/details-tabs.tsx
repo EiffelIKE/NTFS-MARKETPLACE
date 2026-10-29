@@ -46,8 +46,10 @@ export function DetailsTabs({
         className="gap-3"
       >
         <TabsList aria-label="Informações do NFT" className="gap-8">
-          <TabsTrigger value="details">Detalhes do NFT</TabsTrigger>
-          <TabsTrigger value="reviews">
+          <TabsTrigger value="details" className="lg:px-0 lg:text-[1.0625rem]">
+            Detalhes do NFT
+          </TabsTrigger>
+          <TabsTrigger value="reviews" className="lg:px-0 lg:text-[1.0625rem]">
             Avaliações de colecionadores ({nft.reviewCount})
           </TabsTrigger>
         </TabsList>

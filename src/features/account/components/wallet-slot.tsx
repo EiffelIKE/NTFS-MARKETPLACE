@@ -90,7 +90,7 @@ export function WalletSlot({ kind: role, wallet, primary }: WalletSlotProps) {
     <section aria-labelledby={headingId} className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
         <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
-          <h2 id={headingId} className="text-title font-bold text-foreground">
+          <h2 id={headingId} className="text-title font-bold text-foreground lg:text-[1.0625rem]">
             {TITLES[role]}
           </h2>
           {!isPrimary && wallet === undefined && (

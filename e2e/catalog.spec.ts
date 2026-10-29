@@ -601,6 +601,9 @@ test.describe('mobile composition (CAT-26)', () => {
 
   test('the segment tabs scroll sideways and the page does not', async ({ page, isMobile }) => {
     test.skip(!isMobile, 'the scroller is mobile-only')
+    // The 14 px tabs of the Figma frame fit a 390 px phone (fidelity pass); on the narrowest
+    // supported width they still have to scroll sideways, not widen the page.
+    await page.setViewportSize({ width: 320, height: 700 })
     await openHome(page)
     const list = page.getByRole('tablist', { name: 'Segmentos do catálogo' })
     const { scrollWidth, clientWidth } = await list.evaluate((node) => ({

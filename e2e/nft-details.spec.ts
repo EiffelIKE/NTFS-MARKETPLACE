@@ -332,6 +332,174 @@ test.describe('content (DET-05 – DET-09)', () => {
     await expect(zoom).toBeFocused()
   })
 
+  test.describe('zoom gallery (DET-05)', () => {
+    const viewer = (page: Page) => page.getByRole('dialog')
+    const viewerTitle = (page: Page, position: number, total = 4) =>
+      viewer(page).getByRole('heading', {
+        name: `Emerald Ape #042 — imagem ${String(position)} de ${String(total)}`,
+      })
+    const dotName = (position: number) => `Ver imagem ${String(position)} de 4`
+    const viewerDot = (page: Page, position: number) =>
+      viewer(page).getByRole('button', { name: dotName(position), exact: true })
+    const slide = (scope: Locator | Page, position: number) =>
+      scope.getByRole('group', { name: `Imagem ${String(position)} de 4`, exact: true })
+
+    /** Puts the page's gallery on image `position` (1-based), the way each composition does it. */
+    async function showImage(page: Page, isMobile: boolean, position: number) {
+      if (isMobile) {
+        const dot = page.getByRole('button', { name: dotName(position), exact: true })
+        await dot.click()
+        await expect(dot).toHaveAttribute('aria-current', 'true')
+      } else {
+        const thumb = page.getByRole('button', {
+          name: `Imagem ${String(position)} de 4`,
+          exact: true,
+        })
+        await thumb.click()
+        await expect(thumb).toHaveAttribute('aria-pressed', 'true')
+      }
+    }
+
+    test('opens on the image the page shows and has every control', async ({ page, isMobile }) => {
+      await openNft(page, 'emerald-ape-042')
+      await showImage(page, isMobile, 3)
+      await page.getByRole('button', { name: 'Ampliar imagem' }).click()
+
+      await expect(viewerTitle(page, 3)).toBeVisible()
+      await expect(viewerDot(page, 3)).toHaveAttribute('aria-current', 'true')
+      await expect(slide(viewer(page), 3)).toBeInViewport({ ratio: 0.9 })
+      await expect(viewer(page).getByRole('button', { name: 'Imagem anterior' })).toBeEnabled()
+      await expect(viewer(page).getByRole('button', { name: 'Próxima imagem' })).toBeEnabled()
+      // Only the image on screen is eager; the rest wait for the slider to come near them.
+      await expect(viewer(page).locator('img[loading=lazy]')).toHaveCount(3)
+    })
+
+    test('the buttons and the arrow keys move the image and the title, and stop at the ends', async ({
+      page,
+    }) => {
+      await openNft(page, 'emerald-ape-042')
+      await page.getByRole('button', { name: 'Ampliar imagem' }).click()
+      const previous = viewer(page).getByRole('button', { name: 'Imagem anterior' })
+      const next = viewer(page).getByRole('button', { name: 'Próxima imagem' })
+
+      await expect(viewerTitle(page, 1)).toBeVisible()
+      await expect(previous).toBeDisabled()
+
+      await next.click()
+      await expect(viewerTitle(page, 2)).toBeVisible()
+      await expect(previous).toBeEnabled()
+      await previous.click()
+      await expect(viewerTitle(page, 1)).toBeVisible()
+
+      await page.keyboard.press('ArrowRight')
+      await expect(viewerTitle(page, 2)).toBeVisible()
+      await page.keyboard.press('ArrowRight')
+      await page.keyboard.press('ArrowRight')
+      await expect(viewerTitle(page, 4)).toBeVisible()
+      await expect(next).toBeDisabled()
+      await page.keyboard.press('ArrowRight')
+      await expect(viewerTitle(page, 4)).toBeVisible()
+      await page.keyboard.press('ArrowLeft')
+      await expect(viewerTitle(page, 3)).toBeVisible()
+      await expect(slide(viewer(page), 3)).toBeInViewport({ ratio: 0.9 })
+    })
+
+    test('the dots jump to their image', async ({ page }) => {
+      await openNft(page, 'emerald-ape-042')
+      await page.getByRole('button', { name: 'Ampliar imagem' }).click()
+
+      await viewerDot(page, 4).click()
+      await expect(viewerTitle(page, 4)).toBeVisible()
+      await expect(viewerDot(page, 4)).toHaveAttribute('aria-current', 'true')
+      await expect(slide(viewer(page), 4)).toBeInViewport({ ratio: 0.9 })
+      await viewerDot(page, 2).click()
+      await expect(viewerTitle(page, 2)).toBeVisible()
+      await expect(viewerDot(page, 2)).toHaveAttribute('aria-current', 'true')
+      // The dialog announces the image it settles on, once.
+      await expect(viewer(page).getByRole('status')).toHaveText('Imagem 2 de 4')
+    })
+
+    test('closing leaves the page gallery on the image the viewer ended on', async ({
+      page,
+      isMobile,
+    }) => {
+      await openNft(page, 'emerald-ape-042')
+      const zoom = page.getByRole('button', { name: 'Ampliar imagem' })
+      await zoom.click()
+      await page.keyboard.press('ArrowRight')
+      await page.keyboard.press('ArrowRight')
+      await expect(viewerTitle(page, 3)).toBeVisible()
+      await page.keyboard.press('Escape')
+      await expect(viewer(page)).toBeHidden()
+      await expect(zoom).toBeFocused()
+
+      if (isMobile) {
+        await expect(page.getByRole('button', { name: dotName(3), exact: true })).toHaveAttribute(
+          'aria-current',
+          'true',
+        )
+        await expect(slide(page, 3)).toBeInViewport({ ratio: 0.9 })
+      } else {
+        await expect(
+          page.getByRole('button', { name: 'Imagem 3 de 4', exact: true }),
+        ).toHaveAttribute('aria-pressed', 'true')
+      }
+
+      // And it opens there again.
+      await zoom.click()
+      await expect(viewerTitle(page, 3)).toBeVisible()
+    })
+
+    test('a single image has no arrows and no dots', async ({ page }) => {
+      await openNft(page, 'neon-vessel-552')
+      await page.getByRole('button', { name: 'Ampliar imagem' }).click()
+      await expect(
+        viewer(page).getByRole('heading', { name: 'Neon Vessel #552 — imagem 1 de 1' }),
+      ).toBeVisible()
+      await expect(viewer(page).getByRole('button')).toHaveCount(1)
+      await expect(viewer(page).getByRole('button', { name: 'Fechar' })).toBeVisible()
+      await expect(viewer(page).getByRole('status')).toHaveCount(0)
+      await page.keyboard.press('ArrowRight')
+      await expect(viewer(page).getByRole('heading')).toContainText('imagem 1 de 1')
+    })
+
+    test('fits the viewport without a horizontal scrollbar, with a clean axe scan', async ({
+      page,
+    }) => {
+      await openNft(page, 'emerald-ape-042')
+      await page.getByRole('button', { name: 'Ampliar imagem' }).click()
+      await page.keyboard.press('ArrowRight')
+      await expect(viewerTitle(page, 2)).toBeVisible()
+      const overflow = await page.evaluate(() => {
+        const box = document.querySelector('[role=dialog]')?.getBoundingClientRect()
+        return {
+          page: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+          dialog: box ? Math.max(0, box.right - window.innerWidth, -box.left) : -1,
+        }
+      })
+      expect(overflow).toEqual({ page: 0, dialog: 0 })
+      await expectNoAxeViolations(page)
+    })
+
+    test('with reduced motion the viewer jumps instead of gliding', async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: 'reduce' })
+      await openNft(page, 'emerald-ape-042')
+      await page.getByRole('button', { name: 'Ampliar imagem' }).click()
+      await expect(viewerTitle(page, 1)).toBeVisible()
+      // One evaluation, so nothing can happen between the click and the read.
+      const landed = await viewer(page)
+        .getByRole('region', { name: 'Imagens do NFT' })
+        .evaluate((track) => {
+          const next = track
+            .closest('[role=dialog]')
+            ?.querySelector<HTMLButtonElement>('button[aria-label="Próxima imagem"]')
+          next?.click()
+          return track.scrollLeft === track.clientWidth
+        })
+      expect(landed).toBe(true)
+    })
+  })
+
   test('tabs: each spec value is under its own label, the reviews list and the rating link', async ({
     page,
     isMobile,

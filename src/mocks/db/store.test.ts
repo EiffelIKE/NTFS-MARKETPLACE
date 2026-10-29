@@ -95,6 +95,18 @@ describe('store.load', () => {
     ['corrupt JSON', () => '{not json'],
     ['another schema version', () => JSON.stringify({ schemaVersion: SCHEMA_VERSION + 1 })],
     ['a non-object', () => '42'],
+    [
+      'a valid object with its tables missing',
+      () => JSON.stringify({ schemaVersion: SCHEMA_VERSION }),
+    ],
+    [
+      'a catalog table that is gone',
+      () => {
+        const partial = JSON.parse(JSON.stringify(seed())) as Record<string, unknown>
+        delete partial.nfts
+        return JSON.stringify(partial)
+      },
+    ],
   ])('reseeds on %s', (_name, raw) => {
     const info = vi.spyOn(console, 'info').mockImplementation(() => undefined)
     const { store, storage } = setup()

@@ -11,7 +11,7 @@ export const accountSelect =
 
 /** "Salvar" and "Salvar carteira": 131 × 40 on desktop, a full-width 60 pill below `lg`. */
 export const accountSubmit =
-  'lg:self-start lg:min-w-32.75 max-lg:h-15 max-lg:w-full max-lg:rounded-input-mobile max-lg:bg-primary-soft max-lg:text-title'
+  'lg:self-start lg:min-w-32.75 lg:px-1.5 lg:text-body max-lg:h-15 max-lg:w-full max-lg:rounded-input-mobile max-lg:bg-primary-cta max-lg:text-title'
 
 /** The two-column field grid of both screens (one column on phones). */
 export const accountGrid = 'grid gap-x-7 gap-y-5 md:grid-cols-2 lg:gap-y-9'

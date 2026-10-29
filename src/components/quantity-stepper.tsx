@@ -7,11 +7,13 @@ const stepClass =
 const sizes = {
   // Desktop details (Figma): round primary buttons around the value.
   md: {
-    step: 'size-7.75 rounded-full [&_svg]:size-3.5',
+    step: 'h-12 w-7.75 rounded-full [&_svg]:size-4.5',
     value: 'min-w-4 text-body-lg',
     gap: 'gap-3',
   },
-  // Mobile buy bar and cart cards (Figma): 22 px rounded squares.
+  // Mobile details buy bar (Figma): 18 × 28 pills.
+  pill: { step: 'h-7 w-4.5 rounded-full [&_svg]:size-3', value: 'min-w-3 text-body', gap: 'gap-2' },
+  // Mobile cart cards (Figma): 22 px rounded squares.
   sm: { step: 'size-5.5 rounded-sm [&_svg]:size-3', value: 'min-w-3 text-body', gap: 'gap-2' },
 } as const
 

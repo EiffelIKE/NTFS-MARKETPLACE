@@ -27,3 +27,6 @@ figma_tokens/screenshots/
 .DS_Store
 .idea
 *.swp
+
+# Claude Code agent worktrees
+.claude/worktrees/

@@ -52,6 +52,7 @@ export default defineConfig(
     'test-results',
     'reports',
     '.lighthouseci',
+    '.claude',
   ]),
   js.configs.recommended,
   tseslint.configs.strictTypeChecked,

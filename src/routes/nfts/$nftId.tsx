@@ -47,7 +47,11 @@ export const Route = createFileRoute('/nfts/$nftId')({
   errorComponent: DetailsError,
   notFoundComponent: NftNotFound,
   staticData: {
-    shell: { nav: 'market', headerDivider: false, mobile: { kind: 'inner', trailing: 'favorite' } },
+    shell: {
+      nav: 'market',
+      headerDivider: false,
+      mobile: { kind: 'inner', trailing: 'favorite', panel: true },
+    },
   },
   head: ({ loaderData }) => ({
     meta: loaderData ? [{ title: `${loaderData.name} · KURIO` }] : [],

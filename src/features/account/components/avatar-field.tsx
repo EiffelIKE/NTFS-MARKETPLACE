@@ -103,10 +103,10 @@ export function AvatarField({ profile }: { profile: Profile }) {
       aria-busy={busy || undefined}
       className="flex flex-col gap-2"
     >
-      <span id={labelId} className="text-body font-medium text-foreground">
+      <span id={labelId} className="text-body-md font-normal text-foreground">
         Avatar
       </span>
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 lg:gap-x-6">
         <Avatar className="relative size-12.5 border border-border bg-surface-card">
           {src && <AvatarImage key={src} src={src} alt="Foto de perfil" />}
           <AvatarFallback>
@@ -119,12 +119,19 @@ export function AvatarField({ profile }: { profile: Profile }) {
           )}
         </Avatar>
         <input ref={input} type="file" accept={AVATAR_ACCEPT} hidden onChange={onFile} />
-        <Button ref={change} type="button" disabled={busy} onClick={() => input.current?.click()}>
+        <Button
+          ref={change}
+          type="button"
+          className="lg:px-5 lg:text-body"
+          disabled={busy}
+          onClick={() => input.current?.click()}
+        >
           Alterar
         </Button>
         <Button
           type="button"
           variant="ghost"
+          className="lg:px-0 lg:text-body lg:font-normal"
           disabled={busy || profile.avatarUrl === null}
           onClick={onRemove}
         >

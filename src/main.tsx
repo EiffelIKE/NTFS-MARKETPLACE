@@ -18,7 +18,7 @@ if (!container) throw new Error('Missing #root element')
 // mock chunk downloads, and every request waits on `holdBackendUntil`. `vite.config.ts` writes the
 // parsed flag back as a literal, so with `VITE_ENABLE_MOCKS=false` this branch folds away and no
 // mocks/ chunk is emitted (spec 02 §3).
-function startBackend(): Promise<void> {
+function startBackend(onLost: (error: unknown) => void): Promise<void> {
   if (import.meta.env.VITE_ENABLE_MOCKS !== 'true') return Promise.resolve()
   // The URL is cleaned before the router first renders.
   const params = takeMockUrlParams()
@@ -27,7 +27,7 @@ function startBackend(): Promise<void> {
   const ready = import('@/mocks/browser')
     .then(({ startMocks }) => {
       performance.mark('kurio:mocks-loaded')
-      return startMocks(params)
+      return startMocks(params, { onLost })
     })
     .then(() => {
       performance.mark('kurio:mocks-ready')
@@ -40,14 +40,17 @@ function startBackend(): Promise<void> {
 }
 
 const root = createRoot(container)
-const backend = startBackend()
+const showBootError = (error: unknown) => {
+  root.render(<BootError error={error} />)
+}
+const backend = startBackend(showBootError)
 bootApp()
 root.render(
   <StrictMode>
     <App />
   </StrictMode>,
 )
-// With no API behind it the app must not pretend to work: replace it with the error screen.
-backend.catch((error: unknown) => {
-  root.render(<BootError error={error} />)
-})
+// With no API behind it the app must not pretend to work: replace it with the error screen. The
+// start always settles (`mocks/browser.ts`), so neither a hung worker nor a gone one leaves the
+// shell waiting forever.
+backend.catch(showBootError)

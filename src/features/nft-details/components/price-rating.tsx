@@ -40,7 +40,7 @@ export function PriceRating({
 }) {
   return (
     <div className={cn('flex items-center justify-between gap-4', className)}>
-      <p className="flex items-baseline gap-3 text-title leading-6 font-bold text-text-accent">
+      <p className="flex items-baseline gap-3 text-title leading-6 font-bold text-text-accent lg:text-[1.375rem]">
         <span>
           <span className="sr-only">Preço atual: </span>
           {formatEth(nft.price)}
@@ -52,7 +52,7 @@ export function PriceRating({
           </s>
         )}
       </p>
-      <div className="flex items-center gap-1 text-caption">
+      <div className="flex items-center gap-1 text-body">
         <Stars rating={nft.rating} />
         <button
           type="button"

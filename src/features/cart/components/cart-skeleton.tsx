@@ -17,7 +17,7 @@ export function CartTableSkeleton() {
 /** Two cards at the final height (100 on mobile). */
 export function CartCardsSkeleton() {
   return (
-    <ul aria-hidden="true" className="flex flex-col gap-4">
+    <ul aria-hidden="true" className="flex flex-col gap-5">
       {Array.from({ length: 2 }, (_, index) => (
         <li key={index}>
           <Skeleton className="h-25 w-full rounded-card-mobile" />

@@ -120,6 +120,42 @@
   background-image: linear-gradient(137deg, rgb(210 138 76 / 0.45) 24.6%, #d28a4c 100%);
 }
 
+/* The wide mobile CTA ("Comprar NFT", "Conectar e finalizar", "Confirmar compra"): Figma fills it
+   from `primary` to a 12 % deeper tone, left to right, unlike the soft fade of `primary-soft`. */
+@utility bg-primary-cta {
+  background-image: linear-gradient(
+    90deg,
+    var(--color-primary),
+    color-mix(in srgb, var(--color-primary) 88%, var(--color-ink))
+  );
+}
+
+/* Center button of the mobile tab bar (Figma FAB): translucent at the top, solid `primary` below. */
+@utility bg-primary-fab {
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-primary) 45%, transparent),
+    var(--color-primary) 80%
+  );
+}
+
+/* Mobile hero card, as bright as Figma (`primary` at 42 % over ink) where the copy is not: the top
+   left corner holds only the eyebrow and title, and a glow sits behind the artwork. The diagonal fade
+   into `surface-card` reaches the description and the link dark enough for 4.5:1 (a11y wins). */
+@utility bg-hero-card {
+  background-image:
+    radial-gradient(
+      circle 170px at 86% 30%,
+      color-mix(in srgb, var(--color-primary) 26%, transparent),
+      transparent
+    ),
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-primary) 42%, var(--color-ink)),
+      var(--color-surface-card)
+    );
+}
+
 @utility bg-card-gradient {
   background-image: linear-gradient(
     139.5deg,
@@ -151,10 +187,4 @@
   to {
     background-position: -100% 0;
   }
-}
-
-/* Mobile tab bar: concave notch around the center button (Figma shape `15:5504`). The mask colors
-   are alpha values, not visual colors. */
-@utility tab-bar-notch {
-  mask-image: radial-gradient(circle 42px at 50% 0, transparent 41px, #000 42px);
 }

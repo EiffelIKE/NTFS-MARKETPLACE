@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 
 import type { AuthSearch } from '../model/auth-search'
 
-const tab = 'px-4 text-title text-foreground hover:text-text-accent'
+const tab = 'px-2.5 text-[1.25rem] leading-6 font-medium text-foreground hover:text-text-accent'
 const tabActive = 'text-text-accent'
 
 /** "Entrar | Criar conta" (Figma desktop): links, so each tab is a real URL with its own history. */

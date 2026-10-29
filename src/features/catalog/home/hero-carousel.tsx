@@ -98,7 +98,7 @@ function Slides({ slides, className }: { slides: Slide[]; className?: string | u
       aria-roledescription="carrossel"
       aria-label="Destaques"
       className={cn(
-        'relative flex flex-col overflow-hidden rounded-hero-mobile bg-surface-dark lg:overflow-visible lg:rounded-none lg:bg-transparent',
+        'relative flex flex-col overflow-hidden rounded-hero-mobile bg-hero-card lg:overflow-visible lg:rounded-none lg:bg-transparent lg:bg-none',
         frame,
         className,
       )}
@@ -133,7 +133,7 @@ function Slides({ slides, className }: { slides: Slide[]; className?: string | u
       </div>
 
       {slides.length > 1 && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-1 flex justify-center lg:inset-x-auto lg:bottom-24 lg:left-10 lg:w-150 lg:justify-end">
+        <div className="pointer-events-none absolute inset-x-0 bottom-1 flex justify-center lg:inset-x-auto lg:bottom-8.5 lg:left-10 lg:w-150 lg:justify-end">
           {slides.map((slide, index) => (
             <button
               key={slide.id}
@@ -167,8 +167,9 @@ function Circles() {
       aria-hidden="true"
       className="pointer-events-none absolute inset-0 overflow-hidden lg:hidden"
     >
-      <div className="absolute -top-24 -left-10 size-62 rounded-full bg-primary/10" />
-      <div className="absolute -right-16 -bottom-28 size-62 rounded-full bg-primary/10" />
+      {/* Two 248 px circles whose overlap makes the lighter lens of Figma's mask (`14:5290`). */}
+      <div className="absolute -top-7.5 -left-20.25 size-62 rounded-full bg-primary/5" />
+      <div className="absolute -top-1.25 left-18 size-62 rounded-full bg-primary/5" />
     </div>
   )
 }
@@ -199,11 +200,11 @@ function SlideContent({
 
   return (
     <div className="relative flex h-full items-center justify-between gap-2 p-4 lg:gap-8 lg:p-0 lg:pl-10">
-      <div className="flex min-w-0 flex-1 flex-col lg:max-w-150 lg:flex-initial">
+      <div className="flex min-w-0 flex-1 flex-col lg:max-w-150 lg:flex-initial lg:pb-13">
         <p className="text-caption-sm leading-4 font-medium text-foreground lg:text-body lg:tracking-brand">
           {slide.eyebrow}
         </p>
-        <Title className="mt-1.5 text-title leading-7.25 text-foreground uppercase lg:mt-2 lg:text-display lg:leading-17.5">
+        <Title className="mt-1.5 text-title leading-7.25 text-foreground uppercase lg:mt-2 lg:text-display lg:leading-17.5 lg:text-balance">
           <span className="lg:hidden">{slide.shortTitle}</span>
           <span className="hidden lg:inline">{slide.title}</span>
         </Title>
@@ -241,7 +242,7 @@ function SlideContent({
               image={nextImage}
               slot="hero"
               alt=""
-              className="absolute top-22 -left-3.5 size-14.5 rounded-artwork-mobile border-2 border-surface-dark object-cover max-[400px]:hidden lg:hidden"
+              className="absolute top-22 left-3.5 size-14.5 rounded-artwork-mobile border-2 border-surface-dark object-cover lg:hidden"
             />
           )}
         </div>

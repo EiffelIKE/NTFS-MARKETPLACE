@@ -43,7 +43,7 @@ export function AuthPage({ mode, search }: { mode: 'login' | 'signup'; search: A
         <HrefLink
           href={close}
           aria-label="Fechar"
-          className="absolute top-5 right-5 z-10 hidden size-6 items-center justify-center rounded-xs text-primary hover:text-text-accent lg:flex"
+          className="absolute top-2 right-2.25 z-10 hidden size-6 items-center justify-center rounded-xs text-primary hover:text-text-accent lg:flex"
         >
           <CloseIcon className="size-5" />
         </HrefLink>
@@ -60,9 +60,9 @@ export function AuthPage({ mode, search }: { mode: 'login' | 'signup'; search: A
           {copy.mobileTitle}
         </h1>
 
-        <AuthTabs mode={mode} search={search} className="mt-14 hidden lg:flex" />
+        <AuthTabs mode={mode} search={search} className="mt-11.5 hidden lg:flex" />
         <h1 className="sr-only max-lg:hidden">{copy.desktopTitle}</h1>
-        <p className="mx-auto mt-8 mb-6 hidden max-w-105 px-4 text-center text-caption-sm text-foreground lg:block">
+        <p className="mx-auto mt-10 mb-5.5 hidden max-w-105 px-4 text-center text-caption leading-4 font-normal text-foreground lg:block lg:px-0">
           {copy.subtitle}
         </p>
 

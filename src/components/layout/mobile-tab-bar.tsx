@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import * as React from 'react'
 
-import { BagIcon, HeartIcon, HomeIcon, ScanIcon, UserIcon } from '@/components/icons'
+import { BagIcon, HeartFilledIcon, HomeIcon, ScanIcon, UserIcon } from '@/components/icons'
 import { Badge } from '@/components/ui/badge'
 import { useBottomBarInset } from '@/hooks/use-bottom-bar-inset'
 import { cn } from '@/lib/utils'
@@ -10,9 +10,8 @@ import { cartLabel } from './cart-label'
 import type { MobileTab } from './shell-config'
 import { Unavailable } from './unavailable'
 
-const item =
-  'relative flex size-12 flex-col items-center justify-center text-text-secondary after:absolute after:bottom-1 after:size-1 after:rounded-full'
-const itemActive = 'text-text-accent after:bg-text-accent'
+const item = 'relative flex size-12 flex-col items-center justify-center text-secondary'
+const itemActive = 'text-text-accent'
 
 export interface MobileTabBarProps extends React.ComponentProps<'nav'> {
   active?: MobileTab | undefined
@@ -22,7 +21,7 @@ export interface MobileTabBarProps extends React.ComponentProps<'nav'> {
 
 /**
  * Bottom tab bar below `lg` (DS-27): notched bar with the center search button. No visible labels
- * (Figma); each item has an accessible name, and the active one adds a dot (non-color cue).
+ * (Figma); each item has an accessible name, filled icons only, and the current page is `aria-current` plus the accent color.
  */
 export function MobileTabBar({
   active,
@@ -48,8 +47,21 @@ export function MobileTabBar({
     >
       <div
         aria-hidden="true"
-        className="absolute inset-x-0 top-7.75 bottom-0 rounded-t-[32px] bg-surface-card tab-bar-notch"
-      />
+        className="absolute inset-x-0 top-7.75 bottom-0 flex flex-col overflow-hidden rounded-t-[32px]"
+      >
+        <div className="flex h-12 text-surface-card">
+          <div className="flex-1 bg-current" />
+          {/* The cut-out around the center button (Figma `15:5504`): a real hole, so the page shows
+              through it. 47 px radius, and 30 px "ears" rounding the bar's top corners into it (each
+              fillet is tangent to the top edge and to the hole). It overlaps its neighbours by 1 px
+              so no seam shows at fractional widths. */}
+          <svg viewBox="0 0 146 48" className="-mx-px h-12 w-36.5 shrink-0" fill="currentColor">
+            <path d="M0 0H2.08A30 30 0 0 1 29.71 18.31A47 47 0 0 0 116.29 18.31A30 30 0 0 1 143.92 0H146V48H0Z" />
+          </svg>
+          <div className="flex-1 bg-current" />
+        </div>
+        <div className="flex-1 bg-surface-card" />
+      </div>
       {/* Figma icon centers 46 / 118 / FAB 207 / 301 / 364: kept symmetric around the FAB. */}
       <ul className="relative grid h-full grid-cols-[48px_48px_1fr_48px_48px] items-start gap-x-6 px-5.5 pt-13">
         <li className="flex justify-center">
@@ -71,7 +83,7 @@ export function MobileTabBar({
             className={cn(item, active === 'favorites' && itemActive)}
             {...current('favorites')}
           >
-            <HeartIcon className="size-5" />
+            <HeartFilledIcon className="size-5" />
           </Link>
         </li>
         <li className="flex justify-center">
@@ -80,7 +92,7 @@ export function MobileTabBar({
               type="button"
               aria-label="Buscar"
               onClick={onSearch}
-              className="absolute top-0 left-1/2 flex size-16.25 -translate-x-1/2 cursor-pointer items-center justify-center rounded-full bg-primary-soft text-foreground"
+              className="absolute top-0 left-1/2 flex size-16.25 -translate-x-1/2 cursor-pointer items-center justify-center rounded-full bg-primary-fab text-foreground"
             >
               <ScanIcon className="h-6 w-6.75" />
             </button>
@@ -88,7 +100,7 @@ export function MobileTabBar({
             <Unavailable
               as="button"
               aria-label="Buscar"
-              className="absolute top-0 left-1/2 flex size-16.25 -translate-x-1/2 items-center justify-center rounded-full bg-primary-soft text-foreground"
+              className="absolute top-0 left-1/2 flex size-16.25 -translate-x-1/2 items-center justify-center rounded-full bg-primary-fab text-foreground"
             >
               <ScanIcon className="h-6 w-6.75" />
             </Unavailable>

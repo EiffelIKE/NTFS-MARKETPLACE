@@ -134,3 +134,31 @@ One section per miss: page, profile, category or metric, median value vs. target
 8. **Scripts in TypeScript.** `node scripts/*.ts` runs through Node 24's type stripping, so there is no build step or `tsx`; `tsconfig.node.json` includes `scripts` for type checking and lint, and Vitest's `include` gains `scripts/**/*.test.ts`. While wiring this, a fresh run of `src/styles/no-raw-colors.test.ts` reported six false positives (`Emerald Ape #042` in comments and sample data, which look like hex colors); the test now ignores a `#` that follows a word and a space.
 9. **Deferring the mock chunk past first paint** to improve FCP was rejected (§5).
 10. **Preloading the home route's lazy chunks** (a second request round after the entry chunk) was measured as not worth the coupling of the static HTML to one route; listed in the analysis as a next step.
+
+## 11. Post-deploy fix: SW boot recovery
+
+**Symptom (deployed app).** After a Lighthouse run from Chrome DevTools, normal browsing ended in a black screen, or in a page where some parts loaded and others stayed in a loading state; only "Clear site data" helped, and the next load showed the boot error `[MSW] Failed to register the Service Worker ... Operation has been aborted`, which F5 then cleared.
+
+**Root cause.** Lighthouse and DevTools clear service workers and storage, and can leave a registration that does not control the page, a worker stuck in `installing` or `redundant`, or a half-written persisted database. The boot trusted `worker.start()` to settle, and it has no deadline:
+
+1. MSW waits on the worker's `statechange` to `activated` and on the `MOCKING_ENABLED` reply with no timeout, so a worker that never activates left the shell-first gate (`backend-ready.ts`) pending and every request, queued behind it, never left. That is the "parts stay loading forever" state.
+2. With a registration but no controller, MSW calls `location.reload()` and keeps going; if the controller never comes (bypass, a dropped worker) that is a reload loop, which looks like a black screen.
+3. A start that succeeded did not mean the page was intercepted: with the worker bypassed or gone, requests reached the real server (the SPA rewrite answers `200 text/html`) and the catalog showed errors while the shell rendered.
+4. A registration aborted by a clear (`Operation has been aborted`) rejected the start, and the error screen's button only called `location.reload()`, so it kept the dead registration.
+5. `store.load()` accepted any JSON object with the right `schemaVersion`. A database with tables missing (`nfts`, `highlights`) loaded, and every handler that read it threw a 500 until the site data was cleared.
+
+Reproduced locally on a production build: a database cut to `{ schemaVersion, seq }` made `nfts.list` and `highlights.get` answer 500 on every load; `Storage.clearDataForOrigin` (what Lighthouse does) while the app was open left `controller: null`, no registration and `/api/*` answered by the network as HTML; `Network.setBypassServiceWorker` gave 404s on every API call.
+
+**Fix.**
+
+- `lib/mock-recovery.ts` (no msw import, so the entry chunk and the error screen can use it): `withTimeout`, a reload guard (`sessionStorage`, one automatic reload per tab per 30 s, so recovery can never loop), `unregisterMockWorkers`, `hasOrphanedRegistration`, `pingMock`, `recoverOnce` and `bootWithRecovery`.
+- `startMocks` (`mocks/browser.ts`) runs `bootWithRecovery`: a registration that does not control the page is unregistered before `worker.start()` (MSW then registers a fresh one in this load instead of reloading); `start()` has a 15 s deadline; after it, the boot **proves interception** with `GET /api/__mock/health` (answered by the worker with `x-kurio-mock: 1`, outside the pipeline: no latency, rules or log). On a timeout, an abort or a failed probe it unregisters the stale registrations and reloads once; if the guard already spent the reload, or the reload does not happen within 5 s, it rejects, so `main.tsx` shows the boot error screen. It always settles, and the gate rejects instead of holding requests forever.
+- `watchMockWorker`: once the mock is up, the probe runs again on `controllerchange`, `focus`, `visibilitychange` and a bfcache restore (no timer), because a clear can take the worker from an open page. A failure goes through the same guarded recovery, then `main.tsx` shows the error screen.
+- The error screen's "Recarregar página" calls `resetMockWorkerAndReload`: it releases the guard, unregisters the mock registrations (bounded) and then reloads.
+- `db/validate.ts`: `store.load()` checks the shape the handlers rely on (sequences, every table, the rows' arrays and keys, `highlights`, `triggers`), not only the schema version, and reseeds with a log line when it is damaged. The persisted config ignores an `overrides` value that is not an object.
+
+Shell-first behavior is unchanged: the shell still renders at once and requests wait on the gate. The probe adds one request answered by the worker after the start (no network). Entry chunk: 133 to 136 kB (41 kB gzip) from the recovery module, which the error screen imports.
+
+**Tests.** `lib/mock-recovery.test.ts` (timeout, guard, recovery policy, boot outcomes, registrations, probe), `mocks/db/validate.test.ts` and new `store.load` cases, and `e2e/boot-recovery.spec.ts` (a cut-short database, a worker unregistered before a reload, a worker that never takes control: error screen, then the button recovers).
+
+**For the deployment.** `vercel.json` already serves `/mockServiceWorker.js` with `Cache-Control: no-cache`; nothing else is required. `Service-Worker-Allowed` is not needed (scope `/`, script at the root).

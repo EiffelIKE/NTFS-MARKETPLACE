@@ -311,3 +311,13 @@ Decisions taken while implementing, where the design was silent or had to give w
 - **R3 — a settled order ends its attempt.** `forgetSettledAttempt` clears the stored attempt of an order that is `confirmed` (boot's `order.updated` listener) or terminal as seen on its receipt (`OrderPage`, spec 10). A refusal seen by an event keeps the attempt so checkout still says the payment was refused (CHK-32); the receipt of a refused order clears it, since "Tentar novamente" there goes to `/checkout`. `useTrackedOrder` also ignores a stored `orderId` whose order is already `confirmed` in the cache, decided once at mount. Tests: `attempt-store.test.ts`; E2E ("an order that settles while the user is elsewhere ends its attempt", "seeing the settled order on its receipt…").
 - **R7 — an old POST response never shows "pending" over a newer order.** An `order.updated` that finds no cached order is remembered by version (`orders/model/missed-events.ts`, fed from `bootApp`'s listener, cleared on identity change). `recordOrder` keeps a cached order with a higher `version` and invalidates the order's detail only when a newer missed event exists, so there is no extra request in the normal case (an unconditional refetch raced with the "page cut off" E2E in `realtime-resilience.spec.ts`). Test: `use-create-order.test.ts`.
 - **R8 — another user's data leaves on login.** `purgeCheckoutData` (`model/checkout-privacy.ts`, called from `bootApp`) removes the previous user's draft and attempt on `logout` and `other-tab` as before, and now also every other user's keys whenever someone signs in. An expiry keeps them, so the same user resumes (CHK-28). `SafeStorage` gained `keys(prefix)`. Tests: `checkout-privacy.test.ts`; E2E ("somebody else signing in removes the first user's draft and attempt").
+
+## 16. Amendments (Figma fidelity pass, 2026-10-29)
+
+See `SPECS-NTFS/12-visual-regression/fidelity.md`. Changes and accepted deviations owned by this spec (input for `ARCHITECTURE.md`):
+
+- **Field labels** are 15 px regular (the shared `Label`, so profile, wallets and auth follow).
+- **"Seus NFTs" rows** keep the name on one line: `gap-2 pr-2` and a `min-w-22` amount instead of a fixed 104 px.
+- **Desktop totals:** labels 15 px, values 18 px, rows 32 px apart; provider rows 15 px (14 px on mobile).
+- **Mobile:** "Confirmar compra" is `bg-primary-cta`; the top bar gap is 8 px so "Pagamento com carteira" fits at 390 px.
+- **Deviations kept:** the "Usar outra carteira?" checkbox (Figma: radio), the provider chip as a label (Figma: a radio card), the mobile heading "Carteira" (Figma "Carteira conectada"), unselected radios as visible rings (Figma's dark rings fail 3:1), and the extra "Dados do colecionador" section.

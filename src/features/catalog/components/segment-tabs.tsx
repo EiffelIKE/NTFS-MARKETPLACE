@@ -25,10 +25,14 @@ export function SegmentTabs({ active, className }: { active: NftSegment; classNa
     <TabsList
       ref={listRef}
       aria-label="Segmentos do catálogo"
-      className={cn('snap-x snap-proximity lg:w-auto', className)}
+      className={cn('snap-x snap-proximity gap-4 lg:w-auto lg:gap-5', className)}
     >
       {NftSegment.options.map((segment) => (
-        <TabsTrigger key={segment} value={segment} className="snap-start">
+        <TabsTrigger
+          key={segment}
+          value={segment}
+          className="snap-start px-0 text-body lg:pt-0 lg:pb-1.5 lg:text-body-md"
+        >
           {SEGMENT_LABELS[segment]}
         </TabsTrigger>
       ))}

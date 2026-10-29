@@ -11,7 +11,7 @@ export interface ShellConfig {
   headerDivider: boolean
   mobile:
     | { kind: 'tab'; tab?: MobileTab }
-    | { kind: 'inner'; title?: string; trailing?: 'favorite' }
+    | { kind: 'inner'; title?: string; trailing?: 'favorite'; panel?: boolean }
     | { kind: 'bare' }
 }
 

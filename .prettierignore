@@ -8,7 +8,10 @@ test-results
 reports
 .lighthouseci
 
-# Hand-written docs that Prettier would re-flow
+# Hand-written docs that Prettier would re-flow (README.md and ARCHITECTURE.md hold generated
+# tables between markers, which `pnpm docs` writes unpadded)
+README.md
+ARCHITECTURE.md
 SPECS-NTFS
 figma_tokens
 OBJETIVES.md
@@ -16,3 +19,4 @@ AGENTS.md
 CLAUDE.md
 .agents
 skills-lock.json
+.claude

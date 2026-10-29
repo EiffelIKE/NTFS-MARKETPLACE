@@ -110,7 +110,7 @@ function DetailsContent({ nft, refreshing }: { nft: NftDetail; refreshing: boole
   return (
     <div className="mx-auto w-full max-w-150 pb-[var(--bottom-bar-inset,11.5rem)] lg:max-w-page lg:px-6 lg:pb-0">
       <Breadcrumb className="mb-3 hidden lg:block">
-        <BreadcrumbList className="text-body-lg font-bold">
+        <BreadcrumbList className="text-body-md font-bold">
           <BreadcrumbItem>
             <BreadcrumbLink asChild className="text-foreground">
               <Link to="/">Início</Link>
@@ -146,9 +146,9 @@ function DetailsContent({ nft, refreshing }: { nft: NftDetail; refreshing: boole
 
         <div className="relative -mt-16 flex flex-col gap-6 rounded-t-[30px] bg-surface-card px-6 pt-6 pb-10 lg:contents">
           <section className="flex min-w-0 flex-col gap-6 lg:gap-3.25">
-            <div className="flex flex-col gap-3 lg:border-b lg:border-border lg:pb-3">
+            <div className="flex flex-col gap-3 lg:gap-2 lg:border-b lg:border-border lg:pb-3">
               <div className="flex items-start justify-between gap-3">
-                <h1 className="text-title leading-7 font-bold text-foreground lg:text-[1.75rem] lg:leading-9.25">
+                <h1 className="text-[1.25rem] leading-7 font-bold text-foreground lg:text-[1.75rem] lg:leading-9.25">
                   {nft.name}
                 </h1>
                 <RatingChip

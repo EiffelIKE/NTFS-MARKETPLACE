@@ -1,6 +1,6 @@
 # 14 — Docs & delivery · Design
 
-> Status: Draft — see [Open questions](requirements.md#open-questions). Section outlines are fixed; content is filled from specs 00–13 when they are Done.
+> Status: Final. Decisions of the delivery pass are in [§9](#9-decisions); where the draft below differs from what was built, §9 wins.
 
 Implements [`requirements.md`](requirements.md). No new dependencies.
 
@@ -9,16 +9,17 @@ Implements [`requirements.md`](requirements.md). No new dependencies.
 ```
 README.md
 ARCHITECTURE.md
-docs/
-  lighthouse/              # spec 13
+docs/screenshots/home-desktop.png   # README screenshot
+lighthouse/reports/                 # spec 13 (not docs/lighthouse/); deployed-2026-10-29.md added here
 scripts/
-  docs.ts                  # renderSections(): operations and scenario tables (open question 2)
+  docs.ts                  # renderSections(): operations, error-code and scenario tables
   docs.test.ts             # fails when a generated section is stale; rewrites with UPDATE_DOCS=1
+  build-meta.ts (+ test)   # kurio-build identifier and the Vite plugin (§4)
+  dev-routes.ts (+ test)   # /dev/* gating plugin (§9)
   delivery-check.sh        # clean-checkout verification (§5)
-  deploy-check.ts          # Playwright script against the public URL (§6)
 ```
 
-Generated sections sit between `<!-- generated:operations -->` … `<!-- /generated:operations -->` markers. `docs.ts` imports the operations table (`src/contracts/operations.ts`) and the scenario registry metadata (`src/mocks/scenarios.ts`). It runs under Vitest rather than plain Node, because those modules use the `@/` alias, which Vitest resolves from the Vite config. `docs.test.ts` compares each marked section with `renderSections()` and fails when they differ; with `UPDATE_DOCS=1` it rewrites them instead. Script `docs` = `UPDATE_DOCS=1 vitest run scripts/docs.test.ts`. Vitest `include` gains `scripts/**/*.test.ts` (shared with spec 13).
+Generated sections sit between `<!-- generated:NAME -->` … `<!-- /generated:NAME -->` markers (`operations`, `errors` in `ARCHITECTURE.md`; `scenarios` in `README.md`). `docs.ts` imports the operations table (`src/contracts/operations.ts`), the error defaults (`src/contracts/errors.ts`) and the scenario registry (`src/mocks/scenarios.ts`) by relative path and runs under Vitest. The request, success and error columns of the operation table come from a map typed `Record<OperationId, …>` inside `docs.ts`, so a new operation fails the type check until it is described. `docs.test.ts` compares each marked section with `renderSections()` and fails when they differ; with `UPDATE_DOCS=1` it rewrites them instead. Script `docs:update` = `UPDATE_DOCS=1 vitest run scripts/docs.test.ts` (`pnpm docs` is a pnpm built-in, so the script could not be called `docs`). The same test also checks the README against the code: every `pnpm <script>` it names exists and every script is documented, every environment variable of the schema and `.env.example` appears, the demo credentials equal the fixtures, every scenario selector appears; and that every relative link in both documents and every `e2e/*.spec.ts` in the scenario map exists. `README.md` and `ARCHITECTURE.md` are in `.prettierignore`, because Prettier would re-pad the generated tables.
 
 ## 2. README.md outline (DOC-01 – DOC-07)
 
@@ -86,32 +87,33 @@ Generated sections sit between `<!-- generated:operations -->` … `<!-- /genera
 
 ## 4. Commit identifier (DOC-16)
 
-`vite.config.ts` reads `VERCEL_GIT_COMMIT_SHA` (set by Vercel at build), falling back to `git rev-parse --short HEAD` when available, else `dev`, and injects `<meta name="kurio-build" content="<sha>">` through `transformIndexHtml`. The footer does not show it (no Figma slot); the README tells evaluators to read it in DevTools or with `curl -s <url> | grep kurio-build`.
+`scripts/build-meta.ts` resolves the identifier: `VERCEL_GIT_COMMIT_SHA` (set by Vercel at build), shortened to its first 7 characters, else the local `HEAD` (`git rev-parse --short=7 HEAD`), else `dev` (a tarball with no repository). The `buildMeta()` Vite plugin, registered in `vite.config.ts`, injects `<meta name="kurio-build" content="<id>">` through `transformIndexHtml` (`head-prepend`), in the build and in the dev server. The footer does not show it (no Figma slot); the README tells evaluators to read it in DevTools or with `curl -s <url> | grep kurio-build` and to compare it with `git rev-parse --short=7 HEAD`.
 
 ## 5. Clean-checkout check (`scripts/delivery-check.sh`, DOC-15)
 
-1. Copies tracked files to a temporary folder (`git clone --no-local .` once git exists; otherwise `rsync` honoring `.gitignore`, open question 4).
-2. Runs, in that folder: `mise install`, `pnpm install --frozen-lockfile`, `pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm test`, `pnpm build`, `pnpm test:e2e`.
-3. Fails on the first non-zero exit and prints the step; prints the elapsed time per step at the end.
+1. `git clone --no-local` of the repository's committed `HEAD` into a temporary folder (the working tree's uncommitted changes are reported and not checked).
+2. In the clone: `mise install` (when mise exists), `pnpm install --frozen-lockfile`, `pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm test`, `pnpm build`, **build assertions** (`dist/index.html` carries `kurio-build` equal to the clone's `HEAD`, no `ui-kit` or `dev-realtime` chunk in `dist/assets`, no plaintext demo password in `dist/`), then `pnpm test:e2e --workers=3`.
+3. Stops on the first failure and names the step; prints the elapsed time per step; deletes the clone on exit. `SKIP_E2E=1` skips the last step, `E2E_PORT` and `E2E_WORKERS` tune it.
 
 It checks that nothing depends on ignored files, local `.env*.local`, the developer's `localStorage` or a running dev server.
 
-## 6. Deploy check (`scripts/deploy-check.ts`, DOC-17)
+## 6. Deploy check (DOC-17)
 
-A Playwright script (`pnpm exec playwright test scripts/deploy-check.ts --config=…` with `baseURL` from `DEPLOY_URL`, desktop and mobile projects) that runs:
+Run by hand against the public URL with the Chrome DevTools tools (results in `tasks.md`, T07), after each deploy:
 
 | Check | How |
 |---|---|
-| Build identity | `<meta name="kurio-build">` equals the expected commit |
-| Direct access + refresh | each route from spec 00 §5 with anchor ids → `goto`, `reload`, expected `h1` |
-| Not found | `/nao-existe` → not-found view |
-| Worker headers | `request.get('/mockServiceWorker.js')` → 200 and `cache-control: no-cache` |
-| Scenarios | `/?scenario=empty` → empty catalog; `/?reset=1` → default |
-| Purchase | Ana: catalog → details → cart → checkout → confirmed receipt (settles through `order.updated`, spec 09) |
-| Realtime | Ana's cart open, `__mock.updateNft` raises a price → cart shows the change and the new total |
-| Assets | NFT images, font and icons load with 200 from the deploy origin |
+| Build identity | `<meta name="kurio-build">` equals the delivered commit |
+| Direct access + refresh | each route of spec 00 §5 → open it, refresh it, expect the `h1`; private routes land on `/login?redirect=…` |
+| Not found | `/nao-existe` → not-found view; `/dev/ui-kit` and `/dev/realtime` → not-found (§9) |
+| Worker headers | `GET /mockServiceWorker.js` → 200 and `cache-control: no-cache` |
+| Scenarios | `/?scenario=empty` → empty catalog; `/?reset=1` → reseeds the active scenario |
+| Purchase | Ana: sign in → cart → checkout → review → connect → pay → confirmed receipt; `__mock.realtime.log()` shows `order.updated` delivered |
+| Realtime | Ana's cart open, `__mock.updateNft` raises a price → the cart shows the notice and the new total |
+| Mobile | 390 × 844: a deep link and its refresh render, no overflow, no console errors |
+| Lighthouse | `pnpm lighthouse:deployed <url>` |
 
-Results go to `playwright-report/deploy/`; the README links the latest pass date.
+A Playwright version of this table (`scripts/deploy-check.ts`) was not built: the same flows already run with mocks in the E2E suite, and a deploy differs from `vite preview` only by headers, the rewrite and the build identity, which the table covers.
 
 ## 7. Notes
 
@@ -123,3 +125,23 @@ Results go to `playwright-report/deploy/`; the README links the latest pass date
 - `pnpm test:e2e` skips the `@visual` tests off Linux (spec 12 §9); the README's testing section should say that macOS and Windows runs report them as skipped and how to create local baselines.
 - A scenario for a 4xx exists now: `?scenario=rate-limited` (spec 02 §17). Add it to the README's scenario list next to the 5xx ones.
 - The plaintext demo passwords live only in `fixtures/credentials.ts` and the README; the production bundle no longer contains them (spec 02 §17).
+
+## 9. Decisions
+
+Taken at delivery (2026-10-29), after the app was deployed.
+
+1. **Open questions 1–4** took the recommended defaults: English documents; generated tables checked by a test; two Mermaid diagrams; a `--no-local` clone for the clean checkout.
+2. **Generated sections** are three, not two: operations, error codes (`ERROR_DEFAULTS`) and scenarios. The script is `docs:update` (§1).
+3. **`/dev/*` routes are not in the deploy (R10, G8).** The deploy served `/dev/ui-kit` and `/dev/realtime` (checked 2026-10-29). E2E runs against `vite preview` of a production build and uses both (`design-system.spec.ts`, `realtime-resilience.spec.ts`, two tests in `auth.spec.ts`), so they cannot simply be removed. Options weighed: a runtime check (leaves the code in the bundle), a build-time flag read by the route files (the generated route tree and the heavy imports stay), deleting the folder in the Vercel build (a dirty tree and a tree that no longer matches `routeTree.gen.ts`), and a transform plugin. Chosen: `scripts/dev-routes.ts`, a Vite plugin (`enforce: 'pre'`, before the router plugin) that replaces each `src/routes/dev/*.tsx` module with a stub `createFileRoute('/dev/<name>')({ beforeLoad: () => { throw notFound() } })` unless the flag is on. The route tree is untouched, the harness code and its imports never reach `dist/` (no `ui-kit` or `dev-realtime` chunk), and the URL answers the app's not-found view. The flag is `VITE_ENABLE_DEV_ROUTES=true`, read at build time only (not part of the client env schema): the dev server always has the routes, **a build has them only when the flag is set**, so the Vercel build needs no setting and a misconfigured deploy is safe by default. `playwright.config.ts` sets the flag in `webServer.env`. A server started from a plain `pnpm build` gives not-found on those routes; the README says so. Checked: a plain build → `/dev/ui-kit` shows "Página não encontrada"; the flagged build passes `design-system`, `realtime-resilience` and the two `auth` tests (§ tasks).
+4. **Build identifier (DOC-16)** is 7 characters (§4), so `git rev-parse --short=7 HEAD` and the Vercel value compare directly; it is injected in the dev server too.
+5. **Playwright port.** `playwright.config.ts` reads `E2E_PORT` (default 4173) so a second checkout can run beside one that holds 4173; the web server and `baseURL` follow it. Two tests that hard-code `http://localhost:4173` (spec 07 §13, item 19) still need the default port.
+6. **Lighthouse location.** Reports live in `lighthouse/reports/` (spec 13 decision 1), so there is no `docs/lighthouse/`; the README links `lighthouse/reports/` and the deployed summary `lighthouse/reports/deployed-2026-10-29.md`. Mobile Performance below 90 (G1) is documented as an accepted deviation with the spec 13 analysis.
+7. **DOC-17** was checked by hand (§6) rather than by a Playwright script, and its results are recorded in `tasks.md` with the commit the deploy serves.
+8. **Figma fidelity** is not copied into `ARCHITECTURE.md`: §13 lists the deliberate deviations and links `SPECS-NTFS/12-visual-regression/fidelity.md` for the screen-level comparison. `docs.test.ts` lets that one link pass while the file is unmerged (`LANDS_LATER`); remove the entry once it exists.
+9. **README screenshot** is the deployed home of 2026-10-29 (before the fidelity pass); retake it after the final deploy.
+
+## 10. Amendments to earlier specs
+
+- Spec 00 design §12 and spec 02 tasks: the remote deploy proofs are recorded as done (2026-10-29).
+- Spec 13 tasks T06: the deployed audit is done.
+- `SPECS-NTFS/README.md`: statuses of 00, 02, 13 and 14.

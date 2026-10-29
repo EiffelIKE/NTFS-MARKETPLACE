@@ -27,16 +27,16 @@ interface RowProps {
 /** A summary row. The value slot has one fixed width, so a skeleton and a number share a box. */
 function Row({ label, value, prefix, caption, strong, outdated, testId, className }: RowProps) {
   return (
-    <div className={cn('flex items-start justify-between gap-3', className)}>
-      <dt className={cn('text-body', strong ? 'font-bold text-foreground' : 'text-foreground')}>
+    <div className={cn('flex items-start justify-between gap-2', className)}>
+      <dt className={cn('text-body-md', strong ? 'font-bold text-foreground' : 'text-foreground')}>
         {label}
       </dt>
-      <dd className="flex w-32 shrink-0 flex-col items-end">
+      <dd className="flex w-29 shrink-0 flex-col items-end">
         <span
           data-testid={testId}
           data-outdated={outdated ? true : undefined}
           className={cn(
-            'flex min-h-6 items-center justify-end text-right text-title tabular-nums transition-opacity',
+            'flex min-h-6 items-center justify-end text-right text-body-lg tabular-nums transition-opacity lg:text-title',
             strong ? 'font-bold text-text-accent' : 'font-normal text-foreground',
             outdated && 'opacity-60',
           )}
@@ -121,7 +121,7 @@ export function CartSummary({ cart, quote, variant, signedIn }: CartSummaryProps
           </AlertAction>
         </Alert>
       ) : (
-        <dl className="flex flex-col gap-3" aria-busy={loading || outdated}>
+        <dl className="flex flex-col gap-2" aria-busy={loading || outdated}>
           <Row
             testId="summary-subtotal"
             label="Subtotal"
@@ -171,7 +171,7 @@ export function CartSummary({ cart, quote, variant, signedIn }: CartSummaryProps
       {canCheckout ? (
         <Button
           asChild
-          className={cn('h-11', sheet && 'h-15 rounded-full bg-primary-soft text-body-lg')}
+          className={cn('h-10', sheet && 'h-15 rounded-full bg-primary-cta text-body-lg')}
         >
           {signedIn ? (
             <Link to="/checkout">Conectar e finalizar</Link>
@@ -186,7 +186,7 @@ export function CartSummary({ cart, quote, variant, signedIn }: CartSummaryProps
           type="button"
           disabled
           aria-describedby={reason ? reasonId : undefined}
-          className={cn('h-11', sheet && 'h-15 rounded-full text-body-lg disabled:bg-none')}
+          className={cn('h-10', sheet && 'h-15 rounded-full text-body-lg disabled:bg-none')}
         >
           Conectar e finalizar
         </Button>
@@ -196,7 +196,7 @@ export function CartSummary({ cart, quote, variant, signedIn }: CartSummaryProps
         <Link
           to="/"
           hash="mercado"
-          className="text-center text-body-lg text-text-accent hover:underline"
+          className="text-center text-body text-text-accent hover:underline"
         >
           Continuar explorando
         </Link>

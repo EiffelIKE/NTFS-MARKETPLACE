@@ -5,6 +5,8 @@ import type { NftDetail } from '@/contracts'
 import { useMediaQuery } from '@/hooks/use-media-query'
 import { cn } from '@/lib/utils'
 
+import { useSlideTrack } from '../hooks/use-slide-track'
+import { SlideDots, SlideTrack } from './slide-track'
 import { ZoomDialog } from './zoom-dialog'
 
 /** The main image's box: 444 square with the artwork inset by 20 on desktop, edge to edge on mobile. */
@@ -27,10 +29,10 @@ export function Gallery({ nft, className }: { nft: NftDetail; className?: string
   const zoom = (
     <ZoomDialog
       name={nft.name}
-      image={image}
+      images={images}
       index={current}
-      total={images.length}
-      className="absolute top-3.75 right-3.75 z-10"
+      onIndexChange={setIndex}
+      className={wide ? 'absolute top-3.75 right-3.75 z-10' : 'absolute top-3.75 right-9.75 z-10'}
     />
   )
 
@@ -76,98 +78,62 @@ export function Gallery({ nft, className }: { nft: NftDetail; className?: string
       </div>
     )
   }
-  return <MobileTrack nft={nft} onIndexChange={setIndex} zoom={zoom} className={className} />
+  return (
+    <MobileTrack
+      images={images}
+      index={current}
+      onIndexChange={setIndex}
+      zoom={zoom}
+      className={className}
+    />
+  )
 }
 
 function MobileTrack({
-  nft,
+  images,
+  index,
   onIndexChange,
   zoom,
   className,
 }: {
-  nft: NftDetail
+  images: NftDetail['images']
+  index: number
   onIndexChange: (index: number) => void
   zoom: React.ReactNode
   className?: string | undefined
 }) {
-  const track = React.useRef<HTMLDivElement>(null)
-  const [active, setActive] = React.useState(0)
-  const { images } = nft
-
-  // The slide the track is scrolled to is the active one (the track is as wide as a slide).
-  React.useEffect(() => {
-    const root = track.current
-    if (!root || images.length < 2) return
-    const update = () => {
-      const next = Math.min(images.length - 1, Math.round(root.scrollLeft / root.clientWidth))
-      setActive(next)
-      onIndexChange(next)
-    }
-    root.addEventListener('scroll', update, { passive: true })
-    return () => {
-      root.removeEventListener('scroll', update)
-    }
-  }, [images.length, onIndexChange])
-
-  const show = (position: number) => {
-    const slide = track.current?.children[position] as HTMLElement | undefined
-    track.current?.scrollTo({ left: slide?.offsetLeft ?? 0 })
-    setActive(position)
-    onIndexChange(position)
-  }
+  // `index` is also where the zoom dialog left off: the track scrolls there when it closes.
+  const { track, active, show } = useSlideTrack({
+    count: images.length,
+    index,
+    onChange: onIndexChange,
+  })
 
   return (
     <div data-testid="gallery-main" className={cn(galleryMainClass, 'bg-transparent', className)}>
-      <div
-        ref={track}
-        // Focusable so the keyboard can scroll it (arrow keys), as axe's scrollable-region rule asks.
-        // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- a scroll container must be reachable
-        tabIndex={0}
-        role="region"
-        aria-label="Imagens do NFT"
-        className="flex size-full snap-x snap-mandatory [scrollbar-width:none] overflow-x-auto overscroll-x-contain rounded-card-mobile"
+      <SlideTrack
+        images={images}
+        track={track}
+        className="size-full rounded-card-mobile"
+        slideClassName="size-full"
       >
-        {images.map((image, position) => (
-          <div
-            key={image.url}
-            role="group"
-            aria-roledescription="slide"
-            aria-label={`Imagem ${String(position + 1)} de ${String(images.length)}`}
-            className="size-full shrink-0 snap-center"
-          >
-            <NftImage
-              image={image}
-              slot="gallery"
-              priority={position === 0}
-              className="size-full object-cover"
-            />
-          </div>
-        ))}
-      </div>
+        {(image, position) => (
+          <NftImage
+            image={image}
+            slot="gallery"
+            priority={position === 0}
+            className="size-full object-cover"
+          />
+        )}
+      </SlideTrack>
       {zoom}
       {images.length > 1 && (
-        <div className="absolute inset-x-0 bottom-18 flex justify-center">
-          {images.map((image, position) => (
-            <button
-              key={image.url}
-              type="button"
-              aria-label={`Ver imagem ${String(position + 1)} de ${String(images.length)}`}
-              aria-current={position === active ? 'true' : undefined}
-              onClick={() => {
-                show(position)
-              }}
-              className="flex size-6 cursor-pointer items-center justify-center"
-            >
-              <span
-                aria-hidden="true"
-                className={cn(
-                  'h-1.75 rounded-full bg-primary transition-[width] motion-reduce:transition-none',
-                  position === active ? 'w-4' : 'w-1.75 opacity-50',
-                )}
-              />
-            </button>
-          ))}
-        </div>
+        <SlideDots
+          count={images.length}
+          active={active}
+          onSelect={show}
+          className="absolute inset-x-0 bottom-18"
+        />
       )}
     </div>
   )

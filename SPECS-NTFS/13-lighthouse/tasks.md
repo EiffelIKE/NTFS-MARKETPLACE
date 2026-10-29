@@ -1,6 +1,6 @@
 # 13 — Lighthouse · Tasks
 
-> Status: Done — deployed comparison (T06) waits for the user's Vercel deploy.
+> Status: Done. The deployed audit (T06) ran on 2026-10-29 from spec 14: mobile Performance 86 (home) and 87 (details), desktop 99 and 100; the summary is `lighthouse/reports/deployed-2026-10-29.md`. The deploy predates the latest commits, so re-run `pnpm lighthouse:deployed <url>` after the final deploy.
 
 Implements [`requirements.md`](requirements.md) following [`design.md`](design.md). Work top to bottom; check a task only when its proof passes. Commands run inside the mise toolchain.
 
@@ -37,8 +37,8 @@ Started after specs 05–12 were Done.
   - `pnpm lighthouse:publish`.
   - **Proof:** `lighthouse/reports/` holds `summary.{md,json}`, `analysis.md` and 8 report files (5.6 MB); `git check-ignore reports/lighthouse` matches, `git check-ignore lighthouse/reports` does not.
 
-- [ ] **T06 — Deployed comparison** · PERF-04 · *blocked by B1*
-  - Mechanism done and exercised against a local server in place of the deployed origin (`--deployed <url>` clears `startServerCommand`, writes `reports/lighthouse/deployed/`). Remaining: run it on the Vercel URL and add the numbers and their explanation to the analysis ("Local vs. deployed").
+- [x] **T06 — Deployed comparison** · PERF-04 · *B1 resolved: deployed at https://ntfs-marketplace.vercel.app/*
+  - Mechanism done and exercised against a local server in place of the deployed origin (`--deployed <url>` clears `startServerCommand`, writes `reports/lighthouse/deployed/`). Run on the Vercel URL on 2026-10-29 (spec 14, T07): mobile Performance 86 / 87 against 76 locally (HTTP/2 and Brotli, no local CPU contention), desktop 99 / 100, every other category 100. The numbers are in the README and `lighthouse/reports/deployed-2026-10-29.md`; the mobile miss against 90 stays an accepted, documented deviation.
 
 - [x] **T07 — Wrap-up**
   - Design §7 notes are for spec 14; spec 13 status and the amendments to specs 00, 01, 02 and 04 are in [`../README.md`](../README.md) and their documents.
@@ -52,6 +52,7 @@ Started after specs 05–12 were Done.
 - The first full E2E run after the shell-first boot failed one test: the grid test `only the first hero image is eager (CAT-23)`, which my first idea (priority on the first catalog card) broke. The idea was reverted.
 - Pre-existing, found while changing `vite.config.ts`: `src/styles/no-raw-colors.test.ts` flagged `Emerald Ape #042` (comments and sample data) as hex colors on a fresh run. The regex now ignores a `#` after a word and a space.
 - The unit test for the summary lives next to the script; the `--deployed` mechanism was run once against a local `vite preview` standing in for the deployed origin and the output deleted.
+- Post-deploy fix (2026-10-29): after a DevTools Lighthouse run the deployed app could stay black, half-loaded, or on the `Operation has been aborted` boot error until the site data was cleared. Root cause and fix in design §11 (bounded `worker.start()`, interception probe, guarded unregister-and-reload, validated persisted database, a button that cleans the stale registration). Gate: `pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm test`, `pnpm build`; E2E `boot-recovery` (6, new), `mocks`, `smoke`, `catalog`, `purchase`, `loading-states`, `realtime-resilience` pass.
 
 ## Coverage
 
@@ -60,7 +61,7 @@ Started after specs 05–12 were Done.
 | PERF-01 | T01 | 12 runs: 6 per `lhci autorun`, one per config |
 | PERF-02 | T01, T02 | Chromium pin; environment in `summary.md` |
 | PERF-03 | T01 | Lighthouse default storage reset; the mock cost shows every run |
-| PERF-04 | T06 | mechanism tested locally; deployed run pending B1 |
+| PERF-04 | T06 | deployed run 2026-10-29: mobile 86 / 87, desktop 99 / 100 |
 | PERF-05 | T01, T04 | median-run assertions in both configs; `--strict` |
 | PERF-06 | T01, T02 | metric `warn` assertions; medians in the summary |
 | PERF-07 | T02 | `summary.{md,json}` |

@@ -131,8 +131,10 @@ export function DesktopFooter({ className, ...props }: React.ComponentProps<'foo
                 {feature.letter}
               </span>
               {/* Figma sets these at 17 px; at 18 they need the column's right padding from 1280 up. */}
-              <h2 className="text-title text-foreground xl:whitespace-nowrap">{feature.title}</h2>
-              <p className="max-w-53.5 text-body text-text-secondary">{feature.text}</p>
+              <h2 className="text-[1.0625rem] leading-6 font-bold text-foreground xl:whitespace-nowrap">
+                {feature.title}
+              </h2>
+              <p className="max-w-51 text-body text-text-secondary">{feature.text}</p>
             </div>
           ))}
           <div className="flex flex-col gap-4 pl-4">
