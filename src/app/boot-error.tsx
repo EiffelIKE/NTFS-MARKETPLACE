@@ -27,6 +27,11 @@ export function BootError({ error }: BootErrorProps) {
         Se isso aconteceu após uma auditoria Lighthouse, feche o DevTools e tente recarregar. Se
         continuar, em Application → Service Workers, desative “Bypass for network”.
       </p>
+      <p className="text-sm text-muted-foreground">
+        Se ainda assim não funcionar, limpe os dados do site, principalmente os service workers: no
+        DevTools, Application → Storage → “Clear site data”, ou nas configurações do site no
+        navegador. Depois, recarregue a página.
+      </p>
       <Button
         loading={recovering}
         onClick={() => {
