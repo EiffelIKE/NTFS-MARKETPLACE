@@ -332,8 +332,8 @@ Every query function receives Query's `signal` and passes it to Axios, so a navi
 | Unit | Vitest (node) | Pure modules: money, env, search schemas, session controller, realtime guard and manager, query helpers, form models, attempt store, quote review, docs and build scripts. No DOM environment: UI behavior is proven by E2E |
 | Contract | Vitest + `msw/node` against the **real** Axios client (`src/api/*.contract.test.ts`) | Every operation, error code, ownership, idempotency, resilience rules |
 | E2E | Playwright, desktop (1440×900) and mobile (390×844 Pixel 7) Chromium, against `vite preview` of a production build, with mocks | The 12 required scenarios below, plus design system, mocks, explorer, boot recovery |
-| Accessibility | `@axe-core/playwright` in the same E2E run (`e2e/a11y.spec.ts`, 238 runs) | Route × state matrix, keyboard paths, focus, live regions, zoom and overflow at 320–1440; no axe rule is disabled |
-| Visual | Playwright screenshots, 16 Linux baselines (`pnpm test:visual`) | Home, details, cart, checkout and skeletons; frozen clock, zero mock latency, nothing masked; skipped off Linux |
+| Accessibility | `@axe-core/playwright` in the same E2E run (`e2e/a11y.spec.ts`, 254 tests over both projects) | Route × state matrix, keyboard paths, focus, live regions, zoom and overflow at 320–1440; no axe rule is disabled |
+| Visual | Playwright screenshots, 14 Linux baselines (`pnpm test:visual`) | Home, details, cart, checkout and skeletons; frozen clock, zero mock latency, nothing masked; skipped off Linux |
 | Performance | Lighthouse CI, 3 runs per page and profile, medians (`pnpm lighthouse`) | Home and details, mobile and desktop; reports in `lighthouse/reports/` |
 
 Brief §9 scenario map:
@@ -489,5 +489,5 @@ Everything the specs recorded, grouped. Each row names its spec for the reason. 
 - **Visual baselines are Linux-only.** `pnpm test:e2e` skips `@visual` on other systems and reports it; regenerate with `pnpm test:visual:update`.
 - **Unknown URLs answer HTTP 200** with the not-found view (SPA on Vercel); `robots.txt` is a real file for that reason.
 - **Playwright's default parallelism** can overload a small machine; run with `--workers=3` (see the README).
-- **Known test limits:** a server-side 422 with `fields` cannot be triggered from the UI with the mock (unit-tested instead); one rare flake was seen in the catalog sort "three rapid clicks" test (1 in 240 runs, not root-caused); the 5 s poll fallback is proven only in E2E.
+- **Known test limits:** a server-side 422 with `fields` cannot be triggered from the UI with the mock (unit-tested instead); one rare flake was seen in the favorites "three rapid clicks" test (`e2e/favorites.spec.ts`, 1 in 240 runs, not root-caused); the 5 s poll fallback is proven only in E2E.
 - **Out of scope by decision:** social login, password recovery, reviews writing, blog pages, newsletter (they show "Disponível em breve").

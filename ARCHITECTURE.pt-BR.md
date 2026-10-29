@@ -332,8 +332,8 @@ Toda query function recebe o `signal` do Query e o repassa ao Axios, então uma 
 | Unitário | Vitest (node) | Módulos puros: money, env, schemas de search, controller de sessão, guarda e manager de tempo real, helpers de query, modelos de formulário, store de tentativas, revisão de cotação, scripts de docs e de build. Sem ambiente DOM: o comportamento da UI é provado por E2E |
 | Contrato | Vitest + `msw/node` contra o cliente Axios **real** (`src/api/*.contract.test.ts`) | Toda operação, código de erro, propriedade, idempotência, regras de resiliência |
 | E2E | Playwright, Chromium desktop (1440×900) e mobile (390×844 Pixel 7), contra o `vite preview` de um build de produção, com mocks | Os 12 cenários exigidos abaixo, mais design system, mocks, explorador, recuperação de boot |
-| Acessibilidade | `@axe-core/playwright` na mesma execução E2E (`e2e/a11y.spec.ts`, 238 execuções) | Matriz rota × estado, caminhos de teclado, foco, regiões live, zoom e overflow de 320 a 1440; nenhuma regra do axe é desabilitada |
-| Visual | Capturas do Playwright, 16 baselines Linux (`pnpm test:visual`) | Home, detalhes, carrinho, checkout e skeletons; relógio congelado, latência zero do mock, nada mascarado; ignorado fora do Linux |
+| Acessibilidade | `@axe-core/playwright` na mesma execução E2E (`e2e/a11y.spec.ts`, 254 testes nos dois projetos) | Matriz rota × estado, caminhos de teclado, foco, regiões live, zoom e overflow de 320 a 1440; nenhuma regra do axe é desabilitada |
+| Visual | Capturas do Playwright, 14 baselines Linux (`pnpm test:visual`) | Home, detalhes, carrinho, checkout e skeletons; relógio congelado, latência zero do mock, nada mascarado; ignorado fora do Linux |
 | Desempenho | Lighthouse CI, 3 execuções por página e perfil, medianas (`pnpm lighthouse`) | Home e detalhes, mobile e desktop; relatórios em `lighthouse/reports/` |
 
 Mapa dos cenários do enunciado §9:
@@ -489,5 +489,5 @@ Tudo o que as specs registraram, agrupado. Cada linha nomeia a sua spec para o m
 - **As baselines visuais são só para Linux.** O `pnpm test:e2e` ignora o `@visual` em outros sistemas e informa isso; regenere com `pnpm test:visual:update`.
 - **URLs desconhecidas respondem HTTP 200** com a tela de not-found (SPA na Vercel); o `robots.txt` é um arquivo real por esse motivo.
 - **O paralelismo padrão do Playwright** pode sobrecarregar uma máquina pequena; rode com `--workers=3` (veja o README).
-- **Limites conhecidos dos testes:** um 422 do servidor com `fields` não pode ser disparado pela UI com o mock (testado por unidade); uma flake rara foi vista no teste de "três cliques rápidos" da ordenação do catálogo (1 em 240 execuções, sem causa raiz); o fallback do poll de 5 s é provado apenas em E2E.
+- **Limites conhecidos dos testes:** um 422 do servidor com `fields` não pode ser disparado pela UI com o mock (testado por unidade); uma flake rara foi vista no teste de "três cliques rápidos" dos favoritos (`e2e/favorites.spec.ts`, 1 em 240 execuções, sem causa raiz); o fallback do poll de 5 s é provado apenas em E2E.
 - **Fora do escopo por decisão:** login social, recuperação de senha, escrita de avaliações, páginas do blog, newsletter (mostram "Disponível em breve").
