@@ -28,7 +28,7 @@ Brief coverage: §3 (NFT details), §3.1 (direct access, nonexistent resources, 
 - **DET-05** — THE SYSTEM SHALL show a gallery of the NFT's images:
   - Desktop: a main image plus up to four thumbnail buttons. Selecting a thumbnail swaps the main image and marks it selected.
   - Mobile: a swipeable image track with one indicator per image when there are several.
-  - Both: a zoom button that opens the current image at full size in a dialog.
+  - Both: a zoom button that opens a dialog at full size, on the current image. The dialog browses every image of the NFT (amended 2026-10-29): swipe, "Imagem anterior" / "Próxima imagem" buttons (disabled at the ends), `ArrowLeft` / `ArrowRight`, and one dot per image. The title follows the image ("{name} — imagem N de M"). On close the page's gallery shows the image the dialog ended on. A single image shows no buttons and no dots.
 - **DET-06** — THE SYSTEM SHALL show:
   - name, price and the previous price when present;
   - rating: stars with a text alternative, "4.8" style value, and "<n> avaliações de colecionadores";

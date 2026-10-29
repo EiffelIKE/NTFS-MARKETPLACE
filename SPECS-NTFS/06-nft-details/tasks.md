@@ -100,6 +100,11 @@ None. The share row icons were delivered on 2026-10-27 in `src/assets/share_icon
 - Radix checks a radio on focus only while the arrow key is still down, so the keyboard test holds the key (`keyboard.down`/`up`) instead of `press`.
 - Existing E2E adapted (not weakened): `smoke.spec.ts` drops the `/nfts/1` placeholder row and reloads a real NFT.
 
+## Run log (2026-10-29): zoom gallery amendment
+
+- The zoom dialog browses every image (DET-05 amendment, design §17). New: `hooks/use-slide-track.ts`, `components/slide-track.tsx`, `model/slides.ts` (+ unit test); `gallery.tsx` and `zoom-dialog.tsx` use them. E2E: block `zoom gallery (DET-05)` in `e2e/nft-details.spec.ts` (7 tests in both projects).
+- Checked by hand in Chrome at 1440 and 390: the viewer fits the viewport on both, arrows sit over the image edges, dots below it.
+
 ## Coverage
 
 | Req. | Task(s) | Proof |
@@ -108,7 +113,7 @@ None. The share row icons were delivered on 2026-10-27 in `src/assets/share_icon
 | DET-02 | T03 | 404 + bad id E2E |
 | DET-03 | T03 | skeleton / error-retry E2E |
 | DET-04 | T02, T04 | related failure E2E |
-| DET-05 | T04 | gallery + zoom E2E |
+| DET-05 | T04 | gallery + zoom E2E; zoom gallery E2E block and `slides.test.ts` (amendment 2026-10-29) |
 | DET-06 | T04 | anchor content E2E |
 | DET-07 | T07 | tabs E2E |
 | DET-08 | T04 | related E2E |
