@@ -145,3 +145,14 @@ Taken at delivery (2026-10-29), after the app was deployed.
 - Spec 00 design §12 and spec 02 tasks: the remote deploy proofs are recorded as done (2026-10-29).
 - Spec 13 tasks T06: the deployed audit is done.
 - `SPECS-NTFS/README.md`: statuses of 00, 02, 13 and 14.
+
+## 11. Amendment: Brazilian Portuguese copies (2026-10-29)
+
+The evaluators read Portuguese, so each required delivery document has a pt-BR copy.
+
+- **Files.** `README.pt-BR.md` and `ARCHITECTURE.pt-BR.md`, full translations (prose, table text, Mermaid labels). Code, commands, paths, identifiers, schema names, operation ids, error codes and URLs are not translated; UI strings already in pt-BR are unchanged. Links to `SPECS-NTFS/` stay as they are (the specs are English only). Cross-links point to the sibling copy and the anchors use the slug of the translated heading (`ARCHITECTURE.pt-BR.md#13-desvios-e-decisões`).
+- **Language switch.** The first line under the H1 of the four files: `**English** · [Português (Brasil)](README.pt-BR.md)` in the English files, `[English](README.md) · **Português (Brasil)**` in the copies (the ARCHITECTURE pair links to its own sibling). The README link list also names the copies.
+- **English is the source of truth.** A change to `README.md` or `ARCHITECTURE.md` must be mirrored in its pt-BR copy in the same change. The generated tables are enforced; the prose is not, so a reviewer has to check it.
+- **Generated sections.** `renderSections(locale)` takes `'en'` (default, byte-identical to before) or `'pt-BR'`. Only the column headers and the English prose cells (auth labels, "with `favorites`", "on replay") are translated; code cells are identical. `docs.test.ts` lists each section's owners as (file, locale) pairs and checks and rewrites (`UPDATE_DOCS=1`) the section in both the English and the pt-BR file. It also asserts that each document has its sibling, that the four files carry the language-switch link, that the sibling has the same generated sections, and that the relative links of the copies point at existing files. `pnpm docs:update` now edits four files.
+- **Not enforced:** that the prose of a copy matches its original, and that the copy's anchors exist (checked once with a throwaway script at delivery: 50 anchors across the four files, all resolved).
+- **Prettier.** The copies are in `.prettierignore` next to the originals (they hold the same unpadded generated tables). `scripts/delivery-check.sh` needed no change: it does not list the documents, and `pnpm test` already runs the new checks.

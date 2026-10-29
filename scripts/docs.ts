@@ -1,7 +1,8 @@
-// The generated tables of README.md and ARCHITECTURE.md (spec 14 §1, DOC-04, DOC-09). Each one sits
-// between `<!-- generated:NAME -->` and `<!-- /generated:NAME -->`; `docs.test.ts` fails when the
-// text between the markers differs from what `renderSections()` produces, and `pnpm docs:update`
-// (`UPDATE_DOCS=1`) rewrites it.
+// The generated tables of README.md and ARCHITECTURE.md and of their pt-BR copies (spec 14 §1, §11,
+// DOC-04, DOC-09). Each one sits between `<!-- generated:NAME -->` and `<!-- /generated:NAME -->`;
+// `docs.test.ts` fails when the text between the markers differs from what `renderSections()`
+// produces for that file's locale, and `pnpm docs:update` (`UPDATE_DOCS=1`) rewrites it. Only the
+// column headers and the prose cells are translated; code cells are identical in every locale.
 import { ERROR_DEFAULTS } from '../src/contracts/errors.ts'
 import {
   OPERATION_IDS,
@@ -13,6 +14,9 @@ import { SCENARIO_LIST } from '../src/mocks/scenarios.ts'
 
 export const SECTION_NAMES = ['operations', 'errors', 'scenarios'] as const
 export type SectionName = (typeof SECTION_NAMES)[number]
+
+export const LOCALES = ['en', 'pt-BR'] as const
+export type Locale = (typeof LOCALES)[number]
 
 interface OperationDoc {
   /** Request schema, or what stands in for it (query, path, header). */
@@ -133,12 +137,42 @@ const DOCS: Record<OperationId, OperationDoc> = {
   'walletConnections.disconnect': { request: '—', success: '204', errors: '401, 403, 404' },
 }
 
-const AUTH_LABEL: Record<AuthMode, string> = {
-  none: 'none',
-  optional: 'optional bearer',
-  lenient: 'bearer, ignored if invalid',
-  required: 'bearer',
-  cart: 'bearer or guest cart id',
+// The few cells of `DOCS` that are English prose rather than code or numbers.
+const DOCS_PT_BR: Partial<Record<OperationId, Partial<OperationDoc>>> = {
+  'nfts.list': { errors: '422, 401 (com `favorites`)' },
+  'orders.create': {
+    success: '201 `Order` (200 em replay)',
+  },
+}
+
+const AUTH_LABEL: Record<Locale, Record<AuthMode, string>> = {
+  en: {
+    none: 'none',
+    optional: 'optional bearer',
+    lenient: 'bearer, ignored if invalid',
+    required: 'bearer',
+    cart: 'bearer or guest cart id',
+  },
+  'pt-BR': {
+    none: 'nenhuma',
+    optional: 'bearer opcional',
+    lenient: 'bearer, ignorado se inválido',
+    required: 'bearer',
+    cart: 'bearer ou id do carrinho de visitante',
+  },
+}
+
+const HEADERS: Record<Locale, Record<SectionName, string[]>> = {
+  en: {
+    operations: ['Operation', 'Method and path', 'Auth', 'Request', 'Success', 'Errors'],
+    errors: ['Code', 'Status', 'Default message (pt-BR)'],
+    scenarios: ['Scenario', 'Name in the panel', 'Effect', 'Seed'],
+  },
+  'pt-BR': {
+    operations: ['Operação', 'Método e caminho', 'Autenticação', 'Requisição', 'Sucesso', 'Erros'],
+    errors: ['Código', 'Status', 'Mensagem padrão (pt-BR)'],
+    scenarios: ['Cenário', 'Nome no painel', 'Efeito', 'Seed'],
+  },
 }
 
 const cell = (text: string) => text.replaceAll('|', '\\|').replaceAll('\n', ' ')
@@ -152,16 +186,16 @@ function table(header: string[], rows: string[][]): string {
   return lines.join('\n')
 }
 
-function operations(): string {
+function operations(locale: Locale): string {
   return table(
-    ['Operation', 'Method and path', 'Auth', 'Request', 'Success', 'Errors'],
+    HEADERS[locale].operations,
     OPERATION_IDS.map((id) => {
       const { method, path, auth } = OPERATIONS[id]
-      const doc = DOCS[id]
+      const doc = { ...DOCS[id], ...(locale === 'pt-BR' ? DOCS_PT_BR[id] : undefined) }
       return [
         `\`${id}\``,
         `\`${method} ${path}\``,
-        AUTH_LABEL[auth],
+        AUTH_LABEL[locale][auth],
         doc.request,
         doc.success,
         doc.errors,
@@ -170,9 +204,9 @@ function operations(): string {
   )
 }
 
-function errors(): string {
+function errors(locale: Locale): string {
   return table(
-    ['Code', 'Status', 'Default message (pt-BR)'],
+    HEADERS[locale].errors,
     Object.entries(ERROR_DEFAULTS).map(([code, { status, message }]) => [
       `\`${code}\``,
       String(status),
@@ -181,9 +215,9 @@ function errors(): string {
   )
 }
 
-function scenarios(): string {
+function scenarios(locale: Locale): string {
   return table(
-    ['Scenario', 'Name in the panel', 'Effect', 'Seed'],
+    HEADERS[locale].scenarios,
     SCENARIO_LIST.map((scenario) => [
       `\`?scenario=${scenario.id}\``,
       scenario.label,
@@ -193,9 +227,9 @@ function scenarios(): string {
   )
 }
 
-/** The body of every generated section, without its marker comments. */
-export function renderSections(): Record<SectionName, string> {
-  return { operations: operations(), errors: errors(), scenarios: scenarios() }
+/** The body of every generated section for a locale, without its marker comments. */
+export function renderSections(locale: Locale = 'en'): Record<SectionName, string> {
+  return { operations: operations(locale), errors: errors(locale), scenarios: scenarios(locale) }
 }
 
 export const markers = (name: SectionName) =>

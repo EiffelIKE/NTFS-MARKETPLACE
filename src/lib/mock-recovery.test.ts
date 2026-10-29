@@ -5,13 +5,17 @@ import {
   MockBootError,
   RELOAD_GUARD_KEY,
   RELOAD_WINDOW_MS,
+  RESYNC_GUARD_KEY,
+  RESYNC_WINDOW_MS,
   bootWithRecovery,
+  browserResync,
   canAutoReload,
   claimAutoReload,
   hasOrphanedRegistration,
   pingMock,
   recoverOnce,
   releaseAutoReload,
+  resetMockWorkerAndReload,
   toBootError,
   unregisterMockWorkers,
   withTimeout,
@@ -21,6 +25,7 @@ import {
 
 afterEach(() => {
   vi.useRealTimers()
+  vi.unstubAllGlobals()
 })
 
 function memoryGuard(initial?: string): GuardStorage & { data: Map<string, string> } {
@@ -86,6 +91,44 @@ describe('reload guard', () => {
     const storage = memoryGuard('1000')
     releaseAutoReload(storage)
     expect(claimAutoReload(storage, 1_001)).toBe(true)
+  })
+})
+
+describe('manual and watchdog reloads', () => {
+  it('the button unregisters the worker, reloads, and spends the automatic reload', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(5000)
+    const storage = memoryGuard('1000')
+    const mock = registration('https://app.test/mockServiceWorker.js')
+    const reload = vi.fn()
+    vi.stubGlobal('sessionStorage', storage)
+    vi.stubGlobal('navigator', { serviceWorker: container([mock]) })
+    vi.stubGlobal('location', { reload })
+    await resetMockWorkerAndReload()
+    expect(mock.unregister).toHaveBeenCalledOnce()
+    expect(reload).toHaveBeenCalledOnce()
+    expect(storage.data.get(RELOAD_GUARD_KEY)).toBe('5000')
+    expect(claimAutoReload(storage, 5001)).toBe(false)
+  })
+
+  it('the watchdog reloads without unregistering the worker other tabs use', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(5000)
+    // A boot recovery a moment ago does not stop the watchdog: they keep separate guards.
+    const storage = memoryGuard('4000')
+    const mock = registration('https://app.test/mockServiceWorker.js')
+    const reload = vi.fn()
+    vi.stubGlobal('sessionStorage', storage)
+    vi.stubGlobal('navigator', { serviceWorker: container([mock]) })
+    vi.stubGlobal('location', { reload })
+    await expect(browserResync()).resolves.toBe('reloading')
+    expect(mock.unregister).not.toHaveBeenCalled()
+    expect(reload).toHaveBeenCalledOnce()
+    expect(storage.data.get(RESYNC_GUARD_KEY)).toBe('5000')
+    // Bounded too: a second loss inside the window gives up instead of reloading again.
+    vi.setSystemTime(5000 + RESYNC_WINDOW_MS - 1)
+    await expect(browserResync()).resolves.toBe('gave-up')
+    expect(reload).toHaveBeenCalledOnce()
   })
 })
 

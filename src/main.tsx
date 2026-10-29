@@ -14,6 +14,11 @@ import { takeMockUrlParams } from '@/mocks/url-params'
 const container = document.getElementById('root')
 if (!container) throw new Error('Missing #root element')
 
+// The static crawler fallback must not duplicate route-managed titles and meta tags.
+document.head.querySelectorAll('[data-seo]').forEach((tag) => {
+  tag.remove()
+})
+
 // Starts the mock API without blocking the first render (spec 13 §5): the shell paints while the
 // mock chunk downloads, and every request waits on `holdBackendUntil`. `vite.config.ts` writes the
 // parsed flag back as a literal, so with `VITE_ENABLE_MOCKS=false` this branch folds away and no

@@ -8,10 +8,12 @@ test-results
 reports
 .lighthouseci
 
-# Hand-written docs that Prettier would re-flow (README.md and ARCHITECTURE.md hold generated
-# tables between markers, which `pnpm docs` writes unpadded)
+# Hand-written docs that Prettier would re-flow (README.md, ARCHITECTURE.md and their pt-BR copies
+# hold generated tables between markers, which `pnpm docs:update` writes unpadded)
 README.md
 ARCHITECTURE.md
+README.pt-BR.md
+ARCHITECTURE.pt-BR.md
 SPECS-NTFS
 figma_tokens
 OBJETIVES.md

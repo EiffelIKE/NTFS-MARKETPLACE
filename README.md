@@ -1,10 +1,13 @@
 # KURIO — NFT Marketplace
 
+**English** · [Português (Brasil)](README.pt-BR.md)
+
 A frontend-only NFT marketplace for the KURIO challenge: catalog with search, filters and sorting, NFT details, favorites, cart with coupons, checkout with a simulated wallet, order receipt and a simulated block explorer, profile and wallets, and realtime price, availability and order updates over Socket.IO. React 19, TypeScript, TanStack Router and Query, Axios, Zod, MSW, Tailwind v4 with shadcn/ui, Playwright and Lighthouse. There is **no backend**: the REST API and the Socket.IO server are simulated in the browser (MSW), so the same build runs anywhere, offline included.
 
 - **Live demo:** <https://ntfs-marketplace.vercel.app/>
 - **Repository:** <https://github.com/EiffelIKE/NTFS-MARKETPLACE>
 - **How it is built and why:** [`ARCHITECTURE.md`](ARCHITECTURE.md) (contracts, realtime, cache policy, deviations from Figma and the brief, limitations). The spec-by-spec design record is in [`SPECS-NTFS/`](SPECS-NTFS/README.md).
+- **Português (Brasil):** [`README.pt-BR.md`](README.pt-BR.md) and [`ARCHITECTURE.pt-BR.md`](ARCHITECTURE.pt-BR.md). English is the source of truth.
 
 ![KURIO home on desktop](docs/screenshots/home-desktop.png)
 
@@ -128,7 +131,7 @@ Every flow below has an automated E2E test, listed in the last column; the steps
 | `pnpm lighthouse` | Builds and audits home and details, mobile and desktop, 3 runs each | `reports/lighthouse/` |
 | `pnpm lighthouse:publish` | The same, and copies the summary and median runs | `lighthouse/reports/` |
 | `pnpm lighthouse:deployed <url>` | Audits a deployed origin (report only) | `reports/lighthouse/deployed/` |
-| `pnpm docs:update` | Regenerates the tables of this README and `ARCHITECTURE.md` from code | edits both files |
+| `pnpm docs:update` | Regenerates the tables of this README, `ARCHITECTURE.md` and their pt-BR copies from code | edits all four files |
 
 `pnpm docs:update` sets an environment variable inline, so on Windows run it from Git Bash or WSL.
 
@@ -138,7 +141,7 @@ Every flow below has an automated E2E test, listed in the last column; the steps
 - **Unit and contract:** `pnpm test`. Contract tests call the real Axios client against `msw/node`.
 - **E2E:** `pnpm test:e2e` runs against the optimized build (the Playwright web server runs `pnpm build` and `vite preview` on port 4173, with `VITE_ENABLE_DEV_ROUTES=true`, and reuses a server that is already running). **Playwright's default parallelism can overload a small machine; add `--workers=3`:** `pnpm test:e2e --workers=3`. One project: `pnpm test:e2e --project=mobile-chromium`; one file: `pnpm test:e2e e2e/cart.spec.ts`. A server left over from a plain `pnpm build` has no `/dev/*` pages, so a few tests fail with not-found: stop it and let Playwright start its own.
 - **Report and traces:** `pnpm test:e2e:report`; a failing test keeps a trace, screenshot and video. Open a trace with `pnpm exec playwright show-trace test-results/<test>/trace.zip`.
-- **Visual regression:** `pnpm test:visual` and `pnpm test:visual:update`. The 16 baselines are tagged `-linux` (fonts and anti-aliasing differ between systems). On macOS and Windows the `@visual` tests are **reported as skipped**, not failed; run `pnpm test:visual:update` once to create your own local baselines, and review the images before committing them.
+- **Visual regression:** `pnpm test:visual` and `pnpm test:visual:update`. The 14 baselines are tagged `-linux` (fonts and anti-aliasing differ between systems). On macOS and Windows the `@visual` tests are **reported as skipped**, not failed; run `pnpm test:visual:update` once to create your own local baselines, and review the images before committing them.
 - **Accessibility:** axe runs inside the E2E suite (`e2e/a11y.spec.ts`); no rule is disabled.
 
 **Clean-checkout check.** `scripts/delivery-check.sh` clones the committed `HEAD` into a temporary folder and runs install, typecheck, lint, format, unit tests, build (asserting the `kurio-build` meta, no `/dev` harness chunk and no plaintext password in `dist/`) and the E2E suite there, so nothing can depend on ignored files or local state. `SKIP_E2E=1` skips the last step; `E2E_PORT` moves the preview port.
@@ -151,14 +154,14 @@ Audited on the **deployed** URL (Lighthouse CLI through LHCI, 3 runs per page an
 
 | Profile | Page | Performance | Accessibility | Best Practices | SEO | LCP | CLS | TBT |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
-| Mobile | Home | 86 | 100 | 100 | 100 | 3.42 s | 0 | 41 ms |
-| Mobile | Details | 87 | 100 | 100 | 100 | 3.26 s | 0 | 4 ms |
-| Desktop | Home | 99 | 100 | 100 | 100 | 0.76 s | 0 | 0 ms |
-| Desktop | Details | 100 | 100 | 100 | 100 | 0.68 s | 0 | 0 ms |
+| Mobile | Home | 86 | 100 | 100 | 100 | 3.35 s | 0 | 89 ms |
+| Mobile | Details | 86 | 100 | 100 | 100 | 3.33 s | 0 | 54 ms |
+| Desktop | Home | 99 | 100 | 100 | 100 | 0.75 s | 0 | 0 ms |
+| Desktop | Details | 99 | 100 | 100 | 100 | 0.76 s | 0 | 0 ms |
 
-That deploy predates the last commits (it was built before the service-worker boot recovery and the Figma fidelity pass), so re-run `pnpm lighthouse:deployed https://ntfs-marketplace.vercel.app/` after the final deploy. The raw summary of this run is [`lighthouse/reports/deployed-2026-10-29.md`](lighthouse/reports/deployed-2026-10-29.md). The local audit against `vite preview` (committed reports, with the analysis of every miss) is in [`lighthouse/reports/summary.md`](lighthouse/reports/summary.md): mobile Performance 76 there, desktop 98–99.
+Build `6915bac`, the final deploy; re-run with `pnpm lighthouse:deployed https://ntfs-marketplace.vercel.app/`. The summary of this run, with the live checks of the build id, `/dev` and `robots.txt`, is [`lighthouse/reports/deployed-2026-10-29.md`](lighthouse/reports/deployed-2026-10-29.md). The local audit against `vite preview` (committed reports, with the analysis of every miss) is in [`lighthouse/reports/summary.md`](lighthouse/reports/summary.md): mobile Performance 76 there, desktop 98–99.
 
-**Mobile Performance is below the brief's 90 target (86–87 deployed, 76 locally); every other category and target is met, and CLS is 0 everywhere.** This is an accepted, documented deviation: Lighthouse's simulated slow 4G with a 4× CPU slowdown prices the chain HTML → app → mock worker → API → LCP image, and a diagnostic build with mocks off only reached 79–83 locally. The analysis and the options not taken are in [`lighthouse/reports/analysis.md`](lighthouse/reports/analysis.md) and [`ARCHITECTURE.md`](ARCHITECTURE.md#12-performance-notes).
+**Mobile Performance is below the brief's 90 target (86 deployed, 76 locally); every other category and target is met, and CLS is 0 everywhere.** This is an accepted, documented deviation: Lighthouse's simulated slow 4G with a 4× CPU slowdown prices the chain HTML → app → mock worker → API → LCP image, and a diagnostic build with mocks off only reached 79–83 locally. The analysis and the options not taken are in [`lighthouse/reports/analysis.md`](lighthouse/reports/analysis.md) and [`ARCHITECTURE.md`](ARCHITECTURE.md#12-performance-notes).
 
 ## Deploy
 
@@ -173,6 +176,8 @@ git rev-parse --short=7 HEAD
 
 The two values must match (Vercel's `VERCEL_GIT_COMMIT_SHA`, first 7 characters; a local build uses `git rev-parse --short=7 HEAD`, or `dev` outside a git checkout). Also check that `/mockServiceWorker.js` answers 200 with `cache-control: no-cache`, that a deep link (`/cart`) survives a refresh, and that `/?scenario=empty` shows the empty catalog.
 
+The initial HTML includes Open Graph and Twitter metadata with a shared JPEG preview, so link previews work without JavaScript. TanStack Router supplies canonical URLs and descriptions for the homepage and NFT pages; account, checkout, favorites, and developer screens use `noindex`. [`public/sitemap.xml`](public/sitemap.xml), advertised in `robots.txt`, lists the homepage only. [`public/llms.txt`](public/llms.txt) and [`public/.well-known/ai-catalog.json`](public/.well-known/ai-catalog.json) are what Lighthouse's "Agentic Browsing" audits (`llms-txt`, `ard-schema`) look for: a short Markdown guide to the public pages, and an empty Agentic Resource Discovery catalog, because the site offers no agents, tools or MCP servers. NFT discovery depends on the rendered catalog links. Google still needs to render JavaScript to read page-specific metadata and content; individual NFT social previews would require prerendering or server rendering.
+
 ## Known limitations
 
-Everything is simulated (no real backend, wallet or chain), and realtime events reach only the tab that caused the change. Mobile Lighthouse Performance is below target (above). Visual baselines are Linux-only. Unknown URLs return HTTP 200 with the not-found view (an SPA on Vercel). A manual screen-reader pass has not been done yet. The full list, with reasons, is in [`ARCHITECTURE.md`](ARCHITECTURE.md#14-limitations); every deviation from Figma and the brief is in [section 13](ARCHITECTURE.md#13-deviations-and-decisions). Screens with **no Figma frame** (composed by the specs, documented there): mobile profile, mobile wallets, mobile order confirmation, tablet widths, the mobile filter sheet, the checkout review step, and the simulated explorer.
+Everything is simulated (no real backend, wallet or chain), and realtime events reach only the tab that caused the change. Mobile Lighthouse Performance is below target (above). Visual baselines are Linux-only. Unknown URLs return HTTP 200 with the not-found view (an SPA on Vercel). The full list, with reasons, is in [`ARCHITECTURE.md`](ARCHITECTURE.md#14-limitations); every deviation from Figma and the brief is in [section 13](ARCHITECTURE.md#13-deviations-and-decisions). Screens with **no Figma frame** (composed by the specs, documented there): mobile profile, mobile wallets, mobile order confirmation, tablet widths, the mobile filter sheet, the checkout review step, and the simulated explorer.

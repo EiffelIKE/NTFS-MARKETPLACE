@@ -1,0 +1,27 @@
+# KURIO
+
+> KURIO is a demo NFT marketplace, a single-page app with a Brazilian Portuguese (pt-BR) interface. Everything in it is simulated: the API is an in-browser mock (a service worker running MSW), and there is no real backend, wallet, blockchain or payment. Nothing here can be bought, sold or transferred.
+
+The public pages are the home page, which holds the catalog, and one details page per NFT. Account, cart, checkout and order screens exist, but they need a session and are not indexed. The data comes from the in-browser mock after the page's JavaScript runs, so the initial HTML alone does not list the NFTs.
+
+## Public pages
+
+- [Home and catalog](https://ntfs-marketplace.vercel.app/): highlights carousel and the NFT catalog with search, filters, sorting and pagination
+- [NFT details](https://ntfs-marketplace.vercel.app/nfts/emerald-ape-042): one NFT with its gallery, price, editions and rarity; every NFT is at `/nfts/<id>`, for example `emerald-ape-042`
+
+## Catalog URL parameters
+
+The catalog state is kept in the home page's query string, so a filtered view is a shareable link.
+
+- [Trending NFTs](https://ntfs-marketplace.vercel.app/?segment=trending): `segment` is `new` or `trending`
+- [Cheapest first](https://ntfs-marketplace.vercel.app/?sort=price-asc): `sort` is `price-asc`, `price-desc` or `popular`
+- [Search for "ape"](https://ntfs-marketplace.vercel.app/?q=ape): `q` is free text; `categories`, `networks`, `minPrice`, `maxPrice` and `page` also exist
+
+## Machine-readable files
+
+- [Sitemap](https://ntfs-marketplace.vercel.app/sitemap.xml): the home page
+- [Agent resource catalog](https://ntfs-marketplace.vercel.app/.well-known/ai-catalog.json): intentionally lists no agents, tools or MCP servers, because the site offers none
+
+## Optional
+
+- [Robots rules](https://ntfs-marketplace.vercel.app/robots.txt): crawlers are welcome, except on the developer-only `/dev/` routes

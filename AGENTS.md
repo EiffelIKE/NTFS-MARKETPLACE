@@ -46,3 +46,20 @@ The Figma MCP server provides an assets endpoint which can serve image and SVG a
 | `autoCodeSplitting`, lazy routes, split groupings | `node_modules/@tanstack/router-core/skills/router-core/code-splitting/SKILL.md`, `node_modules/@tanstack/router-plugin/skills/router-plugin/SKILL.md` |
 
 Skip `ssr/` (this app is a client-only SPA). Project decisions in `SPECS-NTFS/` win over skill examples when they differ, e.g. Zod 4 schemas go straight into `validateSearch` with `.catch()`, without `@tanstack/zod-adapter` (spec 00 design §1).
+
+## Working on this repository
+
+- **Design record.** Every decision lives in a spec of `SPECS-NTFS/` (requirements, design, tasks). Read the spec of the area before changing it, and record a change of decision as an amendment there. `OBJETIVES.md` is the challenge brief: never deviate from it.
+- **Languages.** Code, comments and documents are English; UI copy is pt-BR. `README.md` and `ARCHITECTURE.md` have pt-BR copies (`README.pt-BR.md`, `ARCHITECTURE.pt-BR.md`): mirror every change in both, with the decimal comma in pt-BR prose. The generated tables (`<!-- generated:… -->`) are written by `pnpm docs:update` and checked by `scripts/docs.test.ts`; do not edit them by hand.
+- **Tooling.** pnpm only. Gates: `pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm test`, `pnpm build`.
+- **Playwright.** Always cap the workers: `pnpm exec playwright test --workers=3` (the default parallelism overloads the machine; `pnpm test:e2e -- --workers=3` may not forward the flag). The web server reuses whatever already listens on port 4173, and a plain `pnpm build && pnpm preview` has no `/dev/*` routes, so stop your own preview before running E2E.
+- **E2E conventions.**
+  - A page-side abort never reaches the Service Worker, so prove cancellation from the page (no stale render), not from the mock request log.
+  - Tests that reset a scenario while a session is seeded call `forgetSession` first.
+  - Every realtime test waits for the NFT to render before changing it (the first-connection race of ARCHITECTURE §4).
+  - `page.route()` does not see requests that go through the Service Worker; use `page.context().route()`.
+  - A request that bypassed the mock gets the SPA's HTML with status 200; check the `x-kurio-mock` header of `/api/__mock/health` to know whether a tab is mocked.
+- **Mock worker.** Recovery lives in `src/lib/mock-recovery.ts` (spec 13 §11 and its follow-up). The watchdog must never unregister the worker: other tabs use it.
+- **SEO and agent files.** If the public domain changes, update `src/lib/seo.ts`, `index.html`, `public/robots.txt`, `public/sitemap.xml`, `public/llms.txt` and `public/.well-known/ai-catalog.json` together. After a deploy that changes them, submit `/sitemap.xml` in Google Search Console and inspect the home URL.
+- **Lighthouse.** `pnpm lighthouse` (local, `vite preview`) and `pnpm lighthouse:deployed <url>` write to the git-ignored `reports/lighthouse/`; the tracked summaries are in `lighthouse/reports/`. The README table holds the **deployed** numbers: update it, and the build id under it, only after measuring the deploy.
+- **Git.** Work on `dev` and commit locally; the owner opens the PR to `main` and deploys on Vercel.

@@ -39,6 +39,43 @@ test('a worker unregistered while the page was away is registered again on reloa
   expect(status).toBe(200)
 })
 
+test('another tab that registers a fresh worker does not break this one', async ({
+  page,
+  context,
+}) => {
+  // What Lighthouse does to the other open tabs of the site: it clears the origin's workers, then
+  // its own load registers a fresh one, which claims every tab. Each tab must reconnect to it,
+  // without unregistering it from under the others (they would then fight over the worker).
+  test.setTimeout(60_000)
+  await page.goto('/')
+  await expect(homeHeading(page)).toBeVisible()
+  const other = await context.newPage()
+  await other.goto('/')
+  await expect(homeHeading(other)).toBeVisible()
+
+  const cdp = await context.newCDPSession(page)
+  await cdp.send('Storage.clearDataForOrigin', {
+    origin: new URL(page.url()).origin,
+    storageTypes: 'service_workers',
+  })
+  await page.reload()
+  await expect(homeHeading(page)).toBeVisible()
+
+  // Only the mock sets the marker; a request that slipped past the worker gets the SPA's HTML.
+  const mocked = (tab: typeof page) =>
+    tab.evaluate(async () => {
+      const response = await fetch('/api/__mock/health', { cache: 'no-store' })
+      return response.headers.get('x-kurio-mock') === '1'
+    })
+  await expect.poll(() => mocked(other), { timeout: 20_000 }).toBe(true)
+  await expect(homeHeading(other)).toBeVisible()
+  // And the tab that reconnected did not take the worker away from the first one.
+  await expect.poll(() => mocked(page), { timeout: 10_000 }).toBe(true)
+  for (const tab of [page, other]) {
+    await expect(tab.getByRole('heading', { name: /Não foi possível iniciar/ })).toHaveCount(0)
+  }
+})
+
 test.describe('a worker that never takes control', () => {
   // The failed requests and the realtime socket that cannot be created are the point here.
   test.use({ allowedConsoleErrors: [/./] })
@@ -60,6 +97,18 @@ test.describe('a worker that never takes control', () => {
     // One automatic recovery reload first, then the error screen: bounded, never a blank page.
     await expect(title).toBeVisible({ timeout: 30_000 })
     await expect(page.getByText(/não está interceptando/)).toBeVisible()
+
+    // Clicking while DevTools still bypasses workers must settle back to an actionable error,
+    // without an additional automatic reload. The app cannot turn a DevTools override off.
+    let navigations = 0
+    page.on('framenavigated', (frame) => {
+      if (frame === page.mainFrame()) navigations++
+    })
+    await page.getByRole('button', { name: 'Recarregar página' }).click()
+    await expect.poll(() => navigations).toBe(1)
+    await expect(title).toBeVisible({ timeout: 20_000 })
+    await expect(page.getByText(/feche o DevTools/)).toBeVisible()
+    expect(navigations).toBe(1)
 
     await cdp.send('Network.setBypassServiceWorker', { bypass: false })
     await page.getByRole('button', { name: 'Recarregar página' }).click()

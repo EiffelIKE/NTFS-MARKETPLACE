@@ -162,3 +162,98 @@ Shell-first behavior is unchanged: the shell still renders at once and requests 
 **Tests.** `lib/mock-recovery.test.ts` (timeout, guard, recovery policy, boot outcomes, registrations, probe), `mocks/db/validate.test.ts` and new `store.load` cases, and `e2e/boot-recovery.spec.ts` (a cut-short database, a worker unregistered before a reload, a worker that never takes control: error screen, then the button recovers).
 
 **For the deployment.** `vercel.json` already serves `/mockServiceWorker.js` with `Cache-Control: no-cache`; nothing else is required. `Service-Worker-Allowed` is not needed (scope `/`, script at the root).
+
+### Follow-up: recovery still fails after Lighthouse
+
+The timeout screen was reported again after the first fix. A single tab audited from the DevTools
+panel always came back, so the failure was reproduced by driving the real DevTools Lighthouse panel
+(Chrome 156) with **a second tab of the site open**, which is the normal case in a real browser.
+
+**Cause.** Lighthouse runs `Storage.clearDataForOrigin` (service workers included) before and after
+the audit. The load it audits registers a fresh worker, and the worker's `clients.claim()` hands
+every open tab to it. MSW's worker only mocks for a tab that sent it `MOCK_ACTIVATE`; any other tab
+gets `passthrough`, so the claimed tab's requests reach the network (the SPA rewrite answers HTML).
+That tab's watchdog then ran the boot recovery: it **unregistered** the worker and reloaded. Its
+fresh worker claimed the first tab, whose watchdog did the same, and the tabs fought over the worker
+until the reload guard ran out and both showed the error screen. An intermediate attempt that gave
+each recovery its own script URL (`?recovery=<timestamp>`) made it worse: every tab then registered
+a different script and replaced the others' worker.
+
+**Fix.**
+- The watchdog (a tab that booted fine, then stopped being mocked) reloads **without unregistering**.
+  The reload activates the tab with the worker that now controls it and leaves the other tabs alone.
+  It has its own guard (`kurio.mock.resync`, one reload per 10 s), so a boot recovery shortly
+  before does not block it and it can never loop.
+- The boot recovery is unchanged (unregister, then one guarded reload): a tab that cannot boot has
+  a broken registration.
+- The worker URL is always `/mockServiceWorker.js`.
+- The "Recarregar página" button also spends the automatic reload, so a retry that still fails
+  returns to the error screen without an extra reload. The error screen also suggests closing
+  DevTools or turning off "Bypass for network", a debugging override that page code cannot change.
+
+**Remaining gap.** The audited tab itself is unmocked for about a second after the run, because
+Lighthouse's cleanup clears the worker under it. The panel then navigates the tab back to the
+inspected URL, and F5 has the same effect; both boot normally.
+
+**Tests.** `e2e/boot-recovery.spec.ts` "another tab that registers a fresh worker does not break
+this one": two tabs, `Storage.clearDataForOrigin`, reload one, and both must be mocked again with no
+error screen. It failed 3/3 before the fix. `lib/mock-recovery.test.ts` checks that the watchdog
+reload leaves the registration alone and has its own guard, and that the button spends the
+automatic reload.
+
+## 12. Amendment: phone LCP images and "Agentic Browsing" (2026-10-29)
+
+Two follow-ups after the owner ran Lighthouse 13.5 (Chrome 156 DevTools) on the deployed site: mobile Performance 86 deployed, with the "LCP request discovery" insight failing, and the new "Agentic Browsing" category at 50.
+
+### 12.1 Phone LCP: eager, high-priority card images
+
+**Status: reverted (`938c491`).** The owner chose the measured score over the insight checks: the change below lowered local mobile Performance from 76 to 73 for an applied-throttling LCP gain of about 0.1 s. The cards are lazy again; this section stays as the record of what was measured.
+
+**Finding.** On the 412 x 823 phone profile the first four catalog cards are in the first viewport (image tops at 385, 417, 652 and 684 px; the right column is offset by 32). The LCP is whichever of them paints first, so it varies between runs (the first card in every local run, the third in the owner's). Each was `loading="lazy"`, `fetchpriority="auto"`, and requested only after the JavaScript and the mock API had produced the card.
+
+**Change.** `ProductGrid` passes `priority` (the existing `NftImage` prop: `loading="eager"`, `fetchpriority="high"`) to the first four cards when `(max-width: 767px)` matches (`useMediaQuery`). Nothing changes from `md` up: at 1350 x 940 the first row is partly visible, but the LCP there is the hero (`priority` already), and raising the cards would make them compete with it. `e2e/catalog.spec.ts` checks it in both projects: four eager and high on the phone project, none on desktop, and that nothing past the fourth card starts inside the first viewport. This supersedes the "first catalog card stays lazy" line of §8 (spec 05 CAT-23); the hero, the details gallery and these four cards are the eager images.
+
+**Measured (local, `pnpm lighthouse` medians of 3, mobile home unless noted):**
+
+| Build | Performance | LCP (simulated) | LCP request discovery | LCP (applied throttling, DevTools method) |
+|---|---:|---:|---|---:|
+| Before | 76 | 4.38 s | fetchpriority, discoverable, lazy: all fail | 5.69 s (score 66) |
+| Priority only (**shipped**) | 73 | 4.52 s | fetchpriority and lazy pass, discoverable fails | 5.58 s (score 67) |
+| + `<link rel="preload">` of the three artworks (750 w) | 70 | 5.12 s | all pass | 6.11 s (one trace) |
+| + the same with a new 320 w variant (about 10 kB each) | 71-74 | 4.52 s | all pass | 5.65 s (one trace) |
+| + preload of the first card only | 72-73 | 4.67 s | the LCP card is another one | |
+
+CLS stays 0.000 in every run. Desktop is unchanged (home 98, LCP 1.01 s, the hero is the LCP element; details 99, LCP 0.92 s).
+
+**Why the score does not rise, and why the preload was not kept.**
+
+1. Lighthouse's simulated LCP (Lantern) builds its graph from every request that finishes before the observed LCP, except images with low priority. A lazy, auto-priority card image is low priority, so before this change the LCP image was left out of the estimate and the 4.38 s ended where the API chain ended. A high-priority image is counted: it is requested after the card renders (one more round trip, about 0.14 s), so honestly requesting it early lowers the simulated score by about 3 points and a better request cannot win it back.
+2. The page is gated by the chain HTML, entry chunk, mock chunk, `worker.start()`, API, render (analysis.md, cause 2), at 1.6 Mbps. In the LCP breakdown the image's own load is 0.15-0.3 s of 4.4-5.7 s. A preload cannot shorten the chain; it can only put bytes in front of it, and it made the real, applied-throttling trace no better (one trace each: 6.11 s with 97 kB of images, 5.65 s with 30 kB, against 5.58 s without a preload).
+3. A preload needs the image URLs in the HTML, so it needs a build step that runs the mock catalog code (`runnerImport` of `catalog.ts` and `catalog-query.ts` from the Vite config), a tiny inline script gated on `location.pathname === '/'`, no query string and a phone-sized viewport (the shared `index.html` serves every route), and, to be affordable, a new 320 w artwork. That is the coupling decision 3 of §9 refused, for no measurable gain. It was prototyped, measured and discarded; this section is the record, so it can be rebuilt if the delivery chain gets shorter (then the image request would be on the critical path).
+4. What would move the number is unchanged: a smaller first-paint bundle and a shorter chain to the data (analysis.md, "What was not done"). Priority only is kept because it is what `lcp-lazy-loaded` and `prioritize-lcp-image` ask for, it costs nothing in an applied-throttling run, and it is the correct request for an image the user is looking at.
+
+The "render-blocking requests" finding was measured and left alone: Lighthouse's audit estimates 0 ms of savings for the 14 kB stylesheet locally (the insight in the DevTools panel says 0 ms of LCP; its FCP figure assumes the first paint is not waiting for the entry script). The entry script does not execute before the stylesheet anyway, and it is bigger, so inlining or deferring the CSS would only risk a flash of unstyled skeleton and layout shift for no gain.
+
+**For the owner after redeploying.** Compare mobile Performance against the 86 of the last deploy: Lantern should show the same small drop as locally (about 3 points), while the DevTools run should show the LCP image request starting with the card instead of lazily. If the drop is the whole story and you value the score more than the cleaner request, revert the commit `perf(home): ...` (one file and one test).
+
+### 12.2 "Agentic Browsing" (Lighthouse 13.x)
+
+The category has two failing audits on the site and both are the SPA rewrite answering `index.html` for files that did not exist.
+
+| Audit | Requests (read from Lighthouse's gatherers) | Needs |
+|---|---|---|
+| `llms-txt` | `GET /llms.txt` | status below 400; at least one H1 (`/^\s*#\s+.+/m`), one Markdown link, 50+ characters; a 404 would make it not applicable |
+| `ard-schema` | `GET /.well-known/ai-catalog.json`, unless `robots.txt` has an `Agentmap:` line, the HTML has `<link rel="ai-catalog">` or the response has a `Link: rel="ai-catalog"` header | JSON object with `specVersion: "1.0"` and an `entries` array (and nothing else at the root except `host`, whose `displayName` is required); each entry needs a `urn:air:` identifier, `displayName`, `type` and exactly one of `url` or `data` |
+
+The audits' own JSON Schema is bundled in Lighthouse 13.5 (the one inside the chrome-devtools MCP), and it is stricter than the current text of agenticresourcediscovery.org, whose primary file is `/.well-known/ard.json` and whose `ai-catalog.json` is the predecessor consumers may still read. The project's own `lighthouse` package (12.6.1) has no such category, so the verification below uses the MCP tool.
+
+**Added (static files in `public/`, copied by Vite, served before the Vercel rewrite):**
+
+- `public/llms.txt`: an H1 (`KURIO`), a blockquote that says what the site is (a pt-BR demo, everything simulated, in-browser mock API, no backend, wallet or chain), the public pages (home and catalog, `/nfts/:id`) and the catalog's URL parameters with absolute links on `SITE_URL`, the sitemap, the ARD catalog and `robots.txt`. English, plain ASCII so that the `text/plain` response needs no charset. Not an inventory of NFTs: the data exists only after the page's JavaScript runs, which the file says.
+- `public/.well-known/ai-catalog.json`: `specVersion` `1.0`, `host` (`KURIO`, documentation URL `/llms.txt`) and **`entries: []`**. The site has no agent card, MCP server or skill, so an entry would point agents at something that does not exist; an empty catalog is valid and honest. Dot-directories are copied by Vite (checked in `dist/`) and served by `vite preview`. Content types are the servers' defaults (`text/plain`, `application/json`), which both audits accept; no `vercel.json` header was added.
+- `e2e/seo.spec.ts`: both files are served with the right type and are not the SPA fallback; `llms.txt` has the H1, a summary, absolute links on `SITE_URL` including the home, an NFT page and the catalog file; the catalog parses, has exactly `specVersion`, `host` and `entries`, and links back to `llms.txt`.
+- README (en, pt-BR): the "if the public domain changes" list now includes both files.
+
+**Verified (chrome-devtools MCP `lighthouse_audit`, mobile, local preview):** Agentic Browsing 50 before (`llms-txt` and `ard-schema` failing), **100** after (`llms-txt` 1, `ard-schema` 1, `agent-accessibility-tree` 1; the three `webmcp-*` audits are not applicable and WebMCP is not implemented). Accessibility, Best Practices and SEO stay 100.
+
+**Not done on purpose.** `/.well-known/ard.json` (the spec's primary name; the audit only reads `ai-catalog.json`), `<link rel="ai-catalog">` in `index.html` and an `Agentmap:` line in `robots.txt` (the well-known URL is already the default), and any WebMCP tool.

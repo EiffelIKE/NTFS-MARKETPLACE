@@ -23,6 +23,10 @@ export function BootError({ error }: BootErrorProps) {
         navegador permite service workers e se a página abre em HTTPS ou em localhost.
       </p>
       <p className="text-sm break-words text-muted-foreground">{reason}</p>
+      <p className="text-sm text-muted-foreground">
+        Se isso aconteceu após uma auditoria Lighthouse, feche o DevTools e tente recarregar. Se
+        continuar, em Application → Service Workers, desative “Bypass for network”.
+      </p>
       <Button
         loading={recovering}
         onClick={() => {

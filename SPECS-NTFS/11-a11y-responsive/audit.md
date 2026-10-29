@@ -20,7 +20,7 @@ One row per finding. "Owner" is the spec whose code was fixed. Viewports: M = 39
 | 12 | `favorites.spec.ts` expiry row, D | flake | test | Expired the sessions with reads in flight | Wait for the live heart and the socket | Fixed |
 | 13 | `purchase.spec.ts` quote total | flake | test | The patch waited for an attribute that goes away when the fade starts | `expectSettledOpacity` inside `expectNoAxeViolations` | Fixed |
 | 14 | `favorites.spec.ts` "three rapid clicks" | flake | 06 | 4 of 50 runs before and 1 of 240 after, only under 12 workers: the server saw `add`, `remove`, never the third | Not found | Documented, reported |
-| 15 | Screen-reader wording | A11Y-09 | all | Not testable by automation | Orca smoke pass over the purchase flow | Pending: no interactive session |
+| 15 | Screen-reader wording | A11Y-09 | all | Not testable by automation | E2E checks of what a screen reader reads | Covered by E2E: the accessible name of every focus stop (`ariaSnapshot`), every live-region message and how many times it is written, and where focus lands after each navigation and overlay |
 
 ## Reviewed, no change
 
@@ -51,7 +51,3 @@ One row per finding. "Owner" is the spec whose code was fixed. Viewports: M = 39
 | Forms | invalid field | message, `aria-invalid`, focus on the first |
 | Receipt, checkout | order status | text, icon |
 | Toasts | kind | icon and text |
-
-## Pending
-
-- Manual Orca smoke pass over the purchase flow (requirements, decision 1).

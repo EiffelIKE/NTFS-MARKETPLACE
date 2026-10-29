@@ -1,5 +1,7 @@
 # KURIO — Architecture
 
+**English** · [Português (Brasil)](ARCHITECTURE.pt-BR.md)
+
 How the NFT marketplace frontend is built and why. The challenge brief is [`OBJETIVES.md`](OBJETIVES.md); how to run and evaluate the app is the [README](README.md). Every decision below was taken in a spec of [`SPECS-NTFS/`](SPECS-NTFS/README.md) (requirements, design and tasks per area), which stays in the repository as the design record. Links in this document point there for the full reasoning.
 
 UI copy is pt-BR, as in Figma; documents, code and comments are English.
@@ -320,7 +322,7 @@ Every query function receives Query's `signal` and passes it to Axios, so a navi
 - **Network conditions.** Fixed or ranged latency (a seeded PRNG keeps the sequence repeatable), out-of-order pairs, failure rules (`http` status and code, `network-error`, `timeout` before or after applying the operation) with `times`.
 - **Control API** (`window.__mock`): `useScenario`, `reset`, `configure`, `addRule`, `clearRules`, `expireSessions`, `updateNft` (a price or stock change "on the server"), `settleOrder`, `disconnectWallet`, `realtime.*`, `requests()`, `snapshot()`. The panel (`?mockPanel=1` or `Alt+Shift+M`) is the same API with a UI.
 - **Handlers** share one pipeline (auth, latency, rules, request log). Server-side validation uses the contracts' schemas with pt-BR messages.
-- **Service Worker recovery** ([spec 13 §11](SPECS-NTFS/13-lighthouse/design.md)). Lighthouse and DevTools "clear site data" can leave a registration that does not control the page or a half-written database. The boot has a 15 s deadline on `worker.start()`, proves interception with `GET /api/__mock/health`, and on failure unregisters stale registrations and reloads **once** per tab per 30 s (a guard, so recovery can never loop) before showing the boot error screen, whose button also resets the worker. `store.load()` reseeds a damaged database. The worker is re-probed on focus and `controllerchange`.
+- **Service Worker recovery** ([spec 13 §11](SPECS-NTFS/13-lighthouse/design.md)). Lighthouse and DevTools "clear site data" can leave a registration that does not control the page or a half-written database. The boot has a 15 s deadline on `worker.start()`, proves interception with `GET /api/__mock/health`, and on failure unregisters stale registrations and reloads **once** per tab per 30 s (a guard, so recovery can never loop) before showing the boot error screen, whose button also resets the worker. `store.load()` reseeds a damaged database. The worker is re-probed on focus and `controllerchange`; a tab that loses it then reloads once per 10 s **without** unregistering, because the usual cause is another tab's fresh worker claiming it (Lighthouse clears the workers, then its own load registers a new one), and unregistering would break the other tabs in turn.
 - **Limits.** MSW needs a secure context (HTTPS or `localhost`). The first visit pays the worker registration; the audit analysis quantifies it. Mocks and realtime run only in the tab that wrote the change.
 
 ## 10. Testing strategy
@@ -330,8 +332,8 @@ Every query function receives Query's `signal` and passes it to Axios, so a navi
 | Unit | Vitest (node) | Pure modules: money, env, search schemas, session controller, realtime guard and manager, query helpers, form models, attempt store, quote review, docs and build scripts. No DOM environment: UI behavior is proven by E2E |
 | Contract | Vitest + `msw/node` against the **real** Axios client (`src/api/*.contract.test.ts`) | Every operation, error code, ownership, idempotency, resilience rules |
 | E2E | Playwright, desktop (1440×900) and mobile (390×844 Pixel 7) Chromium, against `vite preview` of a production build, with mocks | The 12 required scenarios below, plus design system, mocks, explorer, boot recovery |
-| Accessibility | `@axe-core/playwright` in the same E2E run (`e2e/a11y.spec.ts`, 238 runs) | Route × state matrix, keyboard paths, focus, live regions, zoom and overflow at 320–1440; no axe rule is disabled |
-| Visual | Playwright screenshots, 16 Linux baselines (`pnpm test:visual`) | Home, details, cart, checkout and skeletons; frozen clock, zero mock latency, nothing masked; skipped off Linux |
+| Accessibility | `@axe-core/playwright` in the same E2E run (`e2e/a11y.spec.ts`, 254 tests over both projects) | Route × state matrix, keyboard paths, focus, live regions, zoom and overflow at 320–1440; no axe rule is disabled |
+| Visual | Playwright screenshots, 14 Linux baselines (`pnpm test:visual`) | Home, details, cart, checkout and skeletons; frozen clock, zero mock latency, nothing masked; skipped off Linux |
 | Performance | Lighthouse CI, 3 runs per page and profile, medians (`pnpm lighthouse`) | Home and details, mobile and desktop; reports in `lighthouse/reports/` |
 
 Brief §9 scenario map:
@@ -354,7 +356,7 @@ Brief §9 scenario map:
 
 Also: `e2e/smoke.spec.ts` (every route, not-found, failed chunk, redirect safety), `e2e/mocks.spec.ts` (scenarios, reset, control API), `e2e/design-system.spec.ts`, `e2e/boot-recovery.spec.ts`.
 
-Conventions worth knowing: a page-side abort never reaches the Service Worker, so cancellation is proven from the page; tests that reset a scenario while a session is seeded call `forgetSession` first; every realtime test waits for the NFT to render before changing it (the known race of [§4](#4-realtime)); a Playwright `page.route()` does not see requests that go through the Service Worker, so tests use `page.context().route()`. The `/dev/*` harnesses used by a few E2E files exist only in the build that Playwright makes (`VITE_ENABLE_DEV_ROUTES=true`); the deploy answers not-found there ([§13](#13-deviations-and-decisions), Technical).
+The `/dev/*` harnesses used by a few E2E files exist only in the build that Playwright makes (`VITE_ENABLE_DEV_ROUTES=true`); the deploy answers not-found there ([§13](#13-deviations-and-decisions), Technical).
 
 ## 11. Accessibility adjustments
 
@@ -366,7 +368,7 @@ Conventions worth knowing: a page-side abort never reaches the Service Worker, s
 - Fixed bars (cart summary sheet, checkout action bar, receipt bar, tab bar) publish their height as `--bottom-bar-inset`; pages and `scroll-padding-bottom` read it so focus never ends under a bar. Toasts are **top-center** on phones for the same reason.
 - The favorite heart is inert (`aria-disabled`, `aria-busy`) until the user's favorites list is known; it stays focusable.
 - Forms: visually hidden labels keep the placeholder-only Figma look, errors appear after blur or a submit and focus moves to the first invalid field; one visible `h1` per page and width.
-- Checked at 200 % zoom, 400 %, WCAG 1.4.12 text spacing, and at 320, 360, 390, 768, 1024, 1440 px. **Pending:** a manual screen-reader pass (Orca) that needs an interactive session.
+- Checked at 200 % zoom, 400 %, WCAG 1.4.12 text spacing, and at 320, 360, 390, 768, 1024, 1440 px. What a screen reader reads is checked in the E2E suite: the accessible name of every focus stop (`ariaSnapshot`), every live-region message and how many times it is written, and where focus lands after each navigation and overlay.
 
 ## 12. Performance notes
 
@@ -379,9 +381,11 @@ Measured on `vite preview` with mocks on, the default scenario, 3 runs per page 
 | Desktop | Home | 98 | 100 | 100 | 100 | 0.96 s | 0 | 0 ms |
 | Desktop | Details | 99 | 100 | 100 | 100 | 0.90 s | 0 | 0 ms |
 
-**Mobile Performance (76) is below the brief's 90 target and is an accepted, documented deviation.** The causes ([spec 13](SPECS-NTFS/13-lighthouse/design.md), `analysis.md`): Lighthouse's simulated slow 4G with a 4× CPU slowdown gives FCP 3.7 s and LCP 4.4 s; the LCP image URL comes from the API, so it starts late (about 3.4 s of load delay, because the chain is HTML → entry → mock chunk → `worker.start()` → API → image); and a diagnostic build with mocks off reached only 79–83, so the app's own bundle caps the score near 80 on this profile, with MSW adding about 0.7 s to FCP. Not done on purpose: skipping the worker during audits, inlining fixture data into the HTML, deferring the mock chunk past first paint (it would move the cost into the LCP), hard-coding an LCP preload (it couples the HTML to the mock catalog). Possible next steps with estimates are in the analysis. All other targets are met on both profiles; CLS is 0 everywhere.
+**Mobile Performance (86 on the deployed site, 76 against the local `vite preview`) is below the brief's 90 target and is an accepted, documented deviation.** The causes ([spec 13](SPECS-NTFS/13-lighthouse/design.md), `analysis.md`): Lighthouse's simulated slow 4G with a 4× CPU slowdown gives FCP 3.7 s and LCP 4.4 s; the LCP image URL comes from the API, so it starts late (about 3.4 s of load delay, because the chain is HTML → entry → mock chunk → `worker.start()` → API → image); and a diagnostic build with mocks off reached only 79–83, so the app's own bundle caps the score near 80 on this profile, with MSW adding about 0.7 s to FCP. Not done on purpose: skipping the worker during audits, inlining fixture data into the HTML, deferring the mock chunk past first paint (it would move the cost into the LCP), hard-coding an LCP preload (it couples the HTML to the mock catalog). Possible next steps with estimates are in the analysis. All other targets are met on both profiles; CLS is 0 everywhere.
 
-What the app does for speed: shell-first boot (render before the worker is ready, requests held by `backend-ready`), vendor chunks (`react`, `tanstack`) that stay cached across releases (entry 376 kB → about 136 kB), preloaded Latin font subset and mock chunk, `tldts` aliased to `tldts-experimental` (mock chunk 511 → 351 kB, no chunk-size warning), `robots.txt` (the SPA rewrite would otherwise answer it with HTML), route-level code splitting, intrinsic image sizes (CLS 0) and `srcset` variants. The audit of the **deployed** URL is in the README.
+What the app does for speed: shell-first boot (render before the worker is ready, requests held by `backend-ready`), vendor chunks (`react`, `tanstack`) that stay cached across releases (entry 376 kB → about 136 kB), preloaded Latin font subset and mock chunk, `tldts` aliased to `tldts-experimental` (mock chunk 511 → 351 kB, no chunk-size warning), `robots.txt`, `llms.txt` and `.well-known/ai-catalog.json` as real files (the SPA rewrite would otherwise answer them with HTML), route-level code splitting, intrinsic image sizes (CLS 0) and `srcset` variants. The audit of the **deployed** URL is in the README.
+
+Tried and not kept: on a phone the LCP is one of the first four catalog cards (all four are in the first viewport), and Lighthouse's "LCP request discovery" insight flags their images as lazy, without a priority hint and not discoverable from the HTML. Loading them eagerly at `fetchpriority="high"`, and adding a phone-only `<link rel="preload">` for them, were both built and measured locally: mobile Performance went from 76 to 73 (priority only) and 70–74 (with the preload), because the page waits on the JavaScript and mock-API chain, not on the image request, and Lighthouse's simulated LCP stops ignoring an image once it is high priority. With Chrome's applied throttling the LCP moved only from 5.69 s to 5.58 s. Both were reverted. Numbers: [spec 13 design §12.1](SPECS-NTFS/13-lighthouse/design.md).
 
 ## 13. Deviations and decisions
 
@@ -422,7 +426,6 @@ Everything the specs recorded, grouped. Each row names its spec for the reason. 
 | Interactive heart inert until favorites are known; fixed bars publish `--bottom-bar-inset`; merge toast 12 s; no axe rule disabled | [11 §9–10](SPECS-NTFS/11-a11y-responsive/design.md) |
 | The carousel track is a `div` (axe `list`); the mobile gallery is one focusable labelled scroll region; promo and blog images are decorative (`alt=""`); focus after pagination moves only on a click | [05 §15](SPECS-NTFS/05-catalog/design.md), [06 §13](SPECS-NTFS/06-nft-details/design.md) |
 | Unavailable actions are visible and `aria-disabled` ("Disponível em breve"): social login, "Esqueceu a senha?", newsletter, blog links | [01 §11](SPECS-NTFS/01-design-system/design.md), [04 §13](SPECS-NTFS/04-auth-session/design.md) |
-| Manual screen-reader pass (Orca) pending | [11](SPECS-NTFS/11-a11y-responsive/design.md) |
 
 ### Assets
 
@@ -484,10 +487,8 @@ Everything the specs recorded, grouped. Each row names its spec for the reason. 
 - **Everything is simulated.** No real backend, no real wallet, chain or explorer; amounts are fictitious; the mock database is per browser, and a persisted database from an older schema is reseeded (the user signs in again once).
 - **Realtime** is a single-page simulation: events reach the writing tab only, a network drop below the WebSocket cannot be simulated, the first connection does not reconcile and there is no resume cursor ([§4](#4-realtime)). Reconnection and the order poll cover the visible cases.
 - **Session** token in `localStorage` (a production design would use an HttpOnly cookie); no refresh token.
-- **Mobile Lighthouse Performance is 76 (target 90)**; see [§12](#12-performance-notes). The audit measures the app with mocks on.
+- **Mobile Lighthouse Performance is 86 deployed, 76 locally (target 90)**; see [§12](#12-performance-notes). The audit measures the app with mocks on.
 - **Visual baselines are Linux-only.** `pnpm test:e2e` skips `@visual` on other systems and reports it; regenerate with `pnpm test:visual:update`.
-- **Unknown URLs answer HTTP 200** with the not-found view (SPA on Vercel); `robots.txt` is a real file for that reason.
-- **No manual screen-reader pass yet** (Orca); automated axe and keyboard checks pass.
-- **Playwright's default parallelism** can overload a small machine; run with `--workers=3` (see the README).
-- **Known test limits:** a server-side 422 with `fields` cannot be triggered from the UI with the mock (unit-tested instead); one rare flake was seen in the catalog sort "three rapid clicks" test (1 in 240 runs, not root-caused); the 5 s poll fallback is proven only in E2E.
+- **Unknown URLs answer HTTP 200** with the not-found view (SPA on Vercel); `robots.txt`, `llms.txt` and `.well-known/ai-catalog.json` are real files for that reason.
+- **Known test limits:** a server-side 422 with `fields` cannot be triggered from the UI with the mock (unit-tested instead); one rare flake was seen in the favorites "three rapid clicks" test (`e2e/favorites.spec.ts`, 1 in 240 runs, not root-caused); the 5 s poll fallback is proven only in E2E.
 - **Out of scope by decision:** social login, password recovery, reviews writing, blog pages, newsletter (they show "Disponível em breve").

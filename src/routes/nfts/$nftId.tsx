@@ -8,6 +8,7 @@ import { DetailsPage } from '@/features/nft-details/components/details-page'
 import { DetailsSkeleton } from '@/features/nft-details/components/details-skeleton'
 import { NftNotFound } from '@/features/nft-details/components/nft-not-found'
 import { isApiError } from '@/lib/http/errors'
+import { pageHead } from '@/lib/seo'
 
 const noop = () => undefined
 
@@ -35,7 +36,7 @@ export const Route = createFileRoute('/nfts/$nftId')({
       const nft = await queryClient.query({ ...nftDetailQuery(nftId), staleTime: 'static' })
       // Not awaited: the related row has its own skeleton and failure state (DET-04).
       void queryClient.query(relatedQuery(nftId)).catch(noop)
-      return { id: nft.id, name: nft.name }
+      return { id: nft.id, name: nft.name, description: nft.description }
     } catch (error) {
       if (isApiError(error, 'NOT_FOUND')) throw notFound()
       throw error
@@ -53,8 +54,13 @@ export const Route = createFileRoute('/nfts/$nftId')({
       mobile: { kind: 'inner', trailing: 'favorite', panel: true },
     },
   },
-  head: ({ loaderData }) => ({
-    meta: loaderData ? [{ title: `${loaderData.name} · KURIO` }] : [],
-  }),
+  head: ({ loaderData }) =>
+    loaderData
+      ? pageHead({
+          title: `${loaderData.name} · KURIO`,
+          description: loaderData.description,
+          path: `/nfts/${loaderData.id}`,
+        })
+      : pageHead({ noindex: true }),
   component: DetailsPage,
 })

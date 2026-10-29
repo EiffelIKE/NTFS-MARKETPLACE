@@ -1,5 +1,6 @@
 import type { Locator, Page } from '@playwright/test'
 
+import { SITE_TITLE } from '../src/lib/seo'
 import type { ScenarioId } from '../src/mocks/scenarios'
 import {
   expectFocusTrapped,
@@ -212,7 +213,7 @@ test.describe('keyboard paths and route focus (A11Y-04, A11Y-05, A11Y-07)', () =
     isMobile,
   }) => {
     await openScreen(page, { url: '/' })
-    await expect(page).toHaveTitle('Início · KURIO')
+    await expect(page).toHaveTitle(SITE_TITLE)
 
     // Filters, search and sort rewrite the URL of the same page: focus stays where the user is.
     const control = isMobile
@@ -232,7 +233,7 @@ test.describe('keyboard paths and route focus (A11Y-04, A11Y-05, A11Y-07)', () =
 
     // Back: the list page again, and its heading, not a stale element, has focus.
     await page.goBack()
-    await expect(page).toHaveTitle('Início · KURIO')
+    await expect(page).toHaveTitle(SITE_TITLE)
     await expect(page.getByRole('heading', { level: 1 })).toBeFocused()
   })
 
@@ -521,7 +522,8 @@ test.describe('semantics, titles and images (A11Y-11, A11Y-12)', () => {
       page,
     }) => {
       await openScreen(page, screen)
-      await expect(page).toHaveTitle(/ · KURIO$/)
+      // The home page carries the site title, which is also what link previews show (SEO).
+      await expect(page).toHaveTitle(screen.url === '/' ? SITE_TITLE : / · KURIO$/)
       const levels = await page.evaluate(() =>
         [...document.querySelectorAll('h1, h2, h3, h4, h5, h6')]
           .filter((heading) => heading.checkVisibility())

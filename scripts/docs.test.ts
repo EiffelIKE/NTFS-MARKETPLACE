@@ -15,6 +15,7 @@ import {
   renderSections,
   SECTION_NAMES,
   writeSection,
+  type Locale,
   type SectionName,
 } from './docs.ts'
 
@@ -22,33 +23,50 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const read = (file: string) => readFileSync(path.join(root, file), 'utf8')
 const update = process.env.UPDATE_DOCS === '1'
 
-/** Which delivery document holds each generated section. */
-const OWNER: Record<SectionName, 'README.md' | 'ARCHITECTURE.md'> = {
-  operations: 'ARCHITECTURE.md',
-  errors: 'ARCHITECTURE.md',
-  scenarios: 'README.md',
+/** The English documents and their Brazilian Portuguese copies (spec 14 §11). */
+const PAIRS = [
+  { english: 'README.md', translated: 'README.pt-BR.md' },
+  { english: 'ARCHITECTURE.md', translated: 'ARCHITECTURE.pt-BR.md' },
+] as const
+
+/** Which delivery documents hold each generated section, and in which language. */
+const OWNERS: Record<SectionName, { file: string; locale: Locale }[]> = {
+  operations: [
+    { file: 'ARCHITECTURE.md', locale: 'en' },
+    { file: 'ARCHITECTURE.pt-BR.md', locale: 'pt-BR' },
+  ],
+  errors: [
+    { file: 'ARCHITECTURE.md', locale: 'en' },
+    { file: 'ARCHITECTURE.pt-BR.md', locale: 'pt-BR' },
+  ],
+  scenarios: [
+    { file: 'README.md', locale: 'en' },
+    { file: 'README.pt-BR.md', locale: 'pt-BR' },
+  ],
 }
 
 describe('generated sections', () => {
   const rendered = renderSections()
 
   for (const name of SECTION_NAMES) {
-    it(`"${name}" in ${OWNER[name]} matches the code`, () => {
-      const file = OWNER[name]
-      const document = read(file)
-      expect(
-        readSection(document, name),
-        `${file} needs ${markers(name).open} … ${markers(name).close}`,
-      ).not.toBeNull()
-      if (update) {
-        writeFileSync(path.join(root, file), writeSection(document, name, rendered[name]))
-        return
-      }
-      expect(
-        readSection(document, name),
-        `stale: run \`pnpm docs:update\` to refresh ${file}`,
-      ).toBe(rendered[name])
-    })
+    for (const { file, locale } of OWNERS[name]) {
+      it(`"${name}" in ${file} matches the code`, () => {
+        const expected = renderSections(locale)[name]
+        const document = read(file)
+        expect(
+          readSection(document, name),
+          `${file} needs ${markers(name).open} … ${markers(name).close}`,
+        ).not.toBeNull()
+        if (update) {
+          writeFileSync(path.join(root, file), writeSection(document, name, expected))
+          return
+        }
+        expect(
+          readSection(document, name),
+          `stale: run \`pnpm docs:update\` to refresh ${file}`,
+        ).toBe(expected)
+      })
+    }
   }
 
   it('lists every operation and every scenario', () => {
@@ -109,8 +127,30 @@ describe('README.md', () => {
   })
 })
 
+describe('Brazilian Portuguese copies', () => {
+  for (const { english, translated } of PAIRS) {
+    it(`${english} has a sibling ${translated}, and both link to each other`, () => {
+      expect(existsSync(path.join(root, translated)), `${translated} is missing`).toBe(true)
+      expect(read(english), `${english} lacks the language switch`).toContain(
+        `**English** · [Português (Brasil)](${translated})`,
+      )
+      expect(read(translated), `${translated} lacks the language switch`).toContain(
+        `[English](${english}) · **Português (Brasil)**`,
+      )
+    })
+
+    it(`${translated} has the same generated sections as ${english}`, () => {
+      for (const name of SECTION_NAMES) {
+        const inEnglish = readSection(read(english), name) !== null
+        const inTranslation = readSection(read(translated), name) !== null
+        expect(inTranslation, `${translated}: section "${name}"`).toBe(inEnglish)
+      }
+    })
+  }
+})
+
 describe('relative links', () => {
-  for (const file of ['README.md', 'ARCHITECTURE.md']) {
+  for (const file of PAIRS.flatMap(({ english, translated }) => [english, translated])) {
     it(`${file} points only at files that exist`, () => {
       const links = [...read(file).matchAll(/\]\((?!https?:|#|mailto:)([^)\s]+)\)/g)].map(
         (match) => match[1] ?? '',

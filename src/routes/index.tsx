@@ -4,6 +4,7 @@ import { requireAuth } from '@/features/auth/model/redirects'
 import { highlightsQuery, nftListQuery } from '@/features/catalog/api/queries'
 import { HomePage } from '@/features/catalog/home/home-page'
 import { catalogSearch, toListQuery } from '@/features/catalog/model/search'
+import { pageHead, SITE_TITLE } from '@/lib/seo'
 
 const noop = () => undefined
 
@@ -21,13 +22,11 @@ export const Route = createFileRoute('/')({
     void context.queryClient.query(highlightsQuery()).catch(noop)
   },
   staticData: { shell: { nav: 'home', headerDivider: true, mobile: { kind: 'tab', tab: 'home' } } },
-  head: ({ match }) => ({
-    meta: [
-      {
-        title:
-          match.search.favorites !== undefined ? 'Lista de interesse · KURIO' : 'Início · KURIO',
-      },
-    ],
-  }),
+  head: ({ match }) =>
+    pageHead({
+      title: match.search.favorites !== undefined ? 'Lista de interesse · KURIO' : SITE_TITLE,
+      path: '/',
+      noindex: match.search.favorites !== undefined,
+    }),
   component: HomePage,
 })
