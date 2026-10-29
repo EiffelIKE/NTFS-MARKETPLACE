@@ -142,6 +142,8 @@ test.describe('transactions that do not exist', () => {
   test('a network that does not exist is not found without asking the API', async ({ page }) => {
     await page.goto(ANA_TX_PATH.replace('/ethereum/', '/bitcoin/'))
     await expect(heading(page)).toHaveText('Transação não encontrada')
+    // The view renders before the mock finishes booting (shell-first): wait for the control API.
+    await page.waitForFunction(() => '__mock' in window)
     expect(await mock(page).requests({ op: 'explorer.getTransaction' })).toHaveLength(0)
   })
 
