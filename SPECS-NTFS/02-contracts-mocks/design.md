@@ -187,6 +187,7 @@ Base `VITE_API_BASE_URL` (`/api`). "Owner" means another user's id-addressed res
 | `nfts.related` | `GET /nfts/:nftId/related` | — | — | 200 `{ items: NftSummary[] }` (≤ 5) | 404 |
 | `highlights.get` | `GET /highlights` | — | — | 200 `Highlights` | — |
 | `networks.list` | `GET /networks` | — | — | 200 `{ items: PaymentNetwork[] }` | — |
+| `explorer.getTransaction` | `GET /explorer/:network/tx/:txHash` | — | — | 200 `ExplorerTransaction` (public, on-chain data only) | 404 |
 | `favorites.list` | `GET /favorites` | bearer | — | 200 `{ nftIds: NftId[] }` | 401 |
 | `favorites.add` | `PUT /favorites/:nftId` | bearer | — | 204 | 401, 404 |
 | `favorites.remove` | `DELETE /favorites/:nftId` | bearer | — | 204 | 401 |
@@ -517,7 +518,7 @@ Publishers are any write that changes an NFT's price or an edition's availabilit
 - **Which orders:** only pending orders with `settleAt ≤ now`, and only when `config.payment.outcome` is not `manual`.
 - **Confirmed:**
   - `transaction.hash = '0x' + sha256(id + createdAt)` (64 hex);
-  - `explorerUrl` = the network's `explorerTxUrl` + hash, under the reserved `explorer.kurio.example` domain, which is simulated and never resolves;
+  - `explorerUrl` = the network's `explorerTxUrl` + hash, an in-app path (`/explorer/<network>/tx/<hash>`) served by the simulated explorer (spec 10 amendment; it used to be the non-resolving `explorer.kurio.example`);
   - for each order line, decrement that quantity in the user's current cart line with the same NFT and edition, removing the line at ≤ 0, and bump `cart.version`.
 - **Declined:**
   - `declineReason = { code: 'PAYMENT_DECLINED', message: 'A carteira recusou o pagamento.' }`;
@@ -656,8 +657,8 @@ Emerald Ape and the five "Mais desta coleção" items (Cosmic Bloom, Violet Noma
 
 | Code | Discount | Minimum subtotal | Expires | Purpose |
 |---|---|---|---|---|
-| `KURIO10` | 10 % | — | 2027-12-31 | Valid |
-| `COLECAO05` | 0.05 fixed | 0.50 | 2027-12-31 | Minimum subtotal |
+| `KURIO10` | 10 % | — | 2099-12-31 | Valid |
+| `COLECAO05` | 0.05 fixed | 0.50 | 2099-12-31 | Minimum subtotal |
 | `VERAO25` | 25 % | — | 2026-03-31 | Expired |
 
 Any other code is invalid.
@@ -670,7 +671,7 @@ Any other code is invalid.
 | Polygon | 0.002 | EVM |
 | Solana | 0.001 | Solana |
 
-Explorer names are Etherscan, Polygonscan and Solscan (Figma: "Ver no Etherscan"); URLs follow `https://explorer.kurio.example/<id>/tx/`, a reserved domain, so the link is visibly simulated.
+Explorer names are Etherscan, Polygonscan and Solscan (Figma: "Ver no Etherscan"); `explorerTxUrl` is the in-app path `/explorer/<id>/tx/` of the simulated explorer (spec 10 amendment); `explorer.getTransaction` serves it from the mock database, projecting only public data.
 
 **Highlights:**
 - 3 hero slides. Slide 1 is the anchor (artwork 03), with the Figma copy:
@@ -699,6 +700,7 @@ interface MockConfig {
   rules: FailureRule[]
   payment: { outcome: 'confirm' | 'decline' | 'manual'; settleDelayMs: number }
   walletConnect: { outcome: 'approve' | 'reject'; delayMs: number }
+  realtime: { available: boolean; deliveryDelayMs: number }   // spec 03; `offline` sets available: false
   sessionTtlMs: number
   checkoutTrigger: 'raise-price' | 'sell-out' | null   // once per seed, on the first orders.create
   prngSeed: number                                     // drives 'range' latency
@@ -781,6 +783,7 @@ interface MockControl {
   updateNft(nftId: NftId, patch: { price?: Eth; available?: { editionId: EditionId; value: number | null } }): void
   settleOrder(orderId: OrderId, outcome: 'confirmed' | 'declined'): void
   disconnectWallet(connectionId?: ConnectionId): void   // default: every active connection
+  realtime: RealtimeControl                   // spec 03 §5: connections, drop/restore, redeliver, inject, log
   requests(filter?: { op?: OperationId }): RequestLogEntry[]; clearRequests(): void
   snapshot(): MockState                       // deep copy
 }
@@ -818,6 +821,9 @@ Added to `eslint.config.js` (spec 00 §9, project rules):
 | `src/**` except `src/mocks/**`, `src/main.tsx`, `src/**/*.test.ts` | `@/mocks`, `@/mocks/*`, `**/mocks/**` | "Mock code is only reachable from the bootstrap (API-35)." |
 | `src/contracts/**` | `@/*` except `@/contracts/*` and `@/lib/money`; `axios`; `msw` | "Contracts depend only on zod and money." |
 | `src/mocks/**` | `@/api/*`, `@/lib/http/*`, `@/features/*`, `@/routes/*`, `axios` | "Mocks implement the server; they don't use the client." |
+| `src/mocks/**` (spec 03) | `@/lib/realtime`, `@/lib/realtime/*`, `socket.io-client` | "Mocks implement the server; they don't use the realtime client." |
+| everything but `src/mocks/**` (spec 03) | `@mswjs/socket.io-binding` | "The Socket.IO binding is mock-server code; keep it under `src/mocks`." |
+| everything but `src/lib/realtime/**` (spec 03) | `socket.io-client` | "Only `src/lib/realtime` talks to Socket.IO." |
 
 `main.tsx` only uses a dynamic `import()`, which `no-restricted-imports` does not see anyway. Its exemption is documentation.
 
@@ -898,9 +904,64 @@ Pending changes collected when specs 03–14 were drafted. Apply them in the own
 
 | From | Change | Applied in |
 |---|---|---|
-| 03 | `MockConfig.realtime = { available, deliveryDelayMs }`; the `offline` scenario sets `available: false`; panel checkbox "Tempo real indisponível" | spec 03 tasks |
-| 03 | `window.__mock.realtime` (connections, drop/restore, redeliver, inject, log); `contracts/events.ts`; realtime handler in `createHandlers` and `startMocks` | spec 03 tasks |
-| 03 | Lint boundaries for `socket.io-client` (app only) and `@mswjs/socket.io-binding` (mocks only) | spec 03 tasks |
-| 04 | `loginAs` also writes the app session (`kurio.session`) to `localStorage` | spec 04 tasks |
-| 08 | `contracts/wallets.ts` exports `addressMatchesNetwork(address, network)` and refines `WalletFields` with "Endereço inválido para a rede selecionada."; the wallet handler parses with the same schema | spec 08 tasks |
-| 13 | Optional: render the shell before the worker is ready, if the MSW start cost misses the LCP target (changes §3 bootstrap order) | spec 13 analysis |
+| 03 | `MockConfig.realtime = { available, deliveryDelayMs }`; the `offline` scenario sets `available: false`; panel checkbox "Tempo real indisponível" | **applied in spec 03** (design §13) |
+| 03 | `window.__mock.realtime` (connections, drop/restore, redeliver, inject, log); `contracts/events.ts`; realtime handler in `createHandlers` and `startMocks` | **applied in spec 03** (design §13) |
+| 03 | Lint boundaries for `socket.io-client` (app only) and `@mswjs/socket.io-binding` (mocks only) | **applied in spec 03** (design §13) |
+| 04 | `loginAs` also writes the app session (`kurio.session`) to `localStorage` | **applied in spec 04** (design §14): it also waits for `__mock`, and `forgetSession` was added |
+| 08 | `contracts/wallets.ts` exports `addressMatchesNetwork(address, network)` and refines `WalletFields` with "Endereço inválido para a rede selecionada."; the wallet handler parses with the same schema | **applied early in spec 02** (§16); spec 08 T-task only has to use it |
+| 13 | Optional: render the shell before the worker is ready, if the MSW start cost misses the LCP target (changes §3 bootstrap order) | **applied in spec 13** (design §5): `main.tsx` starts the mocks without awaiting them and `lib/backend-ready.ts` holds every request until `startMocks()` resolves; `takeUrlParams` moved to `mocks/url-params.ts` and runs before the first render; `startMocks(params)` takes its result |
+
+## 16. Implementation decisions (2026-10-28)
+
+Decisions taken while implementing, where the design was silent or had to give way to what the code showed.
+
+**Amendments to earlier specs (applied here, in these documents):**
+
+| Spec | Change |
+|---|---|
+| 00 | `lib/http/client.ts` also has a request interceptor that clears the `Content-Type` of `FormData` bodies (`headers.setContentType(false)`), because the fetch adapter in Node otherwise sends urlencoded and the multipart upload answered 422. |
+| 00 | `tsconfig.app.json` adds `"node"` to `types` (`fixtures.test.ts` reads WebP headers with `node:fs`); `tsconfig.node.json` adds `paths` for `@/*` so `e2e/` can import contracts. |
+| 00, 01 | E2E: `smoke.spec.ts` ("a route chunk that fails to load") and `design-system.spec.ts` (fallback font) use `page.context().route()`, because Playwright's `page.route()` does not see requests that go through a service worker. Both suites pass again. |
+| 01 | `styles/no-raw-colors.test.ts` skips `src/mocks/fixtures/catalog.ts`: NFT names such as `Golden Beat #207` match the hex pattern. |
+| 08 | `addressMatchesNetwork`, `addressFamily`, `networkFamily` and the `superRefine` on `WalletFields` were applied in `contracts/wallets.ts` now (§15). |
+| 08 (later) | `NetworkId` and `WalletProvider` carry the pt-BR enum messages "Selecione uma rede." and "Selecione uma carteira.", so a select that was not chosen reads well in the client form and in the mock's `VALIDATION_FAILED` (spec 08 design §11). |
+
+**Contracts and errors**
+- `AuthMode` has a fifth value, `'lenient'`, for `auth.logout`: it accepts a missing or expired token and still answers 204.
+- `INSUFFICIENT_AVAILABILITY.details.lines[].available` is the line limit `min(available, maxPerOrder)`, which is what the user can actually take.
+- A `details` object that does not match its code's schema turns the whole error into code `UNKNOWN` (the client does not narrow on a broken contract). A bad envelope also gives `UNKNOWN`.
+- Client `ApiError` messages are pt-BR per kind (`network`, `timeout`, `cancelled`, `contract`, `unknown`) and one generic pt-BR text for HTTP errors without a valid envelope.
+- `z.config(z.locales.ptBR())` is set in the mock pipeline so server-side validation messages are pt-BR; client forms keep their own messages.
+- Prices are normalized strings (`'12.3'` becomes `'12.30'`) in `toRecord`, `updateNft` and the cart status compare (`eth.cmp`), so string equality never decides a price change.
+
+**Mock behavior**
+- Multi-word search: every word must match somewhere in name, collection, creator or attributes.
+- The `sell-out` checkout trigger zeroes the first cart line's own edition (the first version only zeroed a limited edition, which left open editions untouched).
+- A guest cart id the server does not know is treated as no cart. On merge the user's cart keeps its own coupon and otherwise inherits the guest cart's.
+- A `timeout` failure rule is evaluated before latency, so it never waits first.
+- Avatar checks run in the order MIME (415), magic bytes (415), size (413).
+- The `empty-catalog` seed has no NFTs, favorites, cart lines or highlights, but still contains Ana's seeded order: orders are self-contained snapshots, so they need no catalog.
+- `createHandlers(runtime)` and `createMockServer()` returning `{ server, runtime, control }` are the public factories; there is no module-level singleton.
+
+**Panel**
+- Files are `mount.tsx` and `mock-panel.tsx` (they contain JSX), not `.ts`.
+- Payment has two buttons for pending orders, "Confirmar pedidos pendentes" and "Recusar pedidos pendentes", instead of one "Liquidar".
+- The README mention in the panel footer is plain text (no link: the panel has no README route).
+- The launcher flag is a `sessionStorage` key, `kurio.mock.panel`.
+
+**Test and tooling**
+- `useMockApi` was renamed `serveMockApi` (the `use` prefix tripped `react-hooks/rules-of-hooks`). Test helpers `*-kit.ts` and `*.test.ts` share one ESLint override (mocks allowed, `fetch` allowed, to probe raw HTTP).
+- The Abort case uses `queryClient.query()`: `fetchQuery` is deprecated in TanStack Query 5.104.
+- TanStack's `cancelQueries()` rejects with its own `CancelledError`, not an `ApiError`. The test asserts the rejection plus the `aborted` log entry, and checks `kind: 'cancelled'` with a direct `AbortController`.
+- Vitest fake timers use `shouldAdvanceTime: true`: MSW's interceptors schedule their own 0 ms timers and would hang otherwise.
+- **Browser limit:** a page-side abort never reaches the service worker, so in the browser the request log shows the final status (`200`) instead of `aborted`. Cancellation in the UI must be proved from the page side. Node tests do see `aborted`.
+- Reset (`?reset=1`, `useScenario`) clears sessions, so E2E tests log in again afterwards.
+
+> Amended by spec 13 (2026-10-28): the `prepare()` snippet in §3 is replaced by `startBackend()` in `main.tsx`: the app renders at once, the mock chunk is `modulepreload`ed from the HTML, and the Axios request interceptor and the Socket.IO factory await `lib/backend-ready.ts`. Step 1 of the `startMocks()` order (URL params) now runs in `main.tsx` through `takeMockUrlParams()` before the first render; the other steps are unchanged. A worker that fails to start still replaces the app with `BootError`.
+
+## 17. Amendments (fix batch, 2026-10-28)
+
+- **G4 — no plaintext passwords in the bundle.** `db/seed.ts` names the seeded users by literal ids (`usr_ana`, `usr_carla`) instead of importing `fixtures/credentials.ts`, which is now imported only by tests, `contract-kit` and the E2E helpers. `fixtures.test.ts` fails if an app file imports it, and `grep -r "Kurio#Ana2026" dist/` returns nothing after a build.
+- **G6 — a named 4xx scenario.** `rate-limited` ("Limite de requisições"): `nfts.list` answers 429 `RATE_LIMITED` three times (the first call and its two query retries), then recovers. The `http` effect now adds `details: { retryAfterMs }` and `Retry-After` for that code, so the client parses it and the catalog shows the API's own message. E2E: `loading-states.spec.ts` ("a 429 is a 4xx…").
+- **R9 — unguessable guest cart ids.** `ensureCart` creates `g_<32 hex>` (a random token) instead of `g_<seq>`: the id is the guest's only credential. `seq.guestCart` stays in the state shape, unused, to avoid a schema bump. Nothing showed or depended on the old values.
+- **R11 — coupon dates.** `KURIO10` and `COLECAO05` expire in 2099; `VERAO25` stays in March 2026. The §9 table is updated, and `fixtures.test.ts` checks that no plausible clock flips either state.

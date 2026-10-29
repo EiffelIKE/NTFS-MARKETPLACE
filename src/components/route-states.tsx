@@ -4,19 +4,19 @@ import { Link, useRouter, type ErrorComponentProps } from '@tanstack/react-route
 
 export function NotFound() {
   return (
-    <main>
+    <div>
       <title>Página não encontrada · KURIO</title>
       <h1>Página não encontrada</h1>
       <p>O endereço que você acessou não existe ou foi removido.</p>
       <Link to="/">Voltar ao início</Link>
-    </main>
+    </div>
   )
 }
 
 export function RouteError({ error }: ErrorComponentProps) {
   const router = useRouter()
   return (
-    <main>
+    <div>
       <title>Algo deu errado · KURIO</title>
       <h1>Algo deu errado</h1>
       <p>Não foi possível carregar esta página. Tente novamente em instantes.</p>
@@ -32,6 +32,6 @@ export function RouteError({ error }: ErrorComponentProps) {
       >
         Recarregar página
       </button>
-    </main>
+    </div>
   )
 }

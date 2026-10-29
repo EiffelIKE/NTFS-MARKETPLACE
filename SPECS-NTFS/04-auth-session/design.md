@@ -1,6 +1,6 @@
 # 04 — Auth & session · Design
 
-> Status: Ready for review
+> Status: Done (see §14 for what changed while implementing)
 
 Implements [`requirements.md`](requirements.md). Figma: desktop and mobile "Login" and "Cadastro" screenshots, plus [`screens.md`](../../figma_tokens/screens.md#login-and-sign-up).
 
@@ -20,16 +20,19 @@ src/
   components/form/                 # shared form layer (also used by 08 and 09)
     app-form.ts                    # createFormHook: useAppForm, withForm, field + form components
     text-field.tsx  password-field.tsx  submit-button.tsx  form-alert.tsx
-    server-errors.ts               # applyServerErrors(form, error, codeToField)
+    server-errors.ts               # applyServerErrors, clearServerError(s), setFormError
+    submit.ts  validation.ts  messages.ts  use-form-focus.ts  form-context.ts
   features/auth/
     model/session.ts               # SessionController singleton: state, storage, restore, expiry, epoch, hooks, cross-tab
     model/session-storage.ts       # kurio.session read/write (zod-validated, try/catch, memory fallback)
-    model/redirects.ts             # requireAuth(), redirectIfAuthenticated(), closeTarget()
+    model/redirects.ts             # requireAuth(), redirectIfAuthenticated(), closeTarget(), pathRequiresAuth()
+    model/auth-search.ts  messages.ts  signup-schema.ts  instance.ts  use-session.ts
     api/use-login.ts  use-signup.ts  use-logout.ts
     components/auth-page.tsx       # responsive frame: desktop panel / mobile bare page
     components/auth-tabs.tsx  login-form.tsx  signup-form.tsx  social-login.tsx  expired-notice.tsx
     components/user-menu.tsx       # header avatar + dropdown (desktop)
   app/session-bridge.ts            # wires session ↔ Query cache ↔ realtime ↔ router ↔ http providers
+  app/boot.ts                      # bootApp(): installs the bridge once, after the mock worker is ready
   routes/login.tsx  signup.tsx     # + requireAuth on checkout, orders/$orderId, profile, wallets
 e2e/
   support/mock.ts                  # loginAs() also seeds the app session (amendment)
@@ -326,3 +329,70 @@ Applied in this spec's tasks:
   - sign-out is local even if the API call fails.
 - **Isolation:** every identity change cancels queries, clears the whole Query cache, replaces the socket (spec 03) and bumps an epoch that guards late mutation results. Other tabs follow through the `storage` event.
 - **Boot cost:** a stored session delays the first route by one `auth.session` round trip. A visit without a stored session (including Lighthouse runs) has no cost.
+
+## 14. Implementation decisions (2026-10-28)
+
+Decisions taken while implementing, where the design was silent or had to give way to what the code showed.
+
+**Amendments to earlier specs (applied in those documents):**
+
+| Spec | Change |
+|---|---|
+| 00 §5, §15 | `RouterContext.session`; the root `beforeLoad` awaits `session.ready`; `/login` and `/signup` share `authSearchSchema` (adds `reason`), which now lives in `features/auth/model/auth-search.ts`; `routes/-login-search.ts` and its test were replaced. |
+| 00 §6 | `installAuthInterceptors` is installed on the shared `http` instance by the session bridge. |
+| 00 §9 lint | `@typescript-eslint/only-throw-error` allows TanStack's `Redirect` and `NotFoundError`, so `throw redirect()` in guards is not flagged. |
+| 01 §8, §12 | `DesktopHeader` takes a `userMenu` slot next to `session`. `ShellSession` keeps its `status` discriminant, and its user variant is `{ status: 'user'; name; avatarUrl? }`. The shell fills it from `useSession()`. The guest "Entrar" carries the URL's `redirect` on `/login` and `/signup`. |
+| 02 §13, §15 | `loginAs` seeds `kurio.session` and waits for `window.__mock`. New helper `forgetSession`. Tests that `?reset=1` or switch scenario while a session is seeded call `forgetSession` first, because the mock drops its sessions on reset and the app would log the 401 of restoring a dead one. `mocks.spec.ts` was adjusted that way. |
+| 03 §13 | `app.tsx` no longer calls `setSession({ key: 'guest' })`; the bridge does it after the restore and on every identity change. The temporary bearer interceptor in `features/dev-realtime/resources.tsx` is deleted. `/dev/realtime` reads the real session (a status line replaces the token field), and `realtime-resilience.spec.ts` signs in with `loginAs` plus a navigation instead of "Conectar com token". |
+
+**Session**
+- `createSessionController(deps)` is a factory (storage, `verify`, clock and retry delays injected), and `instance.ts` holds the singleton, as spec 03 does. Methods are declared as properties, so `session.token` and friends can be passed around unbound.
+- **The restore starts in `bootApp()` (`app/boot.ts`), called by `main.tsx` after the mock worker is ready, not at import time.** The first version started it when `app.tsx` was imported, which is before `startMocks()` finishes: the `auth.session` request missed the worker and got a 404. `bootApp` is idempotent.
+- A restore is not an identity change: nothing private was loaded before it, so it neither bumps the epoch nor clears the cache. The first realtime identity is set after `restore()` settles.
+- Restore retries wait 300 ms and then 900 ms (not the Query defaults of 1 s and 2 s), so an offline visit with a stored session delays the first render by about 1.2 s at most.
+- While the stored token is being verified, `token()` returns it (the check carries its own header). `expire()` is a no-op in that state, because the restore decides what a 401 means.
+- Boot-time expiry on a **public** route is silent: the header shows "Entrar" and nothing was lost, and a toast raised before the Toaster mounts would be dropped. On a protected route the guard shows the login notice (AUTH-14).
+- `IdentityChange` carries `{ prev, next, cause, redirecting }`, with `cause` one of `login`, `signup`, `logout`, `expired`, `other-tab`. `redirecting` is true when a route guard is already sending the user to login: `ensureValid` marks its own expiries, and any `expire` that lands while a guard check is running counts too. Without it, the guard check's 401 produced both the AUTH-15 toast and the AUTH-14 notice.
+- Cross-tab: the same token with different user details updates the user in place (a profile edit in another tab) and is not an identity change. A value that does not parse counts as a removal.
+- `signIn` runs the tasks after notifying the identity listeners, and the login and sign-up mutations include it, so the form's pending state covers the cart merge and the navigation happens afterwards.
+
+**Bridge**
+- A `login` or `signup` change neither navigates nor invalidates the router: the form navigates after the post-sign-in tasks (AUTH-10), and an invalidation would have run `redirectIfAuthenticated` first and left the page before the merge finished.
+- `logout` leaves a protected route for `/` (`replace`) from the bridge, not from `useLogout`, so a sign-out in the same tab and one caused elsewhere share the code. A public route is only invalidated.
+- On a protected route, `expired` and an `other-tab` sign-out navigate to `/login?redirect=<current href>` (with `reason=expired` only for expiry). The bridge navigates itself instead of relying on `router.invalidate()` to re-run the guard.
+- The other-tab sign-out toast is shown for any route.
+
+**HTTP**
+- The token a failed request carried is read from `error.cause.config.headers` (the Axios error that spec 00's interceptor keeps as `cause`), not from a `config.meta` field. A 401 caused by an old token therefore never expires the new session, and concurrent 401s act once.
+
+**Forms**
+- The dynamic-validation API of the design exists in `@tanstack/react-form` 1.33.5 as written (`validators.onDynamic` with `revalidateLogic({ mode: 'blur', modeAfterSubmission: 'change' })`), so the fallback is not needed. `components/form/validation.ts` exports `formValidation()`.
+- A field shows its error once it has been blurred or a submit was attempted (`useFieldMessage`), not on first touch: before a submit, validation runs on blur only, and a message left by another field's validation must stay hidden.
+- **Library behavior found while testing, handled in `components/form/submit.ts`:** when the first submit finds a stale blur-time error that the user has since fixed, `handleSubmit` refuses to run with the old message. `submitForm(form)` is the shared `<form onSubmit>` body: it ignores a call while submitting (AUTH-05), clears server errors, re-validates with `form.validate('submit')`, then calls `handleSubmit`. A server error that stayed on an edited-but-unsubmitted field would block the same way, hence `clearServerErrors`.
+- Server errors are stored in `errorMap.onServer` (field) and `form.errorMap.onServer` (`FormAlert`). Editing a field clears its own; `TextField` and `PasswordField` do it.
+- Focus after a failed submit is a state change handled in an effect (`useFormFocus`), because the `aria-invalid` attributes exist only after the re-render.
+- The sign-up schema is in `features/auth/model/signup-schema.ts` (a component file cannot export it without breaking fast refresh).
+
+**Screens**
+- One form instance serves both compositions. The desktop-only parts (close, tabs, subtitle, accent bar) and mobile-only parts (logo, visible title, footer link) are hidden with CSS. There are two `h1` elements, one per breakpoint, and only the visible one is in the accessibility tree, so each page has one `h1` at any width.
+- The sign-up submit reads "Criar conta" from `lg` and "Criar perfil" below it, as in Figma, with both texts in the DOM and one hidden.
+- The panel's × is an anchor built by `components/href-link.tsx` (`HrefLink`), because its target is a string with search and hash rather than a typed route. "Lista de interesse" in the menu uses it too, because `/` gets its `favorites` search from spec 05.
+- Figma centers the mobile "Nome de usuário" placeholder; it is left-aligned like the other fields (recorded as a deviation).
+- The mobile profile screen (spec 08) owns "Sair" on mobile. *Amended by spec 08:* the account menu has it (mobile and desktop), so the mobile project now runs the logout, user-switch and cross-tab steps through it (`signOut` helper in `auth.spec.ts`); only the steps about the header menu itself and the desktop close button stay desktop-only.
+- `/dev/ui-kit` has a "Formulários" section that proves the validation timing (T01).
+
+**Visual check 04** (50 % overlay at 1440 and 390 against `figma_tokens/screenshots/`)
+
+| Element | Result |
+|---|---|
+| Desktop panel: width 500, tabs, subtitle, fields 340 × 40, button 340 × 44, divider, social buttons, accent bar | Matched. The panel sits about 10 px lower than Figma because the page header is taller than the modal's reference frame, and its min height is 600 including the bar. |
+| Desktop sign-up | Matched; four fields plus the password hint make the panel taller than login (not drawn in Figma with a hint). |
+| Mobile login / sign-up: logo, title, 358 × 50 fields, 358 × 60 button, divider, social buttons, footer link | Matched within 2 px vertically; the footer link sits below the fold at 390 × 844 on sign-up, as the page is longer than the frame with the hint. |
+| Field surface | Figma fields are `ink` with a 1 px `border` inside the card, so the auth fields override the default `surface-dark` fill. |
+
+> Amended by spec 05 (2026-10-28): the favorites guard calls `requireAuth` from `beforeLoad` only when `favorites` is set, and the mobile tab bar heart now links to `/?favorites=1` as well as the footer link.
+
+> Amended by spec 11 (2026-10-28): the header account menu is `DropdownMenu modal={false}` (a modal menu hides a focusable page with `aria-hidden`, which axe reports as `aria-hidden-focus`); `Tab` closes it. In-app navigation to another path focuses the new page's `h1` (`app/use-route-focus.ts`).
+> Amended by spec 13 (2026-10-28): `main.tsx` no longer waits for the mock worker before rendering. `bootApp()` still runs once, but the ordering it needed (no request before the worker) is now enforced by `lib/backend-ready.ts`, which the Axios request interceptor and the socket factory await, so the `auth.session` restore cannot miss the worker.
+
+> Amended by the fix batch (2026-10-28): `bootApp` now purges the checkout draft and attempt of every other user whenever someone signs in, so an expiry followed by a login as a different person leaves nothing of the first one (R8, spec 09 §15). A same-user login after an expiry still resumes checkout.

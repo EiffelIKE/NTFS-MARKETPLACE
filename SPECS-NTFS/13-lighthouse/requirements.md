@@ -1,6 +1,6 @@
 # 13 — Lighthouse · Requirements
 
-> Status: Draft — see [Open questions](#open-questions). Scores depend on specs 05 and 06; the analysis section is written after the first real runs.
+> Status: Final — the open questions below were settled (each default applied; decisions in [`design.md`](design.md) §9). Deployed comparison (PERF-04) waits for the user's Vercel deploy.
 
 Audit home and NFT details with Lighthouse CI on the optimized build, in mobile and desktop profiles, three runs each, and report the median per category together with LCP, CLS and TBT. Commit the configuration, a summary and the representative reports, and explain every result below target with its cause. Optimizations must improve the real app; nothing is removed or faked only for the audit.
 
@@ -29,16 +29,18 @@ Brief coverage: §10 (home and details, mobile and desktop, optimized build, def
 ### Reports
 
 - **PERF-07** — WHEN `pnpm lighthouse` finishes, THE SYSTEM SHALL write the HTML and JSON report of every run and a summary (`summary.md` and `summary.json`) with the medians per page × profile × category, the metric medians and the environment from PERF-02.
-- **PERF-08** — THE SYSTEM SHALL commit the configuration, the summary and the representative (median) run's HTML and JSON for each page and profile in `docs/lighthouse/`. Raw run output stays git-ignored.
-- **PERF-09** — WHEN a category or metric misses its target, THE SYSTEM SHALL document in `docs/lighthouse/analysis.md` the failing audits, their measured cost, the cause and the action taken or the reason none was taken.
+- **PERF-08** — THE SYSTEM SHALL commit the configuration, the summary (with the numbers of every run), the analysis and the representative (median) run's HTML and JSON for each page and profile in `lighthouse/reports/`. Raw run output (`reports/lighthouse/`) stays git-ignored.
+- **PERF-09** — WHEN a category or metric misses its target, THE SYSTEM SHALL document in `lighthouse/reports/analysis.md` the failing audits, their measured cost, the cause and the action taken or the reason none was taken.
 
 ### Optimizations without simplification
 
 - **PERF-10** — THE SYSTEM SHALL serve NFT images through `srcset`/`sizes` with the 250/750/1000 variants (spec 02), explicit `width`/`height`, `fetchpriority="high"` and eager loading for the LCP image only, and lazy loading below the fold.
 - **PERF-11** — THE SYSTEM SHALL preload the Latin subset of the self-hosted Roboto Mono font, so text does not wait on CSS discovery.
-- **PERF-12** — THE SYSTEM SHALL serve a valid `robots.txt` and per-route meta descriptions, so SEO audits pass on the real routes.
+- **PERF-12** — THE SYSTEM SHALL serve a valid `robots.txt` and a meta description on every route, so SEO audits pass on the real routes. *(The description is the static default of `index.html`; route-specific copy was left out because the router would add a second `description` tag next to it, see design §9.)*
 - **PERF-13** — THE SYSTEM SHALL measure the mock layer's boot cost (worker registration and `worker.start`) with User Timing marks visible in the Lighthouse trace, and report it in the analysis.
 - **PERF-14** — THE SYSTEM SHALL NOT disable mocks, images, fonts, realtime or features, nor detect Lighthouse, to raise a score.
+- **PERF-15** — THE SYSTEM SHALL render the app shell while the mock layer starts and hold every request (REST and Socket.IO) until the worker controls the page, so the first paint never waits for the mock chunk and no request can miss the worker. *(Amends spec 02 §3, "mocks before render".)*
+- **PERF-16** — THE SYSTEM SHALL build with no chunk-size warning, by real splitting or by replacing a dependency with an equivalent smaller one, not by raising the limit.
 
 ## Out of scope
 
@@ -46,11 +48,11 @@ Brief coverage: §10 (home and details, mobile and desktop, optimized build, def
 - Field data (CrUX/RUM) and a performance budget in CI.
 - Server-side rendering or prerendering: the stack is a client-rendered SPA.
 
-## Open questions
+## Open questions (settled)
 
-Each has a recommended default that applies unless the user decides otherwise.
+Each default below was applied; the user can still override it.
 
 1. **Extra pages** — recommended: home and details only. Alternative: add `/cart` with an LHCI `puppeteerScript` that logs in as Ana.
-2. **Committed reports (PERF-08)** — recommended: commit only the median run per page × profile (8 files) plus the summary, under `docs/lighthouse/`; spec 00 keeps `reports/` ignored. Alternative: commit all 24 runs.
+2. **Committed reports (PERF-08)** — recommended: commit only the median run per page × profile (8 files) plus the summary, under `lighthouse/reports/`; `reports/` stays ignored. Alternative: commit all 24 runs.
 3. **LCP image preload** — the home LCP is the hero artwork, known only after the highlights request. Recommended: no hard-coded preload (it would couple the HTML to mock data), and rely on `fetchpriority`, early highlights prefetch in the route loader and a fast mock boot. Revisit if mobile Performance stays below 90 and the analysis shows the image request starts late.
 4. **Deployed audit (PERF-04)** — recommended: run it once at delivery and include it in the analysis as a comparison. It is blocked until the user deploys to Vercel.

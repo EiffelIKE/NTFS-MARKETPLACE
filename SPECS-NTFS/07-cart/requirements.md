@@ -1,6 +1,6 @@
 # 07 — Cart · Requirements
 
-> Status: Ready for review
+> Status: Done
 
 Build the cart screen (desktop and mobile frames "Carrinho de NFTs") on top of the spec 02 cart, coupon, merge and quote operations: the server cart for signed-in users and the guest cart identified by `X-Guest-Cart-Id`, quantity editing and removal within availability limits, coupons, a quote-driven summary, persistence across refreshes, the merge of guest items on login, and live price and availability changes pushed by spec 03.
 

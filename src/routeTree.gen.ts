@@ -16,8 +16,11 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as WalletsRouteImport } from './routes/wallets'
+import { Route as DevRealtimeRouteImport } from './routes/dev/realtime'
+import { Route as DevUiKitRouteImport } from './routes/dev/ui-kit'
 import { Route as NftsNftIdRouteImport } from './routes/nfts/$nftId'
 import { Route as OrdersOrderIdRouteImport } from './routes/orders/$orderId'
+import { Route as ExplorerNetworkTxTxHashRouteImport } from './routes/explorer/$network/tx/$txHash'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -54,6 +57,16 @@ const WalletsRoute = WalletsRouteImport.update({
   path: '/wallets',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DevRealtimeRoute = DevRealtimeRouteImport.update({
+  id: '/dev/realtime',
+  path: '/dev/realtime',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DevUiKitRoute = DevUiKitRouteImport.update({
+  id: '/dev/ui-kit',
+  path: '/dev/ui-kit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const NftsNftIdRoute = NftsNftIdRouteImport.update({
   id: '/nfts/$nftId',
   path: '/nfts/$nftId',
@@ -62,6 +75,11 @@ const NftsNftIdRoute = NftsNftIdRouteImport.update({
 const OrdersOrderIdRoute = OrdersOrderIdRouteImport.update({
   id: '/orders/$orderId',
   path: '/orders/$orderId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExplorerNetworkTxTxHashRoute = ExplorerNetworkTxTxHashRouteImport.update({
+  id: '/explorer/$network/tx/$txHash',
+  path: '/explorer/$network/tx/$txHash',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -73,8 +91,11 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRoute
   '/signup': typeof SignupRoute
   '/wallets': typeof WalletsRoute
+  '/dev/realtime': typeof DevRealtimeRoute
+  '/dev/ui-kit': typeof DevUiKitRoute
   '/nfts/$nftId': typeof NftsNftIdRoute
   '/orders/$orderId': typeof OrdersOrderIdRoute
+  '/explorer/$network/tx/$txHash': typeof ExplorerNetworkTxTxHashRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -84,8 +105,11 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/signup': typeof SignupRoute
   '/wallets': typeof WalletsRoute
+  '/dev/realtime': typeof DevRealtimeRoute
+  '/dev/ui-kit': typeof DevUiKitRoute
   '/nfts/$nftId': typeof NftsNftIdRoute
   '/orders/$orderId': typeof OrdersOrderIdRoute
+  '/explorer/$network/tx/$txHash': typeof ExplorerNetworkTxTxHashRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -96,8 +120,11 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRoute
   '/signup': typeof SignupRoute
   '/wallets': typeof WalletsRoute
+  '/dev/realtime': typeof DevRealtimeRoute
+  '/dev/ui-kit': typeof DevUiKitRoute
   '/nfts/$nftId': typeof NftsNftIdRoute
   '/orders/$orderId': typeof OrdersOrderIdRoute
+  '/explorer/$network/tx/$txHash': typeof ExplorerNetworkTxTxHashRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -109,8 +136,11 @@ export interface FileRouteTypes {
     | '/profile'
     | '/signup'
     | '/wallets'
+    | '/dev/realtime'
+    | '/dev/ui-kit'
     | '/nfts/$nftId'
     | '/orders/$orderId'
+    | '/explorer/$network/tx/$txHash'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -120,8 +150,11 @@ export interface FileRouteTypes {
     | '/profile'
     | '/signup'
     | '/wallets'
+    | '/dev/realtime'
+    | '/dev/ui-kit'
     | '/nfts/$nftId'
     | '/orders/$orderId'
+    | '/explorer/$network/tx/$txHash'
   id:
     | '__root__'
     | '/'
@@ -131,8 +164,11 @@ export interface FileRouteTypes {
     | '/profile'
     | '/signup'
     | '/wallets'
+    | '/dev/realtime'
+    | '/dev/ui-kit'
     | '/nfts/$nftId'
     | '/orders/$orderId'
+    | '/explorer/$network/tx/$txHash'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -143,8 +179,11 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRoute
   SignupRoute: typeof SignupRoute
   WalletsRoute: typeof WalletsRoute
+  DevRealtimeRoute: typeof DevRealtimeRoute
+  DevUiKitRoute: typeof DevUiKitRoute
   NftsNftIdRoute: typeof NftsNftIdRoute
   OrdersOrderIdRoute: typeof OrdersOrderIdRoute
+  ExplorerNetworkTxTxHashRoute: typeof ExplorerNetworkTxTxHashRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -198,6 +237,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WalletsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dev/realtime': {
+      id: '/dev/realtime'
+      path: '/dev/realtime'
+      fullPath: '/dev/realtime'
+      preLoaderRoute: typeof DevRealtimeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dev/ui-kit': {
+      id: '/dev/ui-kit'
+      path: '/dev/ui-kit'
+      fullPath: '/dev/ui-kit'
+      preLoaderRoute: typeof DevUiKitRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/nfts/$nftId': {
       id: '/nfts/$nftId'
       path: '/nfts/$nftId'
@@ -212,6 +265,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrdersOrderIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/explorer/$network/tx/$txHash': {
+      id: '/explorer/$network/tx/$txHash'
+      path: '/explorer/$network/tx/$txHash'
+      fullPath: '/explorer/$network/tx/$txHash'
+      preLoaderRoute: typeof ExplorerNetworkTxTxHashRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -223,8 +283,11 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRoute,
   SignupRoute: SignupRoute,
   WalletsRoute: WalletsRoute,
+  DevRealtimeRoute: DevRealtimeRoute,
+  DevUiKitRoute: DevUiKitRoute,
   NftsNftIdRoute: NftsNftIdRoute,
   OrdersOrderIdRoute: OrdersOrderIdRoute,
+  ExplorerNetworkTxTxHashRoute: ExplorerNetworkTxTxHashRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

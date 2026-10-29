@@ -1,6 +1,6 @@
 # 08 — Profile & wallets · Design
 
-> Status: Draft — §8 (mobile) is a proposal; §1–§7 and §9–§12 are ready for review
+> Status: Done — §8 (mobile) is final; §14 lists what changed while implementing
 
 Implements [`requirements.md`](requirements.md). Contracts, operations, error codes and fixtures are spec 02's; the form approach (field validation with the spec 02 request schemas, mapping API `fields` onto inputs, `focusFirstInvalid`) is the one spec 04 adopts for login and sign-up.
 
@@ -37,6 +37,8 @@ src/routes/wallets.tsx                  # path /wallets
 
 Spec 04 guards per route with `requireAuth` (no `_authenticated` layout).
 
+> Implemented layout: `api/` as above; `model/` has `avatar-file.ts`, `profile-form.ts`, `wallet-form.ts` and `use-account.ts` (session user id, `useProfile`, `useWallets`); `components/` has `account-layout`, `account-nav`, `account-states` (skeletons, `LoadError`), `account-styles`, `avatar-field`, `profile-form`, `profile-page`, `use-wallet-form`, `wallet-fields`, `wallet-slot` and `wallets-page`. `password-section`, `wallet-form` and `account-skeleton` were folded into those (design §14).
+
 ## 3. Queries and cache
 
 ```ts
@@ -64,7 +66,7 @@ export const accountKeys = {
 | Avatar | separate operations (§5) | `avatar-field.tsx` |
 | Senha atual / Nova senha / Confirmar nova senha | `ChangePasswordBody` + client confirm | `PasswordInput` ×3 |
 
-**Client schema (`model/profile-form.ts`):**
+**Client schema (`model/profile-form.ts`)** — implemented flat, see §14.5:
 
 ```ts
 const PasswordSection = z.object({ currentPassword: z.string(), newPassword: z.string(), confirmPassword: z.string() })
@@ -142,7 +144,7 @@ Active item: 6 px `primary` bar on the left + `aria-current="page"`.
 | `/profile` | "Meu perfil · KURIO" | `nav: 'home'`, divider, mobile tab `profile` | "Perfil do colecionador" |
 | `/wallets` | "Carteiras · KURIO" | `nav: 'home'`, divider, mobile inner "Carteiras" | "Carteiras" (visually hidden on desktop; Figma's first heading is "Carteira principal", rendered as `h2`) |
 
-## 8. Mobile and tablet (proposal, no Figma frame)
+## 8. Mobile and tablet (decided, no Figma frame)
 
 - **`/profile` below `lg`:** tab bar visible (tab `profile`). Top: `h1` "Meu perfil" and the account menu as a compact `surface-card` list (same items and icons, 48 rows, chevron `ChevronRightIcon`), with "Sair" last. Below it the form in one column (`md`: two columns as desktop), the avatar field first, then the password section, then a full-width "Salvar" (gradient `primary-soft` pill as the mobile frames' primary buttons).
 - **`/wallets` below `lg`:** inner top bar "Carteiras" (back → `/profile`), no tab bar. The two slot sections stacked, one-column fields, full-width "Salvar carteira" at the end of each form (not fixed, since two forms share the page).
@@ -175,6 +177,8 @@ Active item: 6 px `primary` bar on the left + `aria-current="page"`.
 
 ### E2E (`e2e/account.spec.ts`, brief scenario 8; Chromium desktop + mobile projects)
 
+Implemented as listed, plus the account menu rows, the load-failure row and the 320 / 390 / 768 / 1440 overflow row; the two-context password row became a second token (§14.14).
+
 | Test | Proves |
 |---|---|
 | Guest `goto('/profile')` → `/login?redirect=%2Fprofile`; Ana logs in → back on `/profile` | ACC-01 |
@@ -196,6 +200,8 @@ Active item: 6 px `primary` bar on the left + `aria-current="page"`.
 
 1. **Shared address/network rule.** `contracts/wallets.ts` exports `addressMatchesNetwork(address: string, network: NetworkId): boolean` and applies it as a `superRefine` on `WalletFields` (issue path `address`, message "Endereço inválido para a rede selecionada."). The wallet handler keeps its check by parsing with the same schema, so the client form and the mock produce the same message (ACC-17). Pure function; respects the contracts lint boundary.
 
+2. **Select messages.** `NetworkId` and `WalletProvider` in `contracts/` carry `{ error: 'Selecione uma rede.' }` and `{ error: 'Selecione uma carteira.' }`. An unchosen select is `''` in the form, so the client schema reports these messages on the select, with no client-only wording.
+
 ## 12. Figma references
 
 - `figma_tokens/screenshots/desktop/Perfil do Colecionador.png`, `figma_tokens/screenshots/desktop/Carteiras.png`.
@@ -203,7 +209,7 @@ Active item: 6 px `primary` bar on the left + `aria-current="page"`.
 
 ## 13. Deviations and notes for `ARCHITECTURE.md` (spec 14)
 
-- **Mobile profile and wallets** have no Figma frame; composition per §8.
+- **Mobile profile and wallets** have no Figma frame; composition per §8 and §14.
 - **`.eth` select** is rendered as a static suffix (one option only).
 - **"Igual à carteira principal"** is a checkbox, not a single radio, and does not copy the address.
 - **Unlabelled alternate wallet field** gets a visible label "ENS ou carteira secundária (opcional)".
@@ -211,3 +217,39 @@ Active item: 6 px `primary` bar on the left + `aria-current="page"`.
 - **Header in the Figma frames** shows "Entrar" on private screens; the app shows the signed-in user (spec 04).
 - **One "Salvar"** runs the profile update and the password change in sequence and reports each outcome.
 - **Avatar** uploads immediately, separate from "Salvar"; no crop UI.
+
+## 14. Implementation decisions (2026-10-28)
+
+Decisions taken while implementing, where the design was silent or had to give way to what the code showed.
+
+**Amendments to earlier specs (applied in those documents):**
+
+| Spec | Change |
+|---|---|
+| 02 | `NetworkId` and `WalletProvider` have pt-BR enum messages (§11.2). |
+| 04 | The mobile logout and user-switch E2E steps run through the profile screen's "Sair"; the "session the server dropped" test waits for the profile read and the socket before expiring sessions (a 401 on a read in flight made it flaky once `/profile` made requests). |
+| 01 / form layer | `components/form/` gains `SelectField`, `EnsField` and `RequiredMark`; `TextField` and `PasswordField` take `required` (the Figma `*`, a hidden "(obrigatório)" and `aria-required`), and `TextField` takes `format` (the referral code is upper-cased as typed). `EnsField` is what spec 09 reuses for its ENS field. |
+| 00 / 01 | `e2e/smoke.spec.ts`: `/profile` is a real screen ("Perfil do colecionador", title "Meu perfil · KURIO"). |
+
+**Mobile and layout**
+1. **Layout confirmed as §8.** `/profile` below `lg`: the menu list on top (all eight rows, chevrons on the left-aligned rows, "Sair" last), then `h1`, then the form. `/wallets` below `lg`: the existing inner top bar (back is `history.back()`, or home when there is no history, as on every inner screen) and the slots; no menu and no tab bar. Content is a 600 px column from `md` (as the cart), the Figma 310 + 28 + 862 grid from `lg`.
+2. **DOM order is visual order.** The avatar field sits after "Apelido da carteira" (Figma position) on every width, instead of moving to the top on phones with CSS order, so keyboard order never differs from reading order.
+3. **Headings.** `/profile` has one visible `h1` "Perfil do colecionador" on every width; "Meu perfil" is the menu's title (a paragraph in a `nav` named "Conta"). `/wallets` has a visually hidden `h1` "Carteiras" (the top bar and the section headings name the screen).
+4. **Mobile controls** follow the auth screens: 50 tall fields with the 10 px mobile radius, "Salvar" and "Salvar carteira" as full-width 60 px pills. "Cancelar" is an outline button beside "Salvar carteira" (stacked on phones).
+
+**Forms**
+5. **The profile form is flat.** The password fields are top-level (`currentPassword`, `newPassword`, `confirmPassword`) in the same schema as the profile fields, not a nested `password` object, so the form layer's `applyServerErrors` (which maps `fields` by top-level name) and `focusFirstInvalid` work unchanged. The schema is `UpdateProfileBody.extend(...).superRefine(...)`; Zod 4 reports password issues together with field issues.
+6. **Dirty check against the saved profile** (`profileChanged`, e-mail compared lower-cased), not form state: a save after a save sends nothing new, and an untouched form says "Nenhuma alteração para salvar." without a request. After a successful update, fields whose saved value differs (trimmed, lower-cased e-mail) are rewritten with what the server kept.
+7. **Messages.** A password-only save toasts "Senha alterada. As outras sessões foram encerradas.", a profile-only one "Perfil atualizado.", both succeeding the two joined. When the profile saved and the password failed, "Perfil atualizado." is shown and the API message sits on the password field.
+8. **Wallet form schema** is `WalletFormValuesSchema.transform(toWalletInput).pipe(WalletFields)`: inputs are strings, an empty alternate wallet is dropped, and the spec 02 rules (including the address and network refinement) are the only rules. The body sent is the schema's trimmed output.
+9. **Wallet selects** use the `NetworkId` enum with fixed labels (Ethereum, Polygon, Solana) and `WALLET_PROVIDER_LABELS`, not `networks.list`: the list only adds fees (checkout, spec 09), and a failing extra request would block a form that does not need it.
+10. **Slot state lives in the slot.** `useWalletForm` is called by `WalletSlot`, because "Igual à carteira principal" sits in the header and writes into the form before it is shown. Unchecking clears a copied value only while it still equals the copied one. A slot's form resets when its saved wallet changes (`id@updatedAt`), which is how `WALLET_ROLE_TAKEN` switches it to edit mode. That notice ("Esta carteira já foi cadastrada. Atualizamos os dados.") is local state, since the reset would clear a form-level error. "Adicionar" moves focus into the first field.
+11. **Revalidating the address** when "Rede" changes calls `validateField('address', 'blur')` only if an address was typed.
+
+**Cache**
+12. **Profile writes** cancel an in-flight profile read, `setQueryData`, then patch the session user, all behind the spec 04 epoch guard (a result after a sign-out or user switch is dropped). **Wallet writes** insert the saved wallet in the cached list by role (primary first), then invalidate the list. `profileQueryOptions(userId)` and `walletsQueryOptions(userId)` are the entries spec 09 reads.
+13. **Avatar** failures map 413 and 415 (by code or status) to the same texts as the client check. Removing the avatar moves focus to "Alterar" after the request settles, because the focused button is disabled while it runs.
+
+**Tests**
+14. Cross-session password test: the "other device" is a second token from `loginAs(page, 'ana', { seed: false })` in the same page. Two browser contexts would not do: each has its own mock database. Its next request answers 401 while the page's session stays.
+15. On phones the toast and the fixed tab bar can cover the bottom of the page, so tests that submit twice in a row submit with Enter the second time.

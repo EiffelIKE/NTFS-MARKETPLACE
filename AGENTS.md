@@ -28,3 +28,21 @@ The Figma MCP server provides an assets endpoint which can serve image and SVG a
 - Respect existing routing, state management, and data‑fetch patterns already adopted in the repo.
 - Strive for 1:1 visual parity with the Figma design. When conflicts arise, prefer design‑system tokens and adjust spacing or sizes minimally to match visuals.
 - Validate the final UI against the Figma screenshot for both look and behavior.
+
+## TanStack Router skills
+
+`@tanstack/router-core` and `@tanstack/router-plugin` ship Agent Skills inside their npm packages ([TanStack Intent](https://tanstack.com/intent/registry/%2540tanstack%252Frouter-core)), so they always match the installed version. They are not loaded automatically: before writing routing code, read the `SKILL.md` that covers the task (run `pnpm install` first if `node_modules` is missing).
+
+| Task | Skill |
+|---|---|
+| Entry point: route trees, `createRootRouteWithContext`, `Register`, file naming | `node_modules/@tanstack/router-core/skills/router-core/SKILL.md` |
+| `beforeLoad` guards, `redirect()`, `_authenticated` layout (spec 04) | `node_modules/@tanstack/router-core/skills/router-core/auth-and-guards/SKILL.md` |
+| `validateSearch`, URL state for filters/sort/pagination (spec 05) | `node_modules/@tanstack/router-core/skills/router-core/search-params/SKILL.md` |
+| Loaders with the Query client in context, pending states, `router.invalidate` | `node_modules/@tanstack/router-core/skills/router-core/data-loading/SKILL.md` |
+| `notFound()`, `notFoundComponent`, `errorComponent` (spec 06 NFT 404) | `node_modules/@tanstack/router-core/skills/router-core/not-found-and-errors/SKILL.md` |
+| `Link`, `useNavigate`, preloading, navigation blocking | `node_modules/@tanstack/router-core/skills/router-core/navigation/SKILL.md` |
+| Dynamic segments (`$nftId`, `$orderId`), `params.parse` | `node_modules/@tanstack/router-core/skills/router-core/path-params/SKILL.md` |
+| Type inference, `from` narrowing, `getRouteApi` | `node_modules/@tanstack/router-core/skills/router-core/type-safety/SKILL.md` |
+| `autoCodeSplitting`, lazy routes, split groupings | `node_modules/@tanstack/router-core/skills/router-core/code-splitting/SKILL.md`, `node_modules/@tanstack/router-plugin/skills/router-plugin/SKILL.md` |
+
+Skip `ssr/` (this app is a client-only SPA). Project decisions in `SPECS-NTFS/` win over skill examples when they differ, e.g. Zod 4 schemas go straight into `validateSearch` with `.catch()`, without `@tanstack/zod-adapter` (spec 00 design §1).

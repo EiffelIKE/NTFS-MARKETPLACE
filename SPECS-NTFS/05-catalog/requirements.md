@@ -1,6 +1,6 @@
 # 05 — Catalog · Requirements
 
-> Status: Ready for review
+> Status: Done
 
 Build the home screen: hero carousel, featured banner, the "Mercado" catalog with search, combinable filters, segments, sorting and pagination kept in the URL, and the static promo and blog bands. Desktop and mobile follow their own Figma compositions. The catalog reads only the spec 02 endpoint functions (`nfts.list`, `highlights.get`). It handles loading, empty, error, background-refresh and out-of-order responses without showing stale results.
 

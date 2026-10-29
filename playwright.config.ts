@@ -7,6 +7,20 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,
+  // Baselines live in the repo, one folder per project, tagged with the OS that rendered them
+  // (spec 12 §2): fonts and anti-aliasing differ between platforms, so a mismatched OS fails loudly
+  // on a missing baseline instead of on pixel noise.
+  snapshotPathTemplate: 'e2e/__screenshots__/{projectName}/{arg}-{platform}{ext}',
+  expect: {
+    toHaveScreenshot: {
+      maxDiffPixelRatio: 0.001,
+      threshold: 0.2,
+      animations: 'disabled',
+      caret: 'hide',
+      scale: 'css',
+      stylePath: './e2e/support/visual.css',
+    },
+  },
   reporter: [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]],
   use: {
     baseURL: 'http://localhost:4173',

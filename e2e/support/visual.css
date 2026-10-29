@@ -1,0 +1,12 @@
+/* Injected by `toHaveScreenshot({ stylePath })` only while a baseline is captured (spec 12 §2). */
+::-webkit-scrollbar {
+  display: none;
+}
+* {
+  scrollbar-width: none;
+}
+/* Dev-only chrome and transient overlays are not part of a screen's look. */
+#mock-panel-root,
+[data-sonner-toaster] {
+  display: none !important;
+}

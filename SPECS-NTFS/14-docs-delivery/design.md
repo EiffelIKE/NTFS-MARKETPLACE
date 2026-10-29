@@ -32,7 +32,7 @@ Generated sections sit between `<!-- generated:operations -->` … `<!-- /genera
    | Bruno Lima | `bruno@kurio.example` | `Kurio#Bruno2026` | one wallet, empty cart; 403 on Ana's order |
    | Carla Mendes | `carla@kurio.example` | `Kurio#Carla2026` | no wallets: checkout asks to register one |
 
-4. **Environment variables**: `VITE_API_BASE_URL`, `VITE_API_TIMEOUT_MS`, `VITE_ENABLE_MOCKS`, `VITE_SOCKET_URL` (spec 03), and any later addition, from the env schema.
+4. **Environment variables**: `VITE_API_BASE_URL`, `VITE_API_TIMEOUT_MS`, `VITE_ENABLE_MOCKS`, `VITE_REALTIME_URL` (spec 03), and any later addition, from the env schema.
 5. **Scenarios and reset**: how to select (URL, panel, `window.__mock`), generated scenario table, reset methods, persistence note (`localStorage`, per browser).
 6. **Reproducing failure flows**: one row per flow — goal, how to trigger, steps, expected result:
 
@@ -45,6 +45,7 @@ Generated sections sit between `<!-- generated:operations -->` … `<!-- /genera
    | 5xx with retry recovery | `?scenario=errors-then-recover` |
    | Server down | `?scenario=server-down` |
    | Session expiry with resume | `?scenario=session-short`, or `__mock.expireSessions()` mid-checkout |
+   | Simulated block explorer | open Ana's receipt `/orders/ord_000001` → "Ver no Etherscan" (public page `/explorer/<network>/tx/<hash>`, in-app; no external link is involved) |
    | Unauthorized / forbidden | open `/profile` signed out; Bruno opens `/orders/ord_000001` |
    | Sign-up conflict, validation | sign up with `ana@kurio.example`; submit empty forms |
    | Invalid / expired coupon | `NAOEXISTE`, `VERAO25` |
@@ -56,7 +57,7 @@ Generated sections sit between `<!-- generated:operations -->` … `<!-- /genera
    | Wallet rejects connection | `?scenario=wallet-reject` |
 
 7. **Commands**: table from spec 00 §2 plus `test:visual`, `test:visual:update` (spec 12), `lighthouse`, `lighthouse:deployed` (spec 13), with outputs (`playwright-report/`, `reports/lighthouse/`, `docs/lighthouse/`).
-8. **Tests**: how to run one project, open the report and a trace; visual tests need Podman or Docker.
+8. **Tests**: how to run one project, open the report and a trace; `test:visual` and `test:visual:update`; baselines are Linux-only (spec 12 design §6).
 9. **Deploy**: Vercel settings (spec 00 §12), `ENABLE_EXPERIMENTAL_COREPACK=1`, Node 24, checking `<meta name="kurio-build">`.
 10. **Known limitations**: short list linking to `ARCHITECTURE.md`.
 
@@ -79,9 +80,9 @@ Generated sections sit between `<!-- generated:operations -->` … `<!-- /genera
 | 13 | Deviations and decisions (DOC-13) | every spec's notes section |
 | 14 | Limitations | collected |
 
-**Deviation collection (DOC-13).** Each spec ends with a "Deviations and notes for `ARCHITECTURE.md`" (or "Notes for …") section. T03 walks `SPECS-NTFS/*/design.md`, copies every item into §13 under one of: Figma, Accessibility, Assets, Brief interpretation, Technical. Each item keeps its reason and links back to the spec section. Items already known from specs 00–02 include: TypeScript 6 / ESLint 9 pins, no icon package, SPA 404 with HTTP 200, derived colors, type-scale collapse, drawn icons, tab bar choices, `aria-current` vs. Figma highlight, out-of-scope links, MSW 2.x, Axios fetch adapter, quote fingerprints, 403 vs. 404, ETH on every network, dot decimal separator, PBKDF2 iterations, mock clock, multi-tab behavior, Service Worker limits.
+**Deviation collection (DOC-13).** Each spec ends with a "Deviations and notes for `ARCHITECTURE.md`" (or "Notes for …") section. T03 walks `SPECS-NTFS/*/design.md`, copies every item into §13 under one of: Figma, Accessibility, Assets, Brief interpretation, Technical. Each item keeps its reason and links back to the spec section. Items already known from specs 00–02 include: TypeScript 6 / ESLint 9 pins, no icon package, SPA 404 with HTTP 200, derived colors, type-scale collapse, drawn icons, tab bar choices, `aria-current` vs. Figma highlight, out-of-scope links, MSW 2.x, Axios fetch adapter, quote fingerprints, 403 vs. 404, ETH on every network, dot decimal separator, PBKDF2 iterations, mock clock, multi-tab behavior, Service Worker limits. From spec 04 (design §13 and §14): desktop auth as a page panel, unavailable social login, bearer token in `localStorage` (HttpOnly cookie in production), the session policy, identity-change isolation and the boot cost of a stored session.
 
-**Transport limits (DOC-10)** to state explicitly, confirmed against spec 03 when it is Done: the Socket.IO "server" runs inside the page's Service Worker interception, not in a separate process; events reach only the tab that caused the change (spec 02 multi-tab note); a real network drop cannot be simulated at the socket level beyond what the binding exposes, so disconnection is driven by the mock control; there is no server persistence of missed events, so reconnection relies on REST reconciliation, which is also the production design.
+**Transport limits (DOC-10)** to state explicitly, confirmed against spec 03 (Done; its design §3 and §12 hold the details: MSW strips the `/socket.io/` path, the binding has no heartbeat, rooms, acks or CONNECT `auth`, refusing a connection needs an `error` event, WebSocket only): the Socket.IO "server" runs inside the page's Service Worker interception, not in a separate process; events reach only the tab that caused the change (spec 02 multi-tab note); a real network drop cannot be simulated at the socket level beyond what the binding exposes, so disconnection is driven by the mock control; there is no server persistence of missed events, so reconnection relies on REST reconciliation, which is also the production design.
 
 ## 4. Commit identifier (DOC-16)
 
@@ -116,3 +117,9 @@ Results go to `playwright-report/deploy/`; the README links the latest pass date
 
 - Documents are English (open question 1); UI copy quoted inside them stays pt-BR.
 - The specs folder stays in the repository as the design record; the README links it.
+
+## 8. Notes added by the fix batch (2026-10-28)
+
+- `pnpm test:e2e` skips the `@visual` tests off Linux (spec 12 §9); the README's testing section should say that macOS and Windows runs report them as skipped and how to create local baselines.
+- A scenario for a 4xx exists now: `?scenario=rate-limited` (spec 02 §17). Add it to the README's scenario list next to the 5xx ones.
+- The plaintext demo passwords live only in `fixtures/credentials.ts` and the README; the production bundle no longer contains them (spec 02 §17).

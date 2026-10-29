@@ -1,47 +1,33 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
+
+import { requireAuth } from '@/features/auth/model/redirects'
+import { highlightsQuery, nftListQuery } from '@/features/catalog/api/queries'
+import { HomePage } from '@/features/catalog/home/home-page'
+import { catalogSearch, toListQuery } from '@/features/catalog/model/search'
+
+const noop = () => undefined
 
 export const Route = createFileRoute('/')({
-  head: () => ({ meta: [{ title: 'KURIO — Marketplace de NFTs' }] }),
+  validateSearch: catalogSearch,
+  // Favorites mode needs a session (CAT-24); a visitor goes to `/login?redirect=<this URL>`.
+  loaderDeps: ({ search }) => ({ query: toListQuery(search) }),
+  beforeLoad: async ({ search, context, location }) => {
+    if (search.favorites !== undefined) await requireAuth({ context, location })
+  },
+  // Not awaited: the page renders its skeletons at once and the router never waits for the
+  // catalog (CAT-14). The components read the same query keys, so nothing is fetched twice.
+  loader: ({ context, deps }) => {
+    void context.queryClient.query(nftListQuery(deps.query)).catch(noop)
+    void context.queryClient.query(highlightsQuery()).catch(noop)
+  },
+  staticData: { shell: { nav: 'home', headerDivider: true, mobile: { kind: 'tab', tab: 'home' } } },
+  head: ({ match }) => ({
+    meta: [
+      {
+        title:
+          match.search.favorites !== undefined ? 'Lista de interesse · KURIO' : 'Início · KURIO',
+      },
+    ],
+  }),
   component: HomePage,
 })
-
-// Placeholder navigation until spec 05 builds the catalog.
-function HomePage() {
-  return (
-    <main>
-      <h1>KURIO</h1>
-      <nav aria-label="Telas">
-        <ul>
-          <li>
-            <Link to="/nfts/$nftId" params={{ nftId: '1' }}>
-              Detalhes do NFT
-            </Link>
-          </li>
-          <li>
-            <Link to="/cart">Carrinho</Link>
-          </li>
-          <li>
-            <Link to="/checkout">Finalizar compra</Link>
-          </li>
-          <li>
-            <Link to="/orders/$orderId" params={{ orderId: '1' }}>
-              Confirmação do pedido
-            </Link>
-          </li>
-          <li>
-            <Link to="/login">Entrar</Link>
-          </li>
-          <li>
-            <Link to="/signup">Criar conta</Link>
-          </li>
-          <li>
-            <Link to="/profile">Perfil</Link>
-          </li>
-          <li>
-            <Link to="/wallets">Carteiras</Link>
-          </li>
-        </ul>
-      </nav>
-    </main>
-  )
-}

@@ -1,23 +1,24 @@
 # 13 — Lighthouse · Design
 
-> Status: Draft — see [Open questions](requirements.md#open-questions). §6 lists likely causes to check first; the real analysis is written from the first runs.
+> Status: Final. The numbers and the analysis live in [`lighthouse/reports/`](../../lighthouse/reports/summary.md) and [`analysis.md`](../../lighthouse/reports/analysis.md); this file records how the audit is built and what was decided.
 
-Implements [`requirements.md`](requirements.md). Builds on the spec 00 skeleton (§11 there: `lighthouse/{desktop,mobile}.json`, `@lhci/cli`, `pnpm lighthouse`) and spec 02's change of the details URL to `/nfts/emerald-ape-042`. No new dependencies.
+Implements [`requirements.md`](requirements.md). Builds on the spec 00 skeleton (§11 there: `lighthouse/{desktop,mobile}.json`, `@lhci/cli`, `pnpm lighthouse`) and spec 02's details URL `/nfts/emerald-ape-042`. One new dev dependency: `tldts-experimental` (§4).
 
 ## 1. Files
 
 ```
 lighthouse/
-  desktop.json  mobile.json      # LHCI configs (spec 00), completed here
+  desktop.json  mobile.json        # LHCI configs (spec 00), completed here
+  reports/                         # committed deliverable
+    summary.md  summary.json       # medians, every run, environment, conditions
+    analysis.md                    # causes of every miss, before/after
+    {home,details}-{mobile,desktop}.report.{html,json}   # the median run of each group
 scripts/
-  lighthouse-run.mjs             # resolves CHROME_PATH, runs both configs, then the summary
-  lighthouse-summary.mjs         # reads reports/lighthouse/*/manifest.json + LHRs → summary.{md,json}
-public/
-  robots.txt
-reports/lighthouse/{desktop,mobile}/   # git-ignored raw output (spec 00)
-docs/lighthouse/
-  summary.md  summary.json  analysis.md
-  {home,details}-{desktop,mobile}.report.{html,json}
+  lighthouse-run.ts                # build, run both configs, summary (Node type stripping, no tsx)
+  lighthouse-summary.ts            # raw LHCI output -> summary.{md,json}; --publish copies to lighthouse/reports/
+scripts/lighthouse-summary.test.ts # unit test (Vitest `include` gains scripts/**)
+public/robots.txt
+reports/lighthouse/{desktop,mobile}/ # git-ignored raw output (12 runs), summary.{md,json}
 ```
 
 ## 2. LHCI configuration (PERF-01 – PERF-06)
@@ -34,8 +35,7 @@ Both configs share:
       "numberOfRuns": 3,
       "settings": { "chromeFlags": "--headless=new" }   // desktop adds "preset": "desktop"
     },
-    "assert": {
-      "aggregationMethod": "median-run",
+    "assert": {                                          // every assertion: median-run
       "assertions": {
         "categories:performance":    ["error", { "minScore": 0.90 }],
         "categories:accessibility":  ["error", { "minScore": 0.95 }],
@@ -51,61 +51,86 @@ Both configs share:
 }
 ```
 
-- Mobile keeps Lighthouse's default emulation (Moto G Power class, simulated 4× CPU slowdown, slow 4G). Desktop uses the `desktop` preset. Both use simulated throttling (the default), so results depend less on the host's network.
-- The default scenario is guaranteed because each run starts with empty storage (PERF-03): the mock DB seeds `default` on first load.
-- The mock panel and its launcher never show without `?mockPanel=1` (spec 02 decision 2), so they are not part of any audit.
+- Mobile keeps Lighthouse's default emulation (Moto G Power class, 412 × 823 at 1.75 DPR, simulated 4× CPU slowdown, slow 4G). Desktop uses the `desktop` preset. Both use simulated (Lantern) throttling, so results depend less on the host's network.
+- The default scenario is guaranteed because each run starts with empty storage (PERF-03): the mock DB seeds `default` on first load. The mock panel never shows without `?mockPanel=1` (spec 02 decision 2).
+- `vite preview` serves HTTP/1.1 with gzip. Lantern models connection limits from the protocol of the recorded trace, so a many-chunk app looks slower locally than behind HTTP/2 (analysis §"Local vs. deployed").
 
 ## 3. Runner and summary (PERF-02, PERF-07, PERF-08)
 
-`pnpm lighthouse` becomes `node scripts/lighthouse-run.mjs` (amends spec 00 §2):
+`pnpm lighthouse` is `node scripts/lighthouse-run.ts` (amends spec 00 §2). `pnpm lighthouse:publish` adds `--publish`; `pnpm lighthouse:deployed <url>` adds `--deployed <url>`.
 
-1. `pnpm build` (production, mocks on).
-2. Resolves Playwright's Chromium (`chromium.executablePath()` from `@playwright/test`) into `CHROME_PATH`, unless already set.
-3. Runs `lhci autorun --config=lighthouse/desktop.json`, then mobile. Both are run even if the first fails assertions; the script exits non-zero at the end if either failed.
-4. Runs `lighthouse-summary.mjs`, which reads each profile's `manifest.json` (LHCI marks the representative median run) and the LHR JSONs, and writes:
-   - `summary.json`: per page × profile, the median category scores, median LCP / CLS / TBT / FCP / SI, the three raw values, and `environment` (`lighthouseVersion`, `environment.hostUserAgent`, `benchmarkIndex`, `configSettings.throttling`, `formFactor`, plus `os.release()`, `os.cpus()[0].model`, `process.version` and the `@lhci/cli` version);
-   - `summary.md`: the same as tables, with ✅ / ❌ against targets.
-5. With `--publish`, copies the summary and the representative reports to `docs/lighthouse/` under stable names (PERF-08).
+1. `pnpm build` (production, mocks on), unless `--skip-build` or `--deployed`.
+2. `CHROME_PATH` is Playwright's Chromium (`chromium.executablePath()`, pinned by the lockfile) unless the caller sets it. It is exported to LHCI and read again by the summary for `--version`.
+3. Deletes the previous raw output (LHCI appends, which would count stale runs), then runs `lhci autorun` for desktop and for mobile. A profile that misses its assertions makes `lhci` exit 1; the reports are written anyway, so the runner continues.
+4. `lighthouse-summary.ts` reads every `*.report.json`, groups by page and profile, and writes `summary.json` and `summary.md`:
+   - the median of **each category and each metric on its own** (LCP, CLS, TBT, FCP, SI), the values of every run, and the run closest to the median performance score and LCP, which is the one published;
+   - the median of the `kurio:mocks*` User Timing measures (§5);
+   - the environment: Lighthouse, `@lhci/cli`, browser (`chrome --version`), host user agent, benchmark index, Node, OS, CPU, memory, git commit; throttling and screen settings of both profiles; the execution conditions.
+5. `--publish` copies the summary and the eight representative reports to `lighthouse/reports/`.
+6. Exit code: non-zero when the build or the collection fails; a missed target only prints the list and exits non-zero under `--strict`. (Spec text said "non-zero if any failed"; with a known miss that would make the delivered command always fail, so the miss is reported by the summary and `--strict` opts in.)
 
-`pnpm lighthouse:deployed <url>` runs the same configs with `collect.url` overridden to the deployed origin and no `startServerCommand`, writing to `reports/lighthouse/deployed-<profile>/`, and adds a "Deployed" column to the summary (PERF-04).
+`--deployed <url>` replaces `collect.url`, clears `startServerCommand`, writes to `reports/lighthouse/deployed/<profile>/` and a `summary.*` next to them (PERF-04). It is report-only and never published.
 
-## 4. App changes this spec owns (PERF-10 – PERF-13)
+## 4. App changes this spec owns (PERF-10 – PERF-16)
 
 | Change | Where | Note |
 |---|---|---|
-| `NftImage` component: `srcset` from `image.srcSet`, `sizes` per slot, `width`/`height`, `decoding="async"`, `loading="lazy"` unless `priority`, `fetchpriority="high"` when `priority` | the shared NFT image component (spec 05 creates it; this spec verifies the props) | `priority` only on the hero slide 1 image and the details main image |
-| Font preload | small Vite plugin in `vite.config.ts` (`transformIndexHtml`, `enforce: 'post'`) that finds the emitted `roboto-mono-latin-wght-normal-*.woff2` asset in the bundle and injects `<link rel="preload" as="font" type="font/woff2" crossorigin>` | only the Latin subset; Latin Extended loads on demand |
-| `public/robots.txt` | `User-agent: *` / `Allow: /` / `Disallow: /dev/` | without it, the SPA rewrite answers `/robots.txt` with HTML and the SEO audit fails |
-| Meta description per route | each route's `head()` | spec 00 sets the default in `index.html` |
-| Boot marks | `main.tsx`: `performance.mark('kurio:boot')`, `mocks:start`, `mocks:ready`, `app:render` and `performance.measure('kurio:mocks', 'mocks:start', 'mocks:ready')` | User Timing entries appear in the LHR (`user-timings` audit), so the summary can report the mock cost |
-| Highlights prefetch | home route `loader` calls `ensureQueryData` for highlights | the hero image request starts as soon as the worker is ready |
+| `NftImage` props | `components/nft-image.tsx` (spec 05) | verified: `srcset` 250/750/1000, per-slot `sizes`, `width`/`height`, `decoding="async"`, lazy unless `priority`, `fetchpriority="high"` when `priority`; `priority` only on the first hero slide and the details main image. The first catalog card is deliberately not eager (CAT-23) |
+| Font and mock-chunk preload | `preloadCriticalAssets()` in `vite.config.ts` (`transformIndexHtml`, `order: 'post'`) | `<link rel="preload" as="font">` for the Latin Roboto Mono subset; `modulepreload` for the `mocks/browser` chunk and the dependencies the entry does not already preload. Only emitted by the production build |
+| `public/robots.txt` | `User-agent: *`, `Allow: /`, `Disallow: /dev/` | without it the SPA rewrite answers `/robots.txt` with HTML and Lighthouse's `robots-txt` audit fails (SEO 92 before) |
+| Shell-first boot | `main.tsx`, `lib/backend-ready.ts`, `mocks/url-params.ts`, `mocks/browser.ts` | §5 |
+| Boot marks | `main.tsx` | `kurio:mocks-start/loaded/ready` marks and `kurio:mocks-chunk`, `kurio:mocks-worker`, `kurio:mocks` measures, visible in the LHR `user-timings` audit (PERF-13) |
+| Vendor chunks | `build.rolldownOptions.output.codeSplitting.groups` | `react` (react, react-dom, scheduler) and `tanstack` (router, query, store): long-lived, cacheable, and the entry chunk drops from 376 to 127 kB |
+| Smaller public-suffix list | `resolve.alias: { tldts: 'tldts-experimental' }` | msw's cookie jar (tough-cookie) bundles tldts' 267 kB list. `tldts-experimental` has the same API and list in a compact encoding. Mock chunk: 511 → 351 kB (189 → 124 kB gzip). Cookie behavior is unchanged, so this is not a simplification |
 
-## 5. Mock boot cost (PERF-13)
+Chunk warning (carried over from spec 01): before this spec `index-*.js` was 376 kB and the lazy `browser-*.js` 511 kB (the warning). After the alias the largest chunk is 351 kB, and the build prints no warning without touching `chunkSizeWarningLimit`.
 
-On a cold visit, `startMocks()` registers `mockServiceWorker.js`, waits for it to activate and control the page, then renders. Every API-driven element, including the LCP image, waits for that. The analysis reports:
+## 5. Mock boot (PERF-13, PERF-15)
 
-- `kurio:mocks` duration (median per profile, from the LHR user timings);
-- its share of LCP;
-- whether the worker script was served with `no-cache` and compressed (spec 02 amends `vercel.json`).
+Before: `main.tsx` awaited `startMocks()` (download of the mock chunk, `setupWorker`, `worker.start()`) and only then rendered, so the first paint waited for ~190 kB gzip of mock code and the worker registration.
 
-Allowed mitigations, all of which keep the deliverable's behavior (the first one amends the spec 02 §3 bootstrap order): render the shell (header, skeleton regions) before `worker.start()` resolves and only hold API calls until ready; keep `mockServiceWorker.js` small and uncached-but-revalidated; lazy-load the mock panel (already the case). Not allowed: skipping the worker during audits or inlining fixture data into the HTML.
+Now:
 
-## 6. Analysis template (`docs/lighthouse/analysis.md`, PERF-09)
+1. `main.tsx` takes `?scenario=`, `?reset=1` and `?mockPanel=1` synchronously (`takeMockUrlParams()`, a dependency-free module), so the URL is clean before the router's first render, and starts `import('@/mocks/browser').then(startMocks)`.
+2. `holdBackendUntil(promise)` (`lib/backend-ready.ts`) records that promise. The Axios request interceptor and `createSocket` `await backendReady()`; with no mocks, or in unit tests, nothing is held. So no request can leave before the worker controls the page, which is what made spec 04 start the session restore after the worker (that order is now enforced by the gate, `bootApp()` still runs once).
+3. The React tree renders at once. Skeletons, header and tab bar paint from the entry chunk; data components wait on their queries as usual.
+4. If the worker fails to start, `root.render(<BootError />)` replaces the app (same behavior as before, no fake backend).
+5. The mock chunk and its own dependencies are `modulepreload`ed from the HTML, so their download overlaps the entry chunk instead of starting after it runs.
 
-One section per miss: page, profile, category or metric, median value vs. target, the top failing audits with their savings from the LHR, cause, action, and the result after the action. Likely items to check first:
+What is left of the cost (analysis): the chain that produces the LCP image is still HTML → entry → mock chunk → `worker.start()` → API → image, and Lantern prices the transferred bytes of everything that loads before the first paint on a 1.6 Mbps link. Not allowed, and not done: skipping the worker during audits, inlining fixture data into the HTML, or deferring the mock chunk past the first paint just to lower FCP (it would move the cost into the LCP).
 
-| Area | What to look at |
-|---|---|
-| LCP (mobile) | `largest-contentful-paint-element`; request start of the hero/details image relative to `mocks:ready`; image variant chosen (Lighthouse mobile emulates 412 px at 1.75 DPR, so the details image slot needs ~640 px and should load 750, not 1000) |
-| TBT | main-thread work during boot: MSW start, Zod parsing of the catalog page, React render; `bootup-time` and `mainthread-work-breakdown` |
-| Bundle | `script-treemap-data`: route chunks, devtools absence (spec 00), mock code chunk size |
-| CLS | skeleton-to-content swaps (spec 01 sizing), font swap (metric-adjusted fallback, spec 01), image boxes |
-| Best Practices | console errors (MSW is `quiet` in production), `errors-in-console`, `inspector-issues`, source maps |
-| SEO | `robots-txt`, `meta-description`, `crawlable-anchors` (the out-of-scope links from spec 01 are not anchors), `link-text` |
-| Local vs. deployed | compression, HTTP/2, cache headers; `vite preview` and Vercel differ, so both columns are explained |
+## 6. Analysis template (`lighthouse/reports/analysis.md`, PERF-09)
+
+One section per miss: page, profile, category or metric, median value vs. target, the audits that explain it with their cost from the LHR, cause, what was done, and the result. Checked first: LCP element and request start, TBT sources (`bootup-time`), the bundle (`unused-javascript`, chunk sizes), CLS, Best Practices console errors, SEO audits, local vs. deployed differences.
 
 ## 7. Notes for `ARCHITECTURE.md` (spec 14)
 
 - Audits run against `vite preview` with mocks on; the first-visit worker registration is part of every run.
+- The app renders before the mock worker is ready; every request waits on `lib/backend-ready.ts`. Amends the "mocks before render" order of spec 02 §3.
 - `robots.txt` exists because the SPA rewrite would otherwise answer it with HTML.
-- The LCP image is not preloaded from HTML, because it is chosen by API data (open question 3).
+- The LCP image is not preloaded from HTML, because it is chosen by API data (decision 3).
+- `tldts` is aliased to `tldts-experimental` for the mock bundle.
+- `pnpm lighthouse` exits 0 on a missed target; `--strict` makes it fail.
+
+## 8. Amendments to earlier specs
+
+| Spec | Change |
+|---|---|
+| 00 §2 / §11 | `pnpm lighthouse` runs `scripts/lighthouse-run.ts`; `lighthouse:publish` and `lighthouse:deployed` added; `.gitignore` anchors `/reports` so `lighthouse/reports/` is tracked |
+| 01 | The chunk-size warning is resolved (§4) |
+| 02 §3 | Bootstrap order: shell first, requests held by `backend-ready` (§5); `startMocks(params)` takes the already-read URL params; `takeMockUrlParams()` moved to `mocks/url-params.ts` |
+| 04 | The restore ordering is guaranteed by the gate instead of by awaiting the worker before render |
+| 05 CAT-23 | Unchanged: the first catalog card stays lazy; the mobile LCP candidate is that card (analysis) |
+
+## 9. Decisions
+
+1. **Report location.** `lighthouse/reports/` next to the configs, not `docs/lighthouse/` (no `docs/` folder exists). The raw output stays in `reports/lighthouse/` (ignored; `.gitignore` entry anchored to the root).
+2. **Which reports are committed.** The median run's HTML and JSON per page × profile (8 files, about 5 MB) and a `summary.json` with every run's scores and metrics. The other 16 files would add 10 MB and say nothing the summary does not.
+3. **LCP image preload.** None: the artwork is chosen by API data, and a hard-coded preload would couple the HTML to the mock catalog (open question 3, default kept). Not revisited, because the analysis shows the delay is the boot chain, not the image request.
+4. **Browser.** Playwright's Chromium via `CHROME_PATH` (pinned, same as E2E); a different binary can be passed in the environment.
+5. **Medians.** Per category and per metric on its own, as the brief asks; the representative run is only used to pick the published report.
+6. **Assertions.** Categories are `error` on the median run; LCP, CLS, TBT are `warn`. The runner does not fail on them unless `--strict`.
+7. **Meta descriptions (PERF-12).** Only the default in `index.html`: TanStack's `HeadContent` appends route tags, which would leave two `description` tags in the document. SEO is 100 on both pages.
+8. **Scripts in TypeScript.** `node scripts/*.ts` runs through Node 24's type stripping, so there is no build step or `tsx`; `tsconfig.node.json` includes `scripts` for type checking and lint, and Vitest's `include` gains `scripts/**/*.test.ts`. While wiring this, a fresh run of `src/styles/no-raw-colors.test.ts` reported six false positives (`Emerald Ape #042` in comments and sample data, which look like hex colors); the test now ignores a `#` that follows a word and a space.
+9. **Deferring the mock chunk past first paint** to improve FCP was rejected (§5).
+10. **Preloading the home route's lazy chunks** (a second request round after the entry chunk) was measured as not worth the coupling of the static HTML to one route; listed in the analysis as a next step.

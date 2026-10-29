@@ -1,6 +1,6 @@
 # 03 — Realtime · Requirements
 
-> Status: Ready for review
+> Status: Done
 
 Deliver live updates over Socket.IO. The client uses `socket.io-client`. The mock server runs inside MSW through `@mswjs/socket.io-binding` and turns spec 02's domain changes (`nft.updated`, `order.updated`) into versioned events. The client drops duplicates and stale events, patches the Query cache, reconciles with REST after a reconnection, and opens a fresh socket for each session. Screens (specs 05–10) consume this through a listener hook and the default cache appliers. They never touch the socket.
 

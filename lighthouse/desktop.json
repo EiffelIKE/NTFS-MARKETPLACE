@@ -3,10 +3,11 @@
     "collect": {
       "startServerCommand": "pnpm preview --port 4173 --strictPort",
       "startServerReadyPattern": "Local",
-      "url": ["http://localhost:4173/", "http://localhost:4173/nfts/1"],
+      "url": ["http://localhost:4173/", "http://localhost:4173/nfts/emerald-ape-042"],
       "numberOfRuns": 3,
       "settings": {
-        "preset": "desktop"
+        "preset": "desktop",
+        "chromeFlags": "--headless=new"
       }
     },
     "assert": {
@@ -36,6 +37,27 @@
           "error",
           {
             "minScore": 0.9,
+            "aggregationMethod": "median-run"
+          }
+        ],
+        "largest-contentful-paint": [
+          "warn",
+          {
+            "maxNumericValue": 2500,
+            "aggregationMethod": "median-run"
+          }
+        ],
+        "cumulative-layout-shift": [
+          "warn",
+          {
+            "maxNumericValue": 0.1,
+            "aggregationMethod": "median-run"
+          }
+        ],
+        "total-blocking-time": [
+          "warn",
+          {
+            "maxNumericValue": 200,
             "aggregationMethod": "median-run"
           }
         ]

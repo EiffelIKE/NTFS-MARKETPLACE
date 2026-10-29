@@ -1,0 +1,417 @@
+{
+  "environment": {
+    "generatedAt": "2026-10-28T20:07:07.195Z",
+    "lighthouse": "12.6.1",
+    "lhci": "0.15.1",
+    "chrome": "Google Chrome for Testing 156.0.8078.4",
+    "hostUserAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+    "benchmarkIndex": 2511.5,
+    "node": "v24.11.0",
+    "os": "Linux 7.2.11-200.fc44.x86_64 (x64)",
+    "cpu": "Intel(R) Core(TM) i7-10750H CPU @ 2.60GHz",
+    "cpuCount": 12,
+    "memoryGb": 31,
+    "commit": "c3cf820+dirty",
+    "profiles": {
+      "mobile": {
+        "formFactor": "mobile",
+        "throttlingMethod": "simulate",
+        "throttling": {
+          "rttMs": 150,
+          "throughputKbps": 1638.4,
+          "requestLatencyMs": 562.5,
+          "downloadThroughputKbps": 1474.5600000000002,
+          "uploadThroughputKbps": 675,
+          "cpuSlowdownMultiplier": 4
+        },
+        "screen": "412×823 @ 1.75x"
+      },
+      "desktop": {
+        "formFactor": "desktop",
+        "throttlingMethod": "simulate",
+        "throttling": {
+          "rttMs": 40,
+          "throughputKbps": 10240,
+          "requestLatencyMs": 0,
+          "downloadThroughputKbps": 0,
+          "uploadThroughputKbps": 0,
+          "cpuSlowdownMultiplier": 1
+        },
+        "screen": "1350×940 @ 1x"
+      }
+    }
+  },
+  "conditions": [
+    "Build: `pnpm build` (Vite production build, minified, hashed assets), served by `vite preview` on `http://localhost:4173` (HTTP/1.1, gzip, no CDN).",
+    "Mocks on (`VITE_ENABLE_MOCKS=true`, the default), scenario `default`, mock panel closed. Nothing is disabled for the audit.",
+    "Each run starts in a fresh browser profile: empty storage, no cache, so every run registers the mock Service Worker (first visit).",
+    "Mobile: Lighthouse default emulation (Moto G Power, 412×823 at 1.75 DPR, simulated slow 4G, 4× CPU slowdown). Desktop: the `desktop` preset (1350×940, simulated 40 ms RTT, 10 Mbps, no CPU slowdown). Both use simulated (Lantern) throttling.",
+    "Three runs per page and profile, sequential, on an otherwise idle machine. Browser launched headless (`--headless=new`)."
+  ],
+  "results": [
+    {
+      "page": "home",
+      "url": "http://localhost:4173/",
+      "profile": "mobile",
+      "runs": [
+        {
+          "file": "localhost--2026_10_28_20_04_18.report.json",
+          "scores": {
+            "performance": 76,
+            "accessibility": 100,
+            "best-practices": 100,
+            "seo": 100
+          },
+          "metrics": {
+            "largest-contentful-paint": 4478.347800000001,
+            "cumulative-layout-shift": 0,
+            "total-blocking-time": 59.55435000000034,
+            "first-contentful-paint": 3690.565200000001,
+            "speed-index": 3690.565200000001
+          },
+          "timings": {
+            "kurio:mocks-chunk": 50.684,
+            "kurio:mocks": 160.984,
+            "kurio:mocks-worker": 110.3
+          }
+        },
+        {
+          "file": "localhost--2026_10_28_20_04_32.report.json",
+          "scores": {
+            "performance": 75,
+            "accessibility": 100,
+            "best-practices": 100,
+            "seo": 100
+          },
+          "metrics": {
+            "largest-contentful-paint": 4415.748999999998,
+            "cumulative-layout-shift": 0,
+            "total-blocking-time": 139.20849999999996,
+            "first-contentful-paint": 3581.749,
+            "speed-index": 3581.749
+          },
+          "timings": {
+            "kurio:mocks-chunk": 47.98,
+            "kurio:mocks": 155.675,
+            "kurio:mocks-worker": 107.695
+          }
+        },
+        {
+          "file": "localhost--2026_10_28_20_04_45.report.json",
+          "scores": {
+            "performance": 77,
+            "accessibility": 100,
+            "best-practices": 100,
+            "seo": 100
+          },
+          "metrics": {
+            "largest-contentful-paint": 4322.1541,
+            "cumulative-layout-shift": 0,
+            "total-blocking-time": 59.153825000000325,
+            "first-contentful-paint": 3685.769399999999,
+            "speed-index": 3685.769399999999
+          },
+          "timings": {
+            "kurio:mocks-chunk": 49.139,
+            "kurio:mocks": 161.399,
+            "kurio:mocks-worker": 112.26
+          }
+        }
+      ],
+      "median": {
+        "scores": {
+          "performance": 76,
+          "accessibility": 100,
+          "best-practices": 100,
+          "seo": 100
+        },
+        "metrics": {
+          "largest-contentful-paint": 4415.748999999998,
+          "cumulative-layout-shift": 0,
+          "total-blocking-time": 59.55435000000034,
+          "first-contentful-paint": 3685.769399999999,
+          "speed-index": 3685.769399999999
+        }
+      },
+      "medianTimings": {
+        "kurio:mocks-chunk": 49.139,
+        "kurio:mocks": 160.984,
+        "kurio:mocks-worker": 110.3
+      },
+      "representative": "localhost--2026_10_28_20_04_18.report.json"
+    },
+    {
+      "page": "details",
+      "url": "http://localhost:4173/nfts/emerald-ape-042",
+      "profile": "mobile",
+      "runs": [
+        {
+          "file": "localhost-nfts_emerald_ape_042-2026_10_28_20_05_07.report.json",
+          "scores": {
+            "performance": 76,
+            "accessibility": 100,
+            "best-practices": 100,
+            "seo": 100
+          },
+          "metrics": {
+            "largest-contentful-paint": 4383.616899999999,
+            "cumulative-layout-shift": 0,
+            "total-blocking-time": 68.06385,
+            "first-contentful-paint": 3769.7126749999998,
+            "speed-index": 3769.7126749999998
+          },
+          "timings": {
+            "kurio:mocks-chunk": 52.072,
+            "kurio:mocks": 99.317,
+            "kurio:mocks-worker": 47.245
+          }
+        },
+        {
+          "file": "localhost-nfts_emerald_ape_042-2026_10_28_20_05_20.report.json",
+          "scores": {
+            "performance": 76,
+            "accessibility": 100,
+            "best-practices": 100,
+            "seo": 100
+          },
+          "metrics": {
+            "largest-contentful-paint": 4380.5507,
+            "cumulative-layout-shift": 0,
+            "total-blocking-time": 51.74154999999996,
+            "first-contentful-paint": 3768.663025,
+            "speed-index": 3768.663025
+          },
+          "timings": {
+            "kurio:mocks-chunk": 47.063,
+            "kurio:mocks": 91.455,
+            "kurio:mocks-worker": 44.392
+          }
+        },
+        {
+          "file": "localhost-nfts_emerald_ape_042-2026_10_28_20_05_32.report.json",
+          "scores": {
+            "performance": 76,
+            "accessibility": 100,
+            "best-practices": 100,
+            "seo": 100
+          },
+          "metrics": {
+            "largest-contentful-paint": 4380.8024000000005,
+            "cumulative-layout-shift": 0,
+            "total-blocking-time": 49.19960000000037,
+            "first-contentful-paint": 3768.8517999999995,
+            "speed-index": 3768.8517999999995
+          },
+          "timings": {
+            "kurio:mocks-chunk": 45.6,
+            "kurio:mocks": 91.145,
+            "kurio:mocks-worker": 45.545
+          }
+        }
+      ],
+      "median": {
+        "scores": {
+          "performance": 76,
+          "accessibility": 100,
+          "best-practices": 100,
+          "seo": 100
+        },
+        "metrics": {
+          "largest-contentful-paint": 4380.8024000000005,
+          "cumulative-layout-shift": 0,
+          "total-blocking-time": 51.74154999999996,
+          "first-contentful-paint": 3768.8517999999995,
+          "speed-index": 3768.8517999999995
+        }
+      },
+      "medianTimings": {
+        "kurio:mocks-chunk": 47.063,
+        "kurio:mocks": 91.455,
+        "kurio:mocks-worker": 45.545
+      },
+      "representative": "localhost-nfts_emerald_ape_042-2026_10_28_20_05_32.report.json"
+    },
+    {
+      "page": "home",
+      "url": "http://localhost:4173/",
+      "profile": "desktop",
+      "runs": [
+        {
+          "file": "localhost--2026_10_28_20_05_47.report.json",
+          "scores": {
+            "performance": 98,
+            "accessibility": 100,
+            "best-practices": 100,
+            "seo": 100
+          },
+          "metrics": {
+            "largest-contentful-paint": 972.2647499999998,
+            "cumulative-layout-shift": 0,
+            "total-blocking-time": 0,
+            "first-contentful-paint": 741.6554999999998,
+            "speed-index": 741.6554999999998
+          },
+          "timings": {
+            "kurio:mocks-chunk": 50.12,
+            "kurio:mocks": 193.413,
+            "kurio:mocks-worker": 143.293
+          }
+        },
+        {
+          "file": "localhost--2026_10_28_20_06_02.report.json",
+          "scores": {
+            "performance": 98,
+            "accessibility": 100,
+            "best-practices": 100,
+            "seo": 100
+          },
+          "metrics": {
+            "largest-contentful-paint": 962.3674499999997,
+            "cumulative-layout-shift": 0,
+            "total-blocking-time": 0,
+            "first-contentful-paint": 733.1720999999998,
+            "speed-index": 733.1720999999998
+          },
+          "timings": {
+            "kurio:mocks-chunk": 53.41,
+            "kurio:mocks": 191.379,
+            "kurio:mocks-worker": 137.969
+          }
+        },
+        {
+          "file": "localhost--2026_10_28_20_06_16.report.json",
+          "scores": {
+            "performance": 98,
+            "accessibility": 100,
+            "best-practices": 100,
+            "seo": 100
+          },
+          "metrics": {
+            "largest-contentful-paint": 964.4835500000003,
+            "cumulative-layout-shift": 0,
+            "total-blocking-time": 0,
+            "first-contentful-paint": 734.9859000000001,
+            "speed-index": 734.9859000000001
+          },
+          "timings": {
+            "kurio:mocks-chunk": 52.469,
+            "kurio:mocks": 197.285,
+            "kurio:mocks-worker": 144.816
+          }
+        }
+      ],
+      "median": {
+        "scores": {
+          "performance": 98,
+          "accessibility": 100,
+          "best-practices": 100,
+          "seo": 100
+        },
+        "metrics": {
+          "largest-contentful-paint": 964.4835500000003,
+          "cumulative-layout-shift": 0,
+          "total-blocking-time": 0,
+          "first-contentful-paint": 734.9859000000001,
+          "speed-index": 734.9859000000001
+        }
+      },
+      "medianTimings": {
+        "kurio:mocks-chunk": 52.469,
+        "kurio:mocks": 193.413,
+        "kurio:mocks-worker": 143.293
+      },
+      "representative": "localhost--2026_10_28_20_06_16.report.json"
+    },
+    {
+      "page": "details",
+      "url": "http://localhost:4173/nfts/emerald-ape-042",
+      "profile": "desktop",
+      "runs": [
+        {
+          "file": "localhost-nfts_emerald_ape_042-2026_10_28_20_06_30.report.json",
+          "scores": {
+            "performance": 99,
+            "accessibility": 100,
+            "best-practices": 100,
+            "seo": 100
+          },
+          "metrics": {
+            "largest-contentful-paint": 904.7728499999997,
+            "cumulative-layout-shift": 0,
+            "total-blocking-time": 0,
+            "first-contentful-paint": 761.2890749999997,
+            "speed-index": 761.2890749999997
+          },
+          "timings": {
+            "kurio:mocks-chunk": 44.82,
+            "kurio:mocks": 89.946,
+            "kurio:mocks-worker": 45.126
+          }
+        },
+        {
+          "file": "localhost-nfts_emerald_ape_042-2026_10_28_20_06_42.report.json",
+          "scores": {
+            "performance": 99,
+            "accessibility": 100,
+            "best-practices": 100,
+            "seo": 100
+          },
+          "metrics": {
+            "largest-contentful-paint": 900.5976999999997,
+            "cumulative-layout-shift": 0,
+            "total-blocking-time": 0,
+            "first-contentful-paint": 757.4121499999999,
+            "speed-index": 757.4121499999999
+          },
+          "timings": {
+            "kurio:mocks-chunk": 46,
+            "kurio:mocks": 90.398,
+            "kurio:mocks-worker": 44.398
+          }
+        },
+        {
+          "file": "localhost-nfts_emerald_ape_042-2026_10_28_20_06_55.report.json",
+          "scores": {
+            "performance": 99,
+            "accessibility": 100,
+            "best-practices": 100,
+            "seo": 100
+          },
+          "metrics": {
+            "largest-contentful-paint": 901.5130000000001,
+            "cumulative-layout-shift": 0,
+            "total-blocking-time": 0,
+            "first-contentful-paint": 757.8335000000002,
+            "speed-index": 757.8335000000002
+          },
+          "timings": {
+            "kurio:mocks-chunk": 49.241,
+            "kurio:mocks": 95.692,
+            "kurio:mocks-worker": 46.451
+          }
+        }
+      ],
+      "median": {
+        "scores": {
+          "performance": 99,
+          "accessibility": 100,
+          "best-practices": 100,
+          "seo": 100
+        },
+        "metrics": {
+          "largest-contentful-paint": 901.5130000000001,
+          "cumulative-layout-shift": 0,
+          "total-blocking-time": 0,
+          "first-contentful-paint": 757.8335000000002,
+          "speed-index": 757.8335000000002
+        }
+      },
+      "medianTimings": {
+        "kurio:mocks-chunk": 46,
+        "kurio:mocks": 90.398,
+        "kurio:mocks-worker": 45.126
+      },
+      "representative": "localhost-nfts_emerald_ape_042-2026_10_28_20_06_55.report.json"
+    }
+  ]
+}

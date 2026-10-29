@@ -64,7 +64,7 @@ Devtools are dev dependencies: they are imported only behind `import.meta.env.DE
 | `test` | `vitest run` |
 | `test:e2e` | `playwright test` (its `webServer` builds and previews) |
 | `test:e2e:report` | `playwright show-report` |
-| `lighthouse` | `pnpm build && lhci autorun --config=lighthouse/desktop.json && lhci autorun --config=lighthouse/mobile.json` |
+| `lighthouse` | `node scripts/lighthouse-run.ts` (builds, audits both profiles with LHCI, writes the summary); amended by spec 13: also `lighthouse:publish` and `lighthouse:deployed` |
 
 Ports: dev `5173`, preview `4173` (`strictPort` on both).
 
@@ -140,11 +140,14 @@ Placeholder copy is temporary and gets replaced by Figma copy in each owner spec
 ### Router instance (`app/router.ts`)
 
 ```ts
-export interface RouterContext { queryClient: QueryClient }
+export interface RouterContext {
+  queryClient: QueryClient
+  session: SessionController // spec 04
+}
 
 export const router = createRouter({
   routeTree,
-  context: { queryClient },
+  context: { queryClient, session },
   defaultPreload: 'intent',
   defaultPreloadStaleTime: 0,          // Query owns freshness
   scrollRestoration: true,
@@ -164,7 +167,7 @@ The root route is `createRootRouteWithContext<RouterContext>()`, which gives eve
 
 ### Search params (FND-13)
 
-Routes declare `validateSearch: someZodSchema` (Zod 4, Standard Schema, no adapter). Convention for later specs: every field is optional or has `.catch(<default>)`, so a malformed URL degrades to defaults instead of throwing. Spec 00 proves the mechanism on `/login` with the param spec 04 needs:
+Routes declare `validateSearch: someZodSchema` (Zod 4, Standard Schema, no adapter). Convention for later specs: every field is optional or has `.catch(<default>)`, so a malformed URL degrades to defaults instead of throwing. Spec 00 proved the mechanism on `/login` with the param spec 04 needs:
 
 ```ts
 const loginSearch = z.object({
@@ -172,7 +175,7 @@ const loginSearch = z.object({
 })
 ```
 
-Only same-origin paths survive, so there is no open redirect. Spec 04 adds the behavior.
+Only same-origin paths survive, so there is no open redirect. Spec 04 added the behavior: the schema is now `authSearchSchema` in `features/auth/model/auth-search.ts`, shared by `/login` and `/signup` with a `reason: 'expired'` field.
 
 ## 6. Server state and HTTP (FND-14 – FND-18)
 
@@ -233,7 +236,7 @@ Mapping: `axios.isCancel(e)` or `code === 'ERR_CANCELED'` → `cancelled`. `ECON
 | `VITE_API_BASE_URL` | non-empty string | `/api` | REST base. MSW (02) intercepts this same path, so the same build works mocked or against a real API. |
 | `VITE_API_TIMEOUT_MS` | positive int (coerced) | `10000` | Axios timeout; spec 02 timeout scenarios rely on it. |
 
-Spec 02 adds `VITE_ENABLE_MOCKS`, spec 03 adds `VITE_SOCKET_URL`, by extending the same schema.
+Spec 02 adds `VITE_ENABLE_MOCKS`, spec 03 adds `VITE_REALTIME_URL` (a URL, default `wss://realtime.kurio.example`, a reserved host that never reaches a real server), by extending the same schema.
 
 Fail fast happens twice. `vite.config.ts` loads env with `loadEnv` and runs `parseEnv`, so a bad deploy fails at build time. `main.tsx` imports `env` first, so a bad runtime env throws before render. The error message lists each invalid variable and the Zod reason, e.g. `Invalid environment: VITE_API_TIMEOUT_MS — expected positive integer`.
 
@@ -246,7 +249,7 @@ Fail fast happens twice. `vite.config.ts` loads env with `loadEnv` and runs `par
   - **As run:** shadcn 4.x no longer offers the legacy `new-york` style, only presets. Used `init --force --no-reinstall --no-monorepo -b radix -p vega` (Radix primitives; Vega is the classic shadcn look) → `components.json` `style: "radix-vega"`, runtime dep `radix-ui`.
   - Post-init cleanup: init added `cn` (shadcn's clsx + tailwind-merge replacement) and rewrote `lib/utils.ts` to re-export it; reverted to the classic `cn()` over `clsx` + `tailwind-merge` and removed `cn`. Removed `lucide-react` and `@fontsource-variable/inter` (and its `@import` / `--font-sans`; the font is Roboto Mono, spec 01). Moved `shadcn` to `devDependencies` (pinned `4.22.1`): only its `shadcn/tailwind.css` is used, at build time.
 - `src/styles/index.css` imports Tailwind as `@import 'tailwindcss' source('..')` so only `src/` is scanned; otherwise class-like words in `SPECS-NTFS/` and `figma_tokens/` leak into the CSS (25 KB → 9 KB).
-- `index.html`: `<html lang="pt-BR">`, `<meta charset>`, `<meta name="viewport" content="width=device-width, initial-scale=1">` (no `maximum-scale`, so zoom keeps working), `<meta name="description" content="KURIO — marketplace de NFTs: descubra, colecione e compre edições digitais.">`, `<meta name="theme-color" content="#140D0A">`, `<title>KURIO — Marketplace de NFTs</title>`. Favicon: `<link rel="icon" href="data:,">` until spec 01 brings the Figma asset. This avoids a `/favicon.ico` 404, which Lighthouse Best Practices counts as a console error.
+- `index.html`: `<html lang="pt-BR">`, `<meta charset>`, `<meta name="viewport" content="width=device-width, initial-scale=1">` (no `maximum-scale`, so zoom keeps working), `<meta name="description" content="KURIO — marketplace de NFTs: descubra, colecione e compre edições digitais.">`, `<meta name="theme-color" content="#140D0A">`, `<title>KURIO — Marketplace de NFTs</title>`. Favicon: `<link rel="icon" href="/favicon.ico" sizes="any">`, with the file in `public/` (Vite copies it as is and serves it in dev; it was `href="data:,"` until the project owner supplied the icon). The explicit link keeps the browser from probing `/favicon.ico` and getting a 404, which Lighthouse Best Practices counts as a console error.
 
 ## 9. Lint and format (FND-24 – FND-26)
 
@@ -259,7 +262,7 @@ Fail fast happens twice. `vite.config.ts` loads env with `loadEnv` and runs `par
 5. `eslint-plugin-react-refresh` (`configs.vite`) with `allowExportNames: ['Route']`. Turned off for `src/components/ui/**` (shadcn exports variants) and `src/routes/**`: v0.5 reports a file-local component when the file exports only non-components (`Route`), and with `autoCodeSplitting` the router plugin moves the component into its own module anyway.
 6. `eslint-plugin-jsx-a11y` flat `strict`.
 7. `@tanstack/eslint-plugin-query` flat recommended; `@tanstack/eslint-plugin-router` flat recommended.
-8. Project rules: `no-restricted-imports` for `axios` outside `src/lib/http/**`, `no-restricted-globals` for `fetch` in `src/**` (FND-15).
+8. Project rules: `no-restricted-imports` for `axios` outside `src/lib/http/**`, `no-restricted-globals` for `fetch` in `src/**` (FND-15). Spec 03 adds `socket.io-client` (only `src/lib/realtime/**`) and `@mswjs/socket.io-binding` (only `src/mocks/**`).
 9. `eslint-config-prettier` last.
 
 `.prettierrc.json`: `singleQuote: true`, `semi: false`, `trailingComma: "all"`, `printWidth: 100`, plugins `prettier-plugin-tailwindcss` with `tailwindStylesheet: "./src/styles/index.css"` and `tailwindFunctions: ["cn", "cva"]`.
@@ -348,8 +351,8 @@ Pending changes collected when specs 03–14 were drafted; each is applied by th
 
 | From | Change |
 |---|---|
-| 03 | `VITE_REALTIME_URL` in `lib/env.ts` and `.env.example` |
-| 04 | `RouterContext.session`; the root route waits for the session check; `reason` search param on `/login` and `/signup`; auth interceptors on the Axios instance |
-| 12 | Playwright projects/config for visual tests; scripts `test:visual`, `test:visual:update` |
-| 13 | Script `lighthouse:deployed`; `public/robots.txt` (the SPA rewrite would answer it with HTML); `kurio-build` meta tag with the commit id |
-| 14 | Script `docs`; Vitest also collects `scripts/**/*.test.ts` |
+| 03 | `VITE_REALTIME_URL` in `lib/env.ts` and `.env.example` — **applied in spec 03** |
+| 04 | `RouterContext.session`; the root route waits for the session check; `reason` search param on `/login` and `/signup`; auth interceptors on the Axios instance — **applied in spec 04** (design §14) |
+| 12 | `snapshotPathTemplate` and `toHaveScreenshot` defaults in the Playwright config; scripts `test:visual`, `test:visual:update` — **applied in spec 12** (design §2, §6) |
+| 13 | Script `lighthouse:deployed`; `public/robots.txt` (the SPA rewrite would answer it with HTML) — **applied in spec 13** (design §3, §4); `.gitignore` anchors `/reports` so `lighthouse/reports/` is tracked. The `kurio-build` meta tag was dropped: the summary records the git commit instead |
+| 14 | Script `docs`; Vitest also collects `scripts/**/*.test.ts` (the second part **applied in spec 13**: `vite.config.ts` `test.include`, `tsconfig.node.json` includes `scripts`) |

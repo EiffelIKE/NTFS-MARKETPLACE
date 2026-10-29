@@ -1,6 +1,6 @@
 # 06 — NFT details · Design
 
-> Status: Ready for review
+> Status: Done (see §14 for what was decided while implementing)
 
 Implements [`requirements.md`](requirements.md). Figma: details desktop `10:244` ([`desktop/nft-details.md`](../../figma_tokens/desktop/nft-details.md)), and the screenshots `desktop/Detalhes do NFT.png` and `mobile/Detalhes do NFT.png` ([`screens.md`](../../figma_tokens/screens.md)), which win where they differ from the inferred values.
 
@@ -358,3 +358,33 @@ Spec 03 receives `nft.updated` and patches or invalidates `catalogKeys.detail(id
 9. "COMPRAR" adds to the cart and opens it; the mobile cart button adds and stays (open question 1).
 10. Mobile and desktop use the same `description`; Figma's mobile copy is a shorter variant of it.
 11. The cart query, the header count wiring and the guest cart id store are introduced here (the first spec that writes to the cart) and extended by spec 07.
+12. The `nftDetailQuery` and `relatedQuery` options live in `features/catalog/api/queries.ts`, not in `nft-details/api` (§2, §4): the cart and favorites components import them, and the catalog already owns `catalogKeys`, so this avoids a cycle.
+13. The mobile gallery is one focusable, labelled scroll region ("Imagens do NFT"), so the keyboard can scroll it.
+14. The desktop gallery box does not stretch with the right column (`lg:self-start`), so the skeleton and the page agree on its size.
+15. `/dev/ui-kit` gains the `outline` chip and both `QuantityStepper` sizes.
+
+## 14. Decisions taken while implementing
+
+1. **Open questions 1 and 2** are resolved by their defaults (COMPRAR adds and opens the cart; the mobile cart button adds and stays).
+2. **`RouteFavorite` reads loader data** (`useMatches` select) instead of a disabled `useQuery`: under StrictMode a disabled observer that unsubscribes during the loader's in-flight fetch cancels it (`CancelledError`).
+3. **Loader fetch:** `queryClient.query({ ...nftDetailQuery(id), staleTime: 'static' })` replaces the deprecated `ensureQueryData`. NOT_FOUND becomes `notFound()`; the related query is started without awaiting it.
+4. **Edition selection is state**, initialised from `?edition=` and written back with `replace`. It is not re-derived when the selected edition sells out (DET-24: stays selected, disabled).
+5. **`FavoriteButton` reads the cache at click time**, so quick clicks flip twice even without a re-render. Icon variants keep a constant `aria-label` ("Favoritar <name>") and expose the state through `aria-pressed`.
+6. **Mutation results are epoch-guarded** (spec 04): favorites and add-to-cart drop a late result after a session change, and an expired session shows no favorites toast.
+7. **Add to cart is single-flight** through a ref guard (details page and card action), not through `isPending`.
+8. **Card quick add** lives in `features/cart/components/card-cart-action.tsx` and reuses the details limits and error mapping. It fetches the details through the query cache to choose the default edition.
+9. **`guest-cart-id` is updated whenever the returned cart id differs** from the stored one, not only on the first add, because a guest cart can be replaced server side.
+10. **One gallery composition is mounted** (`useMediaQuery('(min-width: 1024px)')`), so the LCP image loads once.
+11. **Tests:**
+    - The favorites E2E uses Cosmic Bloom #118, because Ana already favorites Sage Nomad #009.
+    - The 409 E2E rows use `realtime.drop({ block: true })` plus `updateNft`, because mock rules cannot carry typed error details.
+    - The live rows use the real `updateNft` and socket (spec 03 is Done).
+    - Keyboard radio tests hold the arrow key: Radix checks on focus only while the key is down.
+    - The catalog card rows search (`/?q=cosmic`, `/?q=golden`) so the card is on page 1.
+
+> Amended by spec 11 (2026-10-28): the favorite heart is inert until the user's favorites list is known (`useFavoriteState`: `aria-disabled`, `aria-busy`, a click does nothing, or retries a failed read), instead of showing "not favorited" and sending "add". `details-error.tsx` has a document title and a clearer `h1`. The buy bar and the page's bottom padding use `useBottomBarInset`.
+## 15. Amendments (fix batch, 2026-10-28)
+
+- **G5 — favorites are keyed by user.** `favoritesKeys.list(userId)` is `['favorites', userId]`; `favoritesQuery(userId)`, `setFavorite`, the mutation and the button all take it, and the mutation reads the owner from the session (`owner()`), as the cart does. `favoritesKeys.all` stays as the prefix.
+- **F1 — the flaky "three rapid clicks" test (DET-21).** Root cause: the test, not the UI. The mock request log records a request when it is *sent*, so once the second "add" showed up in the log the test reloaded the page while that last request was still in flight (about 120 ms of mock latency, longer under load). The reload dropped it, the server stayed on the state of the "remove" before it, and the heart read "off" after the reload. A copy of the test with 700 ms of latency fails every time without the extra wait and passes with it. The test now also waits until the mock has answered every favorites call before reloading (the assertions are unchanged). The app code was right; as hardening, a list read that lands while toggles are still pending no longer overwrites them (`pendingIntents`, `withPendingIntents`) and the click flips from the last pending intent (`currentFavorite`). Tests: `use-toggle-favorite.test.ts` ("toggles that are still on their way", "the list belongs to its user").
+- **G7 — background refetch on the details page.** While `nftDetailQuery` refetches with the NFT on screen, the content grid has `aria-busy="true"`, `data-outdated="true"` and `opacity-75`. The dimming starts after 300 ms (a refetch that ends sooner, such as a quick reconnection refetch, never flickers) and clears at once. E2E: `loading-states.spec.ts` ("a background refetch keeps the page…").
