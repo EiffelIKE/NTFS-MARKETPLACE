@@ -366,7 +366,7 @@ Conventions worth knowing: a page-side abort never reaches the Service Worker, s
 - Fixed bars (cart summary sheet, checkout action bar, receipt bar, tab bar) publish their height as `--bottom-bar-inset`; pages and `scroll-padding-bottom` read it so focus never ends under a bar. Toasts are **top-center** on phones for the same reason.
 - The favorite heart is inert (`aria-disabled`, `aria-busy`) until the user's favorites list is known; it stays focusable.
 - Forms: visually hidden labels keep the placeholder-only Figma look, errors appear after blur or a submit and focus moves to the first invalid field; one visible `h1` per page and width.
-- Checked at 200 % zoom, 400 %, WCAG 1.4.12 text spacing, and at 320, 360, 390, 768, 1024, 1440 px. **Pending:** a manual screen-reader pass (Orca) that needs an interactive session.
+- Checked at 200 % zoom, 400 %, WCAG 1.4.12 text spacing, and at 320, 360, 390, 768, 1024, 1440 px. What a screen reader reads is checked in the E2E suite: the accessible name of every focus stop (`ariaSnapshot`), every live-region message and how many times it is written, and where focus lands after each navigation and overlay.
 
 ## 12. Performance notes
 
@@ -422,7 +422,6 @@ Everything the specs recorded, grouped. Each row names its spec for the reason. 
 | Interactive heart inert until favorites are known; fixed bars publish `--bottom-bar-inset`; merge toast 12 s; no axe rule disabled | [11 §9–10](SPECS-NTFS/11-a11y-responsive/design.md) |
 | The carousel track is a `div` (axe `list`); the mobile gallery is one focusable labelled scroll region; promo and blog images are decorative (`alt=""`); focus after pagination moves only on a click | [05 §15](SPECS-NTFS/05-catalog/design.md), [06 §13](SPECS-NTFS/06-nft-details/design.md) |
 | Unavailable actions are visible and `aria-disabled` ("Disponível em breve"): social login, "Esqueceu a senha?", newsletter, blog links | [01 §11](SPECS-NTFS/01-design-system/design.md), [04 §13](SPECS-NTFS/04-auth-session/design.md) |
-| Manual screen-reader pass (Orca) pending | [11](SPECS-NTFS/11-a11y-responsive/design.md) |
 
 ### Assets
 
@@ -487,7 +486,6 @@ Everything the specs recorded, grouped. Each row names its spec for the reason. 
 - **Mobile Lighthouse Performance is 76 (target 90)**; see [§12](#12-performance-notes). The audit measures the app with mocks on.
 - **Visual baselines are Linux-only.** `pnpm test:e2e` skips `@visual` on other systems and reports it; regenerate with `pnpm test:visual:update`.
 - **Unknown URLs answer HTTP 200** with the not-found view (SPA on Vercel); `robots.txt` is a real file for that reason.
-- **No manual screen-reader pass yet** (Orca); automated axe and keyboard checks pass.
 - **Playwright's default parallelism** can overload a small machine; run with `--workers=3` (see the README).
 - **Known test limits:** a server-side 422 with `fields` cannot be triggered from the UI with the mock (unit-tested instead); one rare flake was seen in the catalog sort "three rapid clicks" test (1 in 240 runs, not root-caused); the 5 s poll fallback is proven only in E2E.
 - **Out of scope by decision:** social login, password recovery, reviews writing, blog pages, newsletter (they show "Disponível em breve").
