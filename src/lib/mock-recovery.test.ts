@@ -17,6 +17,7 @@ import {
   releaseAutoReload,
   resetMockWorkerAndReload,
   toBootError,
+  stuckError,
   unregisterMockWorkers,
   withTimeout,
   type GuardStorage,
@@ -174,7 +175,7 @@ describe('bootWithRecovery', () => {
 
   it('resolves, without recovering, when the worker starts and intercepts', async () => {
     const options = deps()
-    await expect(bootWithRecovery(options)).resolves.toBeUndefined()
+    await expect(bootWithRecovery(options)).resolves.toBe('worker')
     expect(options.recover).not.toHaveBeenCalled()
   })
 
@@ -215,6 +216,49 @@ describe('bootWithRecovery', () => {
     const assertion = expect(result).rejects.toBeInstanceOf(MockBootError)
     await vi.advanceTimersByTimeAsync(2000)
     await assertion
+  })
+
+  describe('in-page fallback', () => {
+    it('mocks inside the page once the automatic reload is spent', async () => {
+      let inPage = false
+      const fallback = vi.fn(() => {
+        inPage = true
+        return Promise.resolve()
+      })
+      const options = deps({ ping: () => Promise.resolve(inPage), fallback })
+      await expect(bootWithRecovery(options)).resolves.toBe('page')
+      expect(options.recover).toHaveBeenCalledOnce()
+      expect(fallback).toHaveBeenCalledOnce()
+    })
+
+    it('reloads first: the fallback waits until the worker had its second chance', async () => {
+      const fallback = vi.fn(() => Promise.resolve())
+      const options = deps({
+        start: () => Promise.reject(new Error('aborted')),
+        recover: vi.fn(() => Promise.resolve<'reloading' | 'gave-up'>('reloading')),
+        fallback,
+      })
+      await expect(bootWithRecovery(options)).rejects.toBeInstanceOf(MockBootError)
+      expect(fallback).not.toHaveBeenCalled()
+    })
+
+    it('skips the reload for a stuck registration, which survives reloads', async () => {
+      const options = deps({
+        start: () => Promise.reject(stuckError()),
+        recover: vi.fn(() => Promise.resolve<'reloading' | 'gave-up'>('reloading')),
+        fallback: () => Promise.resolve(),
+      })
+      await expect(bootWithRecovery(options)).resolves.toBe('page')
+      expect(options.recover).not.toHaveBeenCalled()
+    })
+
+    it('reports the worker failure when the page cannot mock either', async () => {
+      const options = deps({
+        ping: () => Promise.resolve(false),
+        fallback: () => Promise.reject(new Error('no interceptors')),
+      })
+      await expect(bootWithRecovery(options)).rejects.toMatchObject({ code: 'unreachable' })
+    })
   })
 })
 
@@ -264,7 +308,16 @@ describe('stale registrations', () => {
     }
     const result = unregisterMockWorkers(stuck, 100)
     await vi.advanceTimersByTimeAsync(100)
-    await expect(result).resolves.toBe(0)
+    await expect(result).resolves.toBeNull()
+  })
+
+  it('reports a registration that never finishes unregistering (wedged in the browser)', async () => {
+    vi.useFakeTimers()
+    const empty = registration(null)
+    empty.unregister.mockReturnValue(new Promise(() => undefined))
+    const result = unregisterMockWorkers(container([empty]), 100)
+    await vi.advanceTimersByTimeAsync(100)
+    await expect(result).resolves.toBeNull()
   })
 
   it('detects a mock registration that does not control the page', async () => {

@@ -201,6 +201,62 @@ error screen. It failed 3/3 before the fix. `lib/mock-recovery.test.ts` checks t
 reload leaves the registration alone and has its own guard, and that the button spends the
 automatic reload.
 
+### Follow-up 2: a registration wedged by the DevTools Lighthouse run (2026-10-29)
+
+The error screen was reported once more on the deploy, after a DevTools Lighthouse run, in a normal
+profile, in an incognito window and in a second Chrome profile, with the button unable to recover
+it. Only DevTools "Clear site data" cleared it.
+
+**Evidence** (console probes run by the owner in the stuck tab): `navigator.serviceWorker.controller`
+is `null`, and `getRegistrations()` returns one registration for `/` with no `installing`, `waiting`
+or `active` worker. On it `update()` throws `InvalidStateError`, `unregister()` does not settle in
+5 s, and a new `register()` does not settle in 8 s. The registration is wedged inside the browser:
+its job queue is blocked, and every unregister or register from the page queues behind it. A reload
+cannot help, and page code has no API to clear it (`caches` is Cache Storage, which MSW does not
+use). The boot therefore hung on `worker.start()` for 15 s, reloaded, hung again and showed the
+error screen.
+
+The wedge was **not** reproduced in an automated Chrome 156: the real DevTools panel, with and without
+automation flags, one and two tabs, and CDP clears raced against the page's own register and
+unregister at many delays all left either no registration or a working one.
+
+**Fix: an in-page fallback.** MSW has a fallback mode for browsers without Service Workers: the same
+handlers answer `fetch`, XHR and WebSocket from interceptors inside the page. `mocks/in-page.ts`
+builds it with `msw/experimental` (`defineNetwork`, one `InterceptorSource`) and
+`@mswjs/interceptors` (now a direct dependency, the version MSW resolves). It is a lazy chunk, so
+the worker path downloads nothing more (bundled in, it added 20 KB to the mock chunk). One source only: every
+`InterceptorSource` registers under the same global name, so a second one reuses the first and never
+applies its own interceptors (the WebSocket went to the network until they were merged).
+- `bootWithRecovery` takes a `fallback` and resolves with the mode, `'worker'` or `'page'`.
+- A registration that does not control the page and cannot be unregistered within 3 s is
+  `stuck`: the boot skips the reload and falls back at once (about 3 s instead of a 15 s hang).
+- Any other failure still unregisters and reloads once; when the worker fails again after that
+  reload (the guard is spent), the boot falls back instead of showing the error screen.
+- The fallback must answer the health probe like the worker; if it does not, the original failure
+  goes to the error screen as before.
+- A worker that started (but does not intercept) or starts late is stopped, so it never
+  intercepts on top of the page. The watchdog runs only in worker mode.
+- `<html data-mock>` holds the mode, and the console warns when the page mode is in use.
+
+**Trade-off.** In page mode the API requests do not appear as Service Worker responses in the
+Network panel, and a request that bypasses the interceptors (none does in this app) would reach the
+network. The worker stays the first choice.
+
+**Tests.** `e2e/boot-recovery.spec.ts`:
+- "falls back to mocking inside the page after one automatic reload" (DevTools "Bypass for
+  network") replaces the test that expected the error screen.
+- "a registration wedged in the browser" simulates the reported state (a registration with no
+  worker, `unregister()` and `register()` that never settle). It expects page mode with no reload.
+
+`e2e/realtime-resilience.spec.ts` (Socket.IO events, reconnection, heartbeat, the panel's cut) was
+also run in page mode with the wedged registration injected (not committed): all 24 passed with the
+fallback bundled in. After it moved to a lazy chunk, a second run had 2 mobile failures in the
+pending-order tests ("with the socket down…", "a reconnection reconciles…"), which were not
+investigated. The full E2E suite was not run after this change.
+`lib/mock-recovery.test.ts` covers the policy: fallback after the spent reload, no fallback before
+the reload, no reload for `stuck`, the original error when the fallback fails, and an `unregister()`
+that never settles.
+
 ## 12. Amendment: phone LCP images and "Agentic Browsing" (2026-10-29)
 
 Two follow-ups after the owner ran Lighthouse 13.5 (Chrome 156 DevTools) on the deployed site: mobile Performance 86 deployed, with the "LCP request discovery" insight failing, and the new "Agentic Browsing" category at 50.

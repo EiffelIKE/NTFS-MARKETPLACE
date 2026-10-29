@@ -1,3 +1,5 @@
+import type { Page } from '@playwright/test'
+
 import { apiFetch } from './support/mock'
 import { homeHeading } from './support/home'
 import { expect, test } from './support/test'
@@ -80,7 +82,16 @@ test.describe('a worker that never takes control', () => {
   // The failed requests and the realtime socket that cannot be created are the point here.
   test.use({ allowedConsoleErrors: [/./] })
 
-  test('shows the boot error instead of loading forever, and the button recovers', async ({
+  // Document loads only: `framenavigated` also counts same-document (history) navigations.
+  const documentLoads = (page: Page) => {
+    const count = { value: 0 }
+    page.on('domcontentloaded', () => {
+      count.value++
+    })
+    return count
+  }
+
+  test('falls back to mocking inside the page after one automatic reload', async ({
     page,
     context,
   }) => {
@@ -88,31 +99,51 @@ test.describe('a worker that never takes control', () => {
     await expect(homeHeading(page)).toBeVisible()
     const cdp = await context.newCDPSession(page)
     await cdp.send('Network.enable')
-    // The worker stays registered but the page's requests bypass it (the state a Lighthouse run
-    // can leave behind): the boot's own probe reaches the network instead of the mock.
+    // The worker stays registered but the page's requests bypass it (DevTools "Bypass for
+    // network"): the boot's own probe reaches the network instead of the mock.
     await cdp.send('Network.setBypassServiceWorker', { bypass: true })
+    const navigations = documentLoads(page)
     await page.reload()
 
-    const title = page.getByRole('heading', { name: 'Não foi possível iniciar a simulação da API' })
-    // One automatic recovery reload first, then the error screen: bounded, never a blank page.
-    await expect(title).toBeVisible({ timeout: 30_000 })
-    await expect(page.getByText(/não está interceptando/)).toBeVisible()
-
-    // Clicking while DevTools still bypasses workers must settle back to an actionable error,
-    // without an additional automatic reload. The app cannot turn a DevTools override off.
-    let navigations = 0
-    page.on('framenavigated', (frame) => {
-      if (frame === page.mainFrame()) navigations++
-    })
-    await page.getByRole('button', { name: 'Recarregar página' }).click()
-    await expect.poll(() => navigations).toBe(1)
-    await expect(title).toBeVisible({ timeout: 20_000 })
-    await expect(page.getByText(/feche o DevTools/)).toBeVisible()
-    expect(navigations).toBe(1)
-
-    await cdp.send('Network.setBypassServiceWorker', { bypass: false })
-    await page.getByRole('button', { name: 'Recarregar página' }).click()
     await expect(homeHeading(page)).toBeVisible({ timeout: 30_000 })
-    expect(await page.evaluate(() => navigator.serviceWorker.controller !== null)).toBe(true)
+    await expect(page.locator('html')).toHaveAttribute('data-mock', 'page')
+    // This reload plus the one automatic recovery reload: bounded, never a loop.
+    expect(navigations.value).toBe(2)
+    const { status, body } = await apiFetch<{ totalItems: number }>(page, '/nfts?pageSize=1')
+    expect(status).toBe(200)
+    expect(body.totalItems).toBe(120)
+    await expect(page.getByRole('heading', { name: /Não foi possível iniciar/ })).toHaveCount(0)
+  })
+
+  test('a registration wedged in the browser: mocks inside the page without reloading', async ({
+    page,
+  }) => {
+    // What a DevTools Lighthouse run can leave behind: a registration with no worker in it, whose
+    // unregister() and register() never settle. Only the browser can clear it, so reloading would
+    // not help.
+    await page.addInitScript(() => {
+      const never = () => new Promise<never>(() => undefined)
+      const wedged = {
+        scope: `${location.origin}/`,
+        active: null,
+        waiting: null,
+        installing: null,
+        unregister: never,
+        update: never,
+      }
+      const container = navigator.serviceWorker
+      Object.defineProperty(container, 'controller', { get: () => null })
+      container.getRegistrations = () =>
+        Promise.resolve([wedged as unknown as ServiceWorkerRegistration])
+      container.register = never
+    })
+    const navigations = documentLoads(page)
+    await page.goto('/')
+
+    await expect(homeHeading(page)).toBeVisible({ timeout: 15_000 })
+    await expect(page.locator('html')).toHaveAttribute('data-mock', 'page')
+    expect(navigations.value).toBe(1)
+    const { status } = await apiFetch(page, '/nfts?pageSize=1')
+    expect(status).toBe(200)
   })
 })

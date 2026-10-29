@@ -5,7 +5,8 @@
 // while it is in flight, a worker can sit in `installing` or turn `redundant`, and a page can lose
 // its controller. MSW waits for all of that with no timeout, so the shell-first gate
 // (`backend-ready.ts`) never resolved and every request stayed pending. Everything here is bounded
-// and dependency-free (no msw import), so the entry chunk and the error screen can use it.
+// and dependency-free (no msw import), so the entry chunk and the error screen can use it. When the
+// worker cannot be brought back, the mock runs inside the page instead (`fallback`).
 
 /** Where the mock worker is served from (`public/mockServiceWorker.js`). */
 export const MOCK_WORKER_URL = '/mockServiceWorker.js'
@@ -24,7 +25,7 @@ export const RELOAD_GUARD_KEY = 'kurio.mock.recovery'
 export const RESYNC_WINDOW_MS = 10_000
 export const RESYNC_GUARD_KEY = 'kurio.mock.resync'
 
-export type MockFailureCode = 'timeout' | 'unreachable' | 'start-failed' | 'lost'
+export type MockFailureCode = 'timeout' | 'unreachable' | 'start-failed' | 'lost' | 'stuck'
 
 /** A mock boot failure the error screen can describe. Messages are user-facing (pt-BR). */
 export class MockBootError extends Error {
@@ -48,6 +49,14 @@ export function unreachableError(): MockBootError {
   return new MockBootError(
     'unreachable',
     'O service worker foi iniciado, mas não está interceptando as requisições da página.',
+  )
+}
+
+/** The registration is wedged inside the browser: a reload cannot clear it, only the browser can. */
+export function stuckError(): MockBootError {
+  return new MockBootError(
+    'stuck',
+    'O registro do service worker ficou travado no navegador e não pôde ser removido.',
   )
 }
 
@@ -150,11 +159,16 @@ function isMockRegistration(registration: RegistrationLike): boolean {
   }
 }
 
-/** Unregisters every mock worker registration of the origin; resolves with how many were removed. */
+/**
+ * Unregisters every mock worker registration of the origin; resolves with how many were removed,
+ * or `null` when that did not finish in time. A registration the browser left wedged (after a
+ * DevTools Lighthouse run: no worker in it, and `unregister()` and `register()` never settle) is
+ * the `null` case.
+ */
 export async function unregisterMockWorkers(
   container: WorkerContainerLike | undefined = browserWorkerContainer(),
   timeoutMs = 3_000,
-): Promise<number> {
+): Promise<number | null> {
   if (container === undefined) return 0
   try {
     return await withTimeout(
@@ -167,7 +181,7 @@ export async function unregisterMockWorkers(
       () => timeoutError(timeoutMs),
     )
   } catch {
-    return 0
+    return null
   }
 }
 
@@ -250,30 +264,45 @@ export async function recoverOnce(deps: RecoveryDeps): Promise<'reloading' | 'ga
   return 'reloading'
 }
 
+/** Where the mock answers: the Service Worker, or interceptors inside the page (`fallback`). */
+export type MockMode = 'worker' | 'page'
+
 export interface BootDeps {
   /** `worker.start()` plus whatever else makes the mock ready. */
   start(): Promise<void>
   ping(): Promise<boolean>
   recover(): Promise<'reloading' | 'gave-up'>
+  /** Mocks inside the page (fetch, XHR and WebSocket interceptors), without the worker. */
+  fallback?: () => Promise<void>
   timeoutMs?: number
   graceMs?: number
 }
 
 /**
- * Starts the mock with a deadline, checks it really intercepts, and on failure recovers once. It
- * always settles: resolves when the mock works, rejects when it cannot be made to work (including
- * when a reload was requested but the page did not leave).
+ * Starts the mock with a deadline, checks it really intercepts, and on failure recovers once. When
+ * the worker still fails after that reload, or its registration is wedged (a reload cannot help),
+ * the mock runs inside the page instead. It always settles: resolves with the mode that works,
+ * rejects when neither does (including when a reload was requested but the page did not leave).
  */
-export async function bootWithRecovery(deps: BootDeps): Promise<void> {
+export async function bootWithRecovery(deps: BootDeps): Promise<MockMode> {
   const { timeoutMs = BOOT_TIMEOUT_MS, graceMs = RELOAD_GRACE_MS } = deps
   try {
     await withTimeout(deps.start(), timeoutMs, () => timeoutError(timeoutMs))
     if (!(await deps.ping())) throw unreachableError()
+    return 'worker'
   } catch (error) {
     const failure = toBootError(error)
-    if ((await deps.recover()) === 'reloading') {
+    if (failure.code !== 'stuck' && (await deps.recover()) === 'reloading') {
       await new Promise((resolve) => setTimeout(resolve, graceMs))
+      throw failure
     }
+    const { fallback } = deps
+    if (fallback === undefined) throw failure
+    const works = await withTimeout(fallback(), timeoutMs, () => timeoutError(timeoutMs)).then(
+      () => deps.ping(),
+      () => false,
+    )
+    if (works) return 'page'
     throw failure
   }
 }

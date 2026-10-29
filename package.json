@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "@fontsource-variable/roboto-mono": "^5.3.0",
+    "@mswjs/interceptors": "0.41.9",
     "@mswjs/socket.io-binding": "^0.2.0",
     "@tanstack/react-form": "^1.33.5",
     "@tanstack/react-query": "^5.104.5",

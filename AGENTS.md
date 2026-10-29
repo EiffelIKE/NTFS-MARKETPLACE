@@ -59,7 +59,7 @@ Skip `ssr/` (this app is a client-only SPA). Project decisions in `SPECS-NTFS/` 
   - Every realtime test waits for the NFT to render before changing it (the first-connection race of ARCHITECTURE §4).
   - `page.route()` does not see requests that go through the Service Worker; use `page.context().route()`.
   - A request that bypassed the mock gets the SPA's HTML with status 200; check the `x-kurio-mock` header of `/api/__mock/health` to know whether a tab is mocked.
-- **Mock worker.** Recovery lives in `src/lib/mock-recovery.ts` (spec 13 §11 and its follow-up). The watchdog must never unregister the worker: other tabs use it.
+- **Mock worker.** Recovery lives in `src/lib/mock-recovery.ts` (spec 13 §11 and its follow-ups). The watchdog must never unregister the worker: other tabs use it. When the worker cannot be used, the boot falls back to in-page interception; `<html data-mock>` says which mode a tab runs in (`worker` or `page`), so a test that needs the worker should check it.
 - **SEO and agent files.** If the public domain changes, update `src/lib/seo.ts`, `index.html`, `public/robots.txt`, `public/sitemap.xml`, `public/llms.txt` and `public/.well-known/ai-catalog.json` together. After a deploy that changes them, submit `/sitemap.xml` in Google Search Console and inspect the home URL.
 - **Lighthouse.** `pnpm lighthouse` (local, `vite preview`) and `pnpm lighthouse:deployed <url>` write to the git-ignored `reports/lighthouse/`; the tracked summaries are in `lighthouse/reports/`. The README table holds the **deployed** numbers: update it, and the build id under it, only after measuring the deploy.
 - **Git.** Work on `dev` and commit locally; the owner opens the PR to `main` and deploys on Vercel.
