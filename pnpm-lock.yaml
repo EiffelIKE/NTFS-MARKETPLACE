@@ -11,6 +11,9 @@ importers:
       '@fontsource-variable/roboto-mono':
         specifier: ^5.3.0
         version: 5.3.0
+      '@mswjs/interceptors':
+        specifier: 0.41.9
+        version: 0.41.9
       '@mswjs/socket.io-binding':
         specifier: ^0.2.0
         version: 0.2.0(msw@2.15.0(@types/node@24.19.2)(typescript@6.0.3))

@@ -7,6 +7,7 @@ import {
   browserRecovery,
   hasOrphanedRegistration,
   pingMock,
+  stuckError,
   unregisterMockWorkers,
   watchMockWorker,
   type MockBootError,
@@ -50,8 +51,9 @@ interface StartHooks {
  * render. The app renders while this runs and holds its requests until it resolves
  * (`lib/backend-ready.ts`). It always settles (spec 13, SW boot recovery): the worker start has a
  * deadline, a started worker must prove it intercepts, and a failure unregisters the stale
- * registrations and reloads once. It rejects when that is not enough, so the bootstrap shows an
- * error instead of calling a backend that does not exist or waiting forever.
+ * registrations and reloads once. When the worker still cannot be used, the mock runs inside the
+ * page. It rejects when that is not enough either, so the bootstrap shows an error instead of
+ * calling a backend that does not exist or waiting forever.
  */
 export async function startMocks(params: MockUrlParams, hooks: StartHooks = {}): Promise<void> {
   const runtime = createRuntime({ storage: createBrowserStorage(), baseUrl: env.VITE_API_BASE_URL })
@@ -69,28 +71,55 @@ export async function startMocks(params: MockUrlParams, hooks: StartHooks = {}):
   const healthUrl = `${runtime.baseUrl}${healthPath}`
   const ping = () => pingMock(healthUrl)
 
-  await bootWithRecovery({
+  const handlers = createHandlers(runtime)
+  let worker: ReturnType<typeof setupWorker> | undefined
+  let workerStart: Promise<unknown> | undefined
+  let workerStarted = false
+  const mode = await bootWithRecovery({
     start: async () => {
       // A registration that does not control this page (a hard reload, a worker the browser
       // dropped) would make MSW reload and wait for a controller that may never come: replace it
-      // with a fresh one in this load.
-      if (await hasOrphanedRegistration()) await unregisterMockWorkers()
-      const worker = setupWorker(...createHandlers(runtime))
-      await worker.start({
+      // with a fresh one in this load. One that cannot even be removed is wedged in the browser,
+      // and registering again would queue behind it forever.
+      if ((await hasOrphanedRegistration()) && (await unregisterMockWorkers()) === null) {
+        throw stuckError()
+      }
+      worker = setupWorker(...handlers)
+      workerStart = worker.start({
         serviceWorker: { url: MOCK_WORKER_URL },
         quiet: import.meta.env.PROD,
         // Anything outside the API base (assets, fonts) goes straight to the network.
         onUnhandledRequest: 'bypass',
       })
+      await workerStart
+      workerStarted = true
     },
     ping,
     recover: browserRecovery,
+    fallback: async () => {
+      // A worker that started (but does not intercept), or starts late, must not intercept on top
+      // of the page. Stop it before the page's interceptors take over the WebSocket.
+      if (workerStarted) worker?.stop()
+      else
+        void workerStart?.then(
+          () => worker?.stop(),
+          () => undefined,
+        )
+      // Its own chunk: only a tab that needs it downloads the interceptors.
+      const { startInPage } = await import('./in-page')
+      startInPage(handlers)
+    },
   })
 
-  watchMockWorker({
-    ping,
-    onLost: (error) => hooks.onLost?.(error),
-  })
+  if (mode === 'worker') {
+    watchMockWorker({
+      ping,
+      onLost: (error) => hooks.onLost?.(error),
+    })
+  } else {
+    console.warn('[mock] the service worker is unavailable: the mock API runs inside the page')
+  }
+  document.documentElement.dataset.mock = mode
 
   window.__mock = createControl(runtime)
   runtime.settlement.arm()
