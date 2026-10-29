@@ -7,6 +7,8 @@ import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv, type HtmlTagDescriptor, type Plugin } from 'vite'
 import svgr from 'vite-plugin-svgr'
 
+import { buildMeta } from './scripts/build-meta.ts'
+import { devRoutesEnabled, stripDevRoutes } from './scripts/dev-routes.ts'
 import { parseEnv } from './src/lib/env-schema.ts'
 
 /**
@@ -70,12 +72,18 @@ function preloadCriticalAssets(): Plugin {
   }
 }
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ mode, command }) => {
+  const rawEnv = loadEnv(mode, process.cwd(), 'VITE_')
   // Fail the build (and dev server) early on an invalid environment.
-  const env = parseEnv(loadEnv(mode, process.cwd(), 'VITE_'))
+  const env = parseEnv(rawEnv)
+  // Build-time only, so it is not part of the client's env schema: the `/dev/*` harnesses are
+  // reachable in the dev server, and in a build only when asked for (spec 14 §9, R10).
+  const devRoutes = devRoutesEnabled(command, rawEnv.VITE_ENABLE_DEV_ROUTES)
 
   return {
     plugins: [
+      // Before the router plugin, so a disabled `/dev/*` route is replaced before it is split.
+      stripDevRoutes(devRoutes),
       // Must run before the React plugin.
       tanstackRouter({
         target: 'react',
@@ -87,6 +95,7 @@ export default defineConfig(({ mode }) => {
       }),
       react(),
       preloadCriticalAssets(),
+      buildMeta(),
       tailwindcss(),
       // Figma SVGs as React components; icons are decorative unless a caller labels the control.
       svgr({

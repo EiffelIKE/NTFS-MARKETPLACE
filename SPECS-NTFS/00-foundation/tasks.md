@@ -64,6 +64,7 @@ Implements [`requirements.md`](requirements.md) following [`design.md`](design.m
 - [x] **T14 — Deploy config and ignores** · FND-32, FND-33
   - `vercel.json` per design §12. `.gitignore` per design §13.
   - **Proof (local):** T12's reload-on-deep-link test passes on `vite preview`. **Proof (remote, user-assisted):** after the user links the Vercel project (with `ENABLE_EXPERIMENTAL_COREPACK=1`, Node 24.x): `curl -sI <url>/nfts/abc` → `200 text/html`; `curl -sI <url>/assets/missing.js` → `404`; opening and refreshing `/cart` and `/nao-existe` in a browser shows the right views. Until then FND-33 stays **pending deploy**; it does not block starting spec 01.
+  - **Remote proof done (2026-10-29, spec 14 T07):** `/nfts/abc` → `200 text/html`; `/assets/missing.js` → `404`; `/nao-existe` → `200` with the not-found view; `/cart` and `/nfts/emerald-ape-042` survive a refresh. Deployed at https://ntfs-marketplace.vercel.app/.
   - *Status 2026-10-27:* local proof done; remote proof pending (Vercel project not linked yet).
 
 - [x] **T15 — Done gate** · FND-03, FND-04, FND-26

@@ -1,6 +1,8 @@
 import { defineConfig, devices } from '@playwright/test'
 
 const isCI = !!process.env.CI
+// The preview port; `E2E_PORT` lets a second checkout run beside another one that holds 4173.
+const port = process.env.E2E_PORT ?? '4173'
 
 export default defineConfig({
   testDir: 'e2e',
@@ -23,7 +25,7 @@ export default defineConfig({
   },
   reporter: [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]],
   use: {
-    baseURL: 'http://localhost:4173',
+    baseURL: `http://localhost:${port}`,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -47,10 +49,13 @@ export default defineConfig({
       },
     },
   ],
-  // Tests run against the optimized build, the same thing that gets deployed.
+  // Tests run against the optimized build, the same thing that gets deployed, except that this one
+  // keeps the `/dev/*` harnesses (the realtime page and the UI kit) the deploy leaves out
+  // (spec 14 §9). A server started from a plain `pnpm build` answers those routes with not-found.
   webServer: {
-    command: 'pnpm build && pnpm preview --port 4173 --strictPort',
-    url: 'http://localhost:4173',
+    command: `pnpm build && pnpm preview --port ${port} --strictPort`,
+    env: { VITE_ENABLE_DEV_ROUTES: 'true' },
+    url: `http://localhost:${port}`,
     reuseExistingServer: !isCI,
     timeout: 180_000,
   },
