@@ -1,5 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
+import { SITE_TITLE } from '../src/lib/seo'
+
 import { loginAs } from './support/mock'
 
 // `title` is the document title's first part when it differs from the `h1` (the cart is
@@ -34,7 +36,7 @@ const SIGNUP_HEADING = /^Criar (conta|perfil de colecionador)$/
 test('home renders its heading and the document metadata', async ({ page }) => {
   await page.goto('/')
   await expect(heading(page, /^SEJA DONO D/)).toBeVisible()
-  await expect(page).toHaveTitle('Início · KURIO')
+  await expect(page).toHaveTitle(SITE_TITLE)
   await expect(page.locator('html')).toHaveAttribute('lang', 'pt-BR')
   await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /KURIO/)
   await expect(page.locator('meta[name="viewport"]')).toHaveAttribute(

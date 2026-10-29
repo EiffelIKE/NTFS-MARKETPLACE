@@ -96,7 +96,7 @@ The draft's "Realtime change on details → announce" and "favorite added / remo
 
 ## 6. Semantics and images (A11Y-11 – A11Y-13)
 
-- Headings: one visible `h1`, no skipped level, a title ending in " · KURIO", on every cell of §2. The test walks `h1–h6` with `checkVisibility()`.
+- Headings: one visible `h1`, no skipped level, a title ending in " · KURIO" (the home page carries the site title, `KURIO — Marketplace de NFTs`), on every cell of §2. The test walks `h1–h6` with `checkVisibility()`.
 - Landmarks: one `main`; a landmark role that appears more than once is named, and names are not repeated.
 - Images: every visible `img` has an `alt` attribute; an image inside a link or button whose own label already contains the alt text must have `alt=""`, so the name is not read twice. The test runs over home, details and cart.
 - Non-color cues, reviewed on the real screens (rows in `audit.md`): the current page (`aria-current` + fill), the active segment (`aria-selected` + underline), the selected edition (`aria-checked` + border), a sold-out edition (strikethrough + "esgotada" in its name, disabled), the previous price (strikethrough, with a hidden "Preço anterior:"), the order status (text + icon), invalid fields (message + `aria-invalid`), the active filter (check mark + count).

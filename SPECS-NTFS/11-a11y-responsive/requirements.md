@@ -37,7 +37,7 @@ Brief coverage: §8 (keyboard and visible focus, dialog/drawer focus, semantics 
 
 ### Semantics and content
 
-- **A11Y-11** — THE SYSTEM SHALL give every page exactly one `h1`, a heading order without skipped levels, unique landmark labels, and a document title in the pattern `"<screen> · KURIO"`.
+- **A11Y-11** — THE SYSTEM SHALL give every page exactly one `h1`, a heading order without skipped levels, unique landmark labels, and a document title in the pattern `"<screen> · KURIO"`. The home page is the one exception: it carries the site title, `KURIO — Marketplace de NFTs` (SEO amendment, 2026-10-29).
 - **A11Y-12** — THE SYSTEM SHALL give each NFT image the fixture alt text, mark decorative images and repeated thumbnails appropriately (design §6), and give every icon-only control a pt-BR name.
 - **A11Y-13** — THE SYSTEM SHALL convey every state (selected edition, sold out, price drop, order status, invalid field, active filter, current page) by text or shape in addition to color.
 - **A11Y-14** — THE SYSTEM SHALL meet WCAG 2.2 AA contrast for text and state-bearing UI on the real screens, including text over artwork or gradients (hero, promo cards), not only on the token pairs that spec 01 tests.

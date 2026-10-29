@@ -1,3 +1,5 @@
 User-agent: *
 Allow: /
 Disallow: /dev/
+
+Sitemap: https://ntfs-marketplace.vercel.app/sitemap.xml
