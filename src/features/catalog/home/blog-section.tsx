@@ -12,7 +12,10 @@ export function BlogSection() {
   return (
     <section aria-labelledby="blog-title" className="hidden flex-col items-center gap-10 lg:flex">
       <div className="flex flex-col items-center gap-3 text-center">
-        <h2 id="blog-title" className="text-heading text-foreground">
+        <h2
+          id="blog-title"
+          className="text-heading text-foreground lg:text-[1.75rem] lg:leading-9.5"
+        >
           {BLOG.title}
         </h2>
         <p className="text-body text-text-secondary">{BLOG.subtitle}</p>

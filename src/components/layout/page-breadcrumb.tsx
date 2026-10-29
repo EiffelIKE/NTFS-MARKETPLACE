@@ -13,7 +13,7 @@ import {
 export function PageBreadcrumb({ current }: { current: string }) {
   return (
     <Breadcrumb className="mb-4">
-      <BreadcrumbList className="text-body-lg font-bold">
+      <BreadcrumbList className="text-body-md font-bold">
         <BreadcrumbItem>
           <BreadcrumbLink asChild className="text-foreground">
             <Link to="/">Início</Link>

@@ -296,7 +296,7 @@ function MobileComposition({
         ref={bar}
         className="fixed inset-x-0 bottom-0 z-30 bg-background px-6 pt-3 pb-[calc(1rem+env(safe-area-inset-bottom))] [@media(max-height:560px)]:static [@media(max-height:560px)]:p-0"
       >
-        <ConfirmButton className="h-15 w-full rounded-full bg-primary-soft text-body-lg" />
+        <ConfirmButton className="h-15 w-full rounded-full bg-primary-cta text-body-lg" />
       </div>
     </div>
   )

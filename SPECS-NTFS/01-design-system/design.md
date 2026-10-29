@@ -519,3 +519,9 @@ Visual baselines of the shells are spec 12.
 | 09 | shadcn `textarea` for "Observação do colecionador" (spec 09 T01) |
 | 13 | The chunk-size warning is gone (spec 13, PERF-16): vendor `codeSplitting` groups and `tldts` aliased to `tldts-experimental` in `vite.config.ts` |
 | 11 | Spec 11 (2026-10-28): `ui/sonner.tsx` toasts at the top on phones (§11, item 19); `ui/button.tsx` passes a caller's `aria-busy` through; `hooks/use-bottom-bar-inset.ts` is used by the tab bar and by every fixed action bar, and `base.css` sets `scroll-padding-bottom` from it; `app/use-route-focus.ts` moves focus to the new page's `h1` after an in-app navigation. |
+## 12. Amendments (Figma fidelity pass, 2026-10-29)
+
+- **`bg-primary-cta`** (`theme.css`): `linear-gradient(90deg, primary, 88 % primary over ink)`. It is the wide mobile CTA fill measured on Figma's cart, details and checkout frames (left `#CF884B`, right `#B87843`). `bg-primary-soft` remains the filter button, tab bar FAB and "Aplicar" fill.
+- **`Label`** is `text-body-md font-normal` (Figma: 15 px regular), `RadioGroupChip` outline variant is 12 px with `px-2`, `QuantityStepper` `md` is a 31 × 48 pill, `PageBreadcrumb` is 15 px.
+
+- **Utilities added by the owner's fix list:** `bg-primary-fab` (tab bar center button), `bg-hero-card` (mobile hero); `tab-bar-notch` removed.

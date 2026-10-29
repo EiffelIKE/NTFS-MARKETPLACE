@@ -253,3 +253,7 @@ Decisions taken while implementing, where the design was silent or had to give w
 **Tests**
 14. Cross-session password test: the "other device" is a second token from `loginAs(page, 'ana', { seed: false })` in the same page. Two browser contexts would not do: each has its own mock database. Its next request answers 401 while the page's session stays.
 15. On phones the toast and the fixed tab bar can cover the bottom of the page, so tests that submit twice in a row submit with Enter the second time.
+
+## Amendment (Figma fidelity pass, 2026-10-29)
+
+`AccountNav`: icons are `secondary` and the active row's icon is `primary` (measured on Figma's profile frame, where the labels are all `text-accent`); the 6 px bar stays. Details in `SPECS-NTFS/12-visual-regression/fidelity.md`.

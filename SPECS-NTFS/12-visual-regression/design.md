@@ -104,3 +104,7 @@ One `test.describe('@visual')` with `home`, `home loading`, `details`, `details 
 ## 9. Amendments (fix batch, 2026-10-28)
 
 - **G3 — skip off Linux.** `@visual` tests skip when `process.platform !== 'linux'`, with the reason in the report, instead of failing on a missing `-linux` baseline. `pnpm test:visual:update` still runs on any OS to create local baselines. No baseline image changed in this batch.
+
+## 10. Amendment (Figma fidelity pass, 2026-10-29)
+
+A visual-fidelity pass changed the UI of home, details, cart, checkout and the shared shell, so every `@visual` baseline except `details-loading` was regenerated and reviewed. The comparison table, the fixes and the accepted deviations are in [`fidelity.md`](fidelity.md). Note: `pnpm test:visual:update -- --workers=3` does not forward the flag (pnpm passes it to Playwright as a file filter); run `pnpm exec playwright test --grep @visual --update-snapshots --workers=3`.

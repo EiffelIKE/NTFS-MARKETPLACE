@@ -13,11 +13,11 @@ export function CardSkeleton({
 }) {
   const compact = variant === 'compact'
   return (
-    <div className={cn('flex flex-col gap-2', !compact && 'lg:gap-3', className)}>
+    <div className={cn('flex flex-col gap-2 lg:gap-3', className)}>
       <Skeleton className={cn('w-full', compact ? compactMediaShape : cardMediaShape)} />
-      <div className={cn('flex flex-col gap-1.5 px-2', !compact && 'lg:px-0')}>
-        <Skeleton className="h-5.5 w-3/4" />
-        <Skeleton className="h-6 w-1/2" />
+      <div className={cn('flex flex-col px-2 lg:gap-1.5 lg:px-0', compact && 'lg:gap-0')}>
+        <Skeleton className="h-4.5 w-3/4" />
+        <Skeleton className="h-4.5 w-1/2 lg:h-5" />
       </div>
     </div>
   )

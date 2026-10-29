@@ -22,12 +22,12 @@ export function PromoCards() {
           <NftImage
             image={promo.image}
             slot="promo"
-            className="relative size-62.5 shrink-0 rounded-artwork-lg object-cover"
+            className="relative h-62.5 w-72 shrink-0 rounded-artwork-lg object-cover"
           />
-          <div className="relative flex min-w-0 flex-1 flex-col items-end pt-9 pr-7.5 pl-4 text-right">
+          <div className="relative flex min-w-0 flex-1 flex-col items-end pt-9 pr-7.5 pl-1 text-right">
             <h2 className="text-title text-foreground">{promo.title}</h2>
-            <p className="mt-9 max-w-66 text-body leading-6 text-text-secondary">{promo.text}</p>
-            <Button asChild className="mt-auto mb-9 w-35 gap-1 px-0 text-body font-medium">
+            <p className="mt-2 max-w-66 text-body leading-6 text-text-secondary">{promo.text}</p>
+            <Button asChild className="mt-auto mb-11.5 w-35 gap-1 px-0 text-body font-medium">
               <Link
                 to="/"
                 search={promo.search}

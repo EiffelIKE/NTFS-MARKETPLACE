@@ -38,11 +38,11 @@ export function PurchaseActions({
           disabled={!canBuy}
           loading={pending}
           onClick={onBuy}
-          className="tracking-wide w-32.5 px-0"
+          className="w-32.5 px-0 text-body"
         >
           COMPRAR
         </Button>
-        <FavoriteButton nft={nft} variant="button" />
+        <FavoriteButton nft={nft} variant="button" className="text-body" />
       </div>
     </div>
   )

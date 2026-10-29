@@ -19,8 +19,10 @@ function SummaryBand({ view }: { view: ReceiptView }) {
       className="grid grid-cols-2 border-y border-primary lg:grid-cols-[1.2fr_1.4fr_1fr_1fr]"
     >
       <div className={bandCell}>
-        <dt className="text-caption-sm font-bold text-text-secondary">ID da transação</dt>
-        <dd className="text-caption-sm text-text-secondary">
+        <dt className="text-caption-sm font-bold text-text-secondary lg:text-caption lg:font-bold">
+          ID da transação
+        </dt>
+        <dd className="text-caption-sm text-text-secondary lg:text-caption lg:font-normal">
           <Tooltip>
             <TooltipTrigger asChild>
               <span
@@ -40,23 +42,32 @@ function SummaryBand({ view }: { view: ReceiptView }) {
         </dd>
       </div>
       <div className={bandCell}>
-        <dt className="text-caption-sm text-text-secondary">Data</dt>
-        <dd data-testid="receipt-date" className="text-caption-sm text-text-secondary">
+        <dt className="text-caption-sm text-text-secondary lg:text-caption lg:font-normal">Data</dt>
+        <dd
+          data-testid="receipt-date"
+          className="text-caption-sm text-text-secondary lg:text-caption lg:font-normal"
+        >
           {view.date}
         </dd>
       </div>
       <div className={bandCell}>
-        <dt className="text-caption-sm text-text-secondary">Total</dt>
+        <dt className="text-caption-sm text-text-secondary lg:text-caption lg:font-normal">
+          Total
+        </dt>
         <dd
           data-testid="receipt-total"
-          className="text-caption-sm text-text-secondary tabular-nums"
+          className="text-caption-sm text-text-secondary tabular-nums lg:text-caption lg:font-normal"
         >
           {view.total}
         </dd>
       </div>
       <div className={bandCell}>
-        <dt className="text-caption-sm font-bold text-text-secondary">Carteira</dt>
-        <dd className="text-caption-sm text-text-secondary">{view.wallet}</dd>
+        <dt className="text-caption-sm font-bold text-text-secondary lg:text-caption lg:font-bold">
+          Carteira
+        </dt>
+        <dd className="text-caption-sm text-text-secondary lg:text-caption lg:font-normal">
+          {view.wallet}
+        </dd>
       </div>
     </dl>
   )
@@ -168,7 +179,7 @@ export function ReceiptCard({ view, focusOnMount }: { view: ReceiptView; focusOn
         >
           <Button
             asChild
-            className="h-12 px-8 max-lg:mx-auto max-lg:h-15 max-lg:w-full max-lg:max-w-150 max-lg:rounded-full max-lg:bg-primary-soft"
+            className="h-12 px-8 max-lg:mx-auto max-lg:h-15 max-lg:w-full max-lg:max-w-150 max-lg:rounded-full max-lg:bg-primary-cta"
           >
             <ExplorerLink explorer={view.explorer} describedBy={captionId} />
           </Button>

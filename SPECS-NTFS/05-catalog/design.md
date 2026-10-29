@@ -380,3 +380,17 @@ Each "Ler mais →" is a spec 01 `UnavailableLink`. The 4 × 268 row is centered
 27. **Promo and blog images have `alt=""`** (decorative: the card text names them). The card focus ring is the link's own outline around the name; the stretched `::after` carries no outline, so the design-system "every focus stop shows a 2 px outline" test keeps its meaning.
 28. **Pagination "Anterior"** uses the existing `ArrowLeftIcon`; no new icon.
 29. **Amended by spec 11 (2026-10-28):** the search dialog remembers its opener and returns focus to it on close (it has no `DialogTrigger`). The Mercado header row wraps (tabs, then the sort select) and the hero text and art shrink between 1024 and about 1200 px, where the desktop composition overflowed sideways. The mobile hero card is `min-h-49.5` (198 px, what the loaded card measures from 385 px up) instead of a fixed 190 px (Figma's frame is 414 wide; at 390 / 360 / 320 the copy wraps one more line and was cut off); the skeleton reserves the same 198 px, and 245 px under 380 px, so CAT-14's no-layout-shift row holds (the card is 216 px at 380 and shifts once on phones in that narrow band), its art is `clamp(5rem, 33vw, 8.625rem)` and the overlapping thumbnail is hidden under 400 px.
+## 16. Amendments (Figma fidelity pass, 2026-10-29)
+
+See `SPECS-NTFS/12-visual-regression/fidelity.md` for the full table. Changes and accepted deviations owned by this spec (input for `ARCHITECTURE.md`):
+
+- **Hero:** the title balances its two lines (`text-balance`) and the copy column reserves the dots' height (`lg:pb-13`), so eyebrow, title and button land at Figma's y; the dots sit 34 px above the bottom edge, below the button. **Deviation kept:** the active dot is a 20 px pill and the others are dimmed with 24 px hit areas (Figma: three equal 8 px dots), for the non-color cue (WCAG 1.4.1) and the target size (2.5.8).
+- **Toolbar tabs** are 15 px with a 20 px gap and flush with the grid from `lg`; below `lg` they are 14 px with a 16 px gap so the three fit a 390 px screen.
+- **Product card text** uses 18 / 20 px line heights (card 356 px, Figma) instead of 22 / 24.
+- **Price filter:** label and "Aplicar" are indented 12 px with the list text. **Deviation:** amounts keep the dot decimal separator ("0.02 - 12.30 ETH") like every other amount; Figma writes this one with a comma.
+- **Promo cards:** artwork 288 px wide, copy and button at Figma's offsets. **Deviation:** the decorative circles are two 5 % CSS circles, not Figma's mask group.
+- **Blog title** is 28 px from `lg`; blog cards stay 282 px wide filling the column (Figma's 268 px row does not fill its own column).
+- **Footer features** (spec 01's footer, edited here): titles 17 px, copy 204 px wide.
+- **Collections:** Figma shows "Arte digital" active; ours has no selection in the default state (behaviour).
+
+- **Owner's fix list (2026-10-29):** the desktop hover buttons share one light glyph (the heart turns `primary` only when favorited); the mobile card favorite is a solid `surface-card` circle inside the image corner; the mobile hero uses `bg-hero-card`, two 5 % circles and a thumbnail inside the artwork at every width (Figma's brighter card fails 4.5:1 for the copy, a11y wins); `MobileTabBar` always draws filled icons, drops the active dot, and cuts the notch with an `ink` half-disc (47 px) behind a `bg-primary-fab` button. Details in `SPECS-NTFS/12-visual-regression/fidelity.md`.

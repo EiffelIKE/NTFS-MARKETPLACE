@@ -71,24 +71,31 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         }
         onSearch={onSearch}
       />
-      {mobile.kind === 'inner' && (
-        <MobileTopBar
-          className="lg:hidden"
-          title={mobile.title}
-          trailing={mobile.trailing === 'favorite' ? <RouteFavorite /> : undefined}
-        />
-      )}
-      <main
-        id="conteudo"
-        tabIndex={-1}
+      {/* A "panel" screen (the mobile details) is one `surface-card` sheet from the top bar down. */}
+      <div
         className={cn(
-          'outline-none lg:pt-8 lg:pb-0',
-          mobile.kind === 'tab' && 'pb-[calc(126px+env(safe-area-inset-bottom))]',
-          mobile.kind !== 'inner' && 'pt-10',
+          mobile.kind === 'inner' && mobile.panel && 'max-lg:min-h-dvh max-lg:bg-surface-card',
         )}
       >
-        {children}
-      </main>
+        {mobile.kind === 'inner' && (
+          <MobileTopBar
+            className="lg:hidden"
+            title={mobile.title}
+            trailing={mobile.trailing === 'favorite' ? <RouteFavorite /> : undefined}
+          />
+        )}
+        <main
+          id="conteudo"
+          tabIndex={-1}
+          className={cn(
+            'outline-none lg:pt-8 lg:pb-0',
+            mobile.kind === 'tab' && 'pb-[calc(126px+env(safe-area-inset-bottom))]',
+            mobile.kind !== 'inner' && 'pt-10',
+          )}
+        >
+          {children}
+        </main>
+      </div>
       <DesktopFooter className="hidden lg:block" />
       {mobile.kind === 'tab' && (
         <MobileTabBar

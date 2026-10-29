@@ -49,7 +49,7 @@ export function QuoteLines({ cart, quote, diff, outdated }: LinesProps) {
             key={item?.id ?? line?.itemId}
             data-testid="quote-line"
             data-changed={change ? true : undefined}
-            className="flex min-h-17.5 items-center gap-3 rounded-md bg-surface-card pr-3"
+            className="flex min-h-17.5 items-center gap-2 rounded-md bg-surface-card pr-2"
           >
             {item && (
               <NftImage
@@ -83,7 +83,7 @@ export function QuoteLines({ cart, quote, diff, outdated }: LinesProps) {
             </p>
             <div
               className={cn(
-                'w-26 shrink-0 text-right text-body-lg font-bold text-text-accent tabular-nums',
+                'min-w-22 shrink-0 text-right text-body-lg font-bold text-text-accent tabular-nums',
                 outdated && 'opacity-60',
               )}
             >
@@ -128,7 +128,7 @@ interface AmountsProps {
 export function QuoteAmounts({ quote, diff, outdated, className }: AmountsProps) {
   return (
     <dl
-      className={cn('flex flex-col gap-3', className)}
+      className={cn('flex flex-col gap-3 lg:gap-2', className)}
       aria-busy={quote === undefined || outdated}
     >
       {ROWS.map((row) => {
@@ -141,7 +141,9 @@ export function QuoteAmounts({ quote, diff, outdated, className }: AmountsProps)
               strong && 'border-t border-border pt-3',
             )}
           >
-            <dt className={cn('text-body-lg text-foreground', strong && 'font-bold')}>
+            <dt
+              className={cn('text-body-lg text-foreground lg:text-body-md', strong && 'font-bold')}
+            >
               {row.label}
               {row.key === 'discount' && quote?.coupon && (
                 <span className="block text-caption-sm font-normal text-text-secondary">
@@ -154,8 +156,8 @@ export function QuoteAmounts({ quote, diff, outdated, className }: AmountsProps)
                 data-testid={row.testId}
                 data-outdated={outdated ? true : undefined}
                 className={cn(
-                  'flex min-h-6 items-center justify-end text-right text-body-lg tabular-nums transition-opacity',
-                  strong ? 'font-bold text-text-accent' : 'text-foreground',
+                  'flex min-h-6 items-center justify-end text-right text-body-lg tabular-nums transition-opacity lg:text-title',
+                  strong ? 'font-bold text-text-accent' : 'font-normal text-foreground',
                   outdated && 'opacity-60',
                 )}
               >

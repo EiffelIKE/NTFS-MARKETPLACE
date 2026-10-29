@@ -22,11 +22,11 @@ export function MobileTopBar({ title, trailing, className, ...props }: MobileTop
 
   return (
     <header className={cn('pt-5.5', className)} {...props}>
-      <PageContainer className="grid h-14 grid-cols-[40px_1fr_40px] items-center gap-4">
+      <PageContainer className="grid h-14 grid-cols-[40px_1fr_40px] items-center gap-2">
         <button
           type="button"
           aria-label="Voltar"
-          className="relative flex size-8.75 cursor-pointer items-center justify-center justify-self-center rounded-full bg-surface-card text-text-secondary after:absolute after:-inset-1"
+          className="relative flex size-8.75 cursor-pointer items-center justify-center justify-self-center rounded-full border border-primary/20 bg-surface-raised text-text-secondary after:absolute after:-inset-1"
           onClick={() => {
             if (canGoBack) router.history.back()
             else void router.navigate({ to: '/' })

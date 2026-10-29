@@ -253,3 +253,12 @@ Decisions taken while implementing, where the design was silent or had to give w
 
 - **R1 — the cart refreshes without its page.** `bootApp` registers an always-on `nft.updated` listener (`{ known: true }`, see spec 03 §14) that calls `refreshCartForNft` (`model/refresh-cart.ts`): when the current owner's cached cart holds a line of that NFT, the cart entry (and its quote, by key prefix) is invalidated. An active observer, such as the header badge, refetches at once; otherwise the next mount does. `useCartLive` keeps only the announcements and the per-line event version. Tests: `refresh-cart.test.ts`; E2E `cart.spec.ts` ("a price that changes while the cart page is closed…").
 - **R5 — a failed merge is visible.** On a non-401 failure while the session is still current, `createMergeGuestCartTask` shows an error toast ("Não foi possível juntar o seu carrinho de visitante", action "Tentar novamente") that runs the merge again. The guest id is kept, and the next session start still retries. Tests: `merge-guest-cart.test.ts`; E2E `cart.spec.ts` ("a merge that fails says so…").
+
+## 15. Amendments (Figma fidelity pass, 2026-10-29)
+
+See `SPECS-NTFS/12-visual-regression/fidelity.md`. Changes and accepted deviations owned by this spec (input for `ARCHITECTURE.md`):
+
+- **Summary (desktop and sheet):** labels 15 px, values 18 px from `lg` (16 px in the sheet), rows 32 px apart, value column `min-w-28`, button 40 px, "Continuar explorando" 14 px. **Deviation:** a rule above "Total" (Figma has none).
+- **Mobile sheet button** is `bg-primary-cta` (new utility in `theme.css`: `primary` to a 12 % deeper tone, left to right); `primary-soft` stays on "Aplicar".
+- **Mobile cards:** 20 px apart, "Edição:" 14 px regular. **Deviation kept:** trash top-right and stepper bottom-right (Figma's stepper is mid-right and its trash is lost under a stepper).
+- **Desktop rows** keep the edition line and 12 px secondary text (Figma: token id at 14 px and no edition).

@@ -17,7 +17,7 @@ export function DetailsSkeleton() {
       label="Carregando NFT"
       className="mx-auto w-full max-w-150 pb-[var(--bottom-bar-inset,11.5rem)] lg:max-w-page lg:px-6 lg:pb-0"
     >
-      <Skeleton className="mb-3 hidden h-5 w-48 lg:block" />
+      <Skeleton className="mb-3 hidden h-5.5 w-48 lg:block" />
       <div className="flex flex-col lg:grid lg:grid-cols-[minmax(0,573fr)_minmax(0,595fr)] lg:gap-x-8">
         <div className="lg:flex lg:gap-7">
           <div className="hidden w-25 shrink-0 flex-col gap-4 lg:flex">
@@ -35,7 +35,7 @@ export function DetailsSkeleton() {
         </div>
         <div className="relative -mt-16 flex flex-col gap-6 rounded-t-[30px] bg-surface-card px-6 pt-6 pb-10 lg:contents">
           <div className="flex min-w-0 flex-col gap-6 lg:gap-3.25">
-            <div className="flex flex-col gap-3 lg:border-b lg:border-border lg:pb-3">
+            <div className="flex flex-col gap-3 lg:gap-2 lg:border-b lg:border-border lg:pb-3">
               <div className="flex items-start justify-between gap-3">
                 <Skeleton className="h-7 w-3/5 lg:h-9.25" />
                 <Skeleton className="h-7 w-16 rounded-full lg:hidden" />
@@ -56,7 +56,7 @@ export function DetailsSkeleton() {
               </div>
               <Skeleton className="h-4.5 w-64" />
             </div>
-            <Skeleton className="h-12.25 w-full max-lg:hidden" />
+            <Skeleton className="h-12 w-full max-lg:hidden" />
             <div className="flex flex-col gap-3">
               <Skeleton className="h-5.5 w-40" />
               <Skeleton className="h-5.5 w-48" />

@@ -30,7 +30,7 @@ export function Gallery({ nft, className }: { nft: NftDetail; className?: string
       image={image}
       index={current}
       total={images.length}
-      className="absolute top-3.75 right-3.75 z-10"
+      className={wide ? 'absolute top-3.75 right-3.75 z-10' : 'absolute top-3.75 right-9.75 z-10'}
     />
   )
 

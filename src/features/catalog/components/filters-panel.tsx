@@ -186,7 +186,7 @@ function PriceDraft({
           if (nextLow !== undefined && nextHigh !== undefined) setDraft([nextLow, nextHigh])
         }}
       />
-      <p className="text-body-md text-foreground">
+      <p className="px-3 text-body-md text-foreground">
         {bounds
           ? `Preço: ${formatEthAmount(fromSteps(low))} - ${formatEthAmount(fromSteps(high))} ETH`
           : 'Sem preços para filtrar'}
@@ -194,7 +194,7 @@ function PriceDraft({
       <Button
         size="sm"
         disabled={!bounds}
-        className="h-9 w-fit px-3 font-bold"
+        className="ml-3 h-9 w-fit px-3 font-bold"
         onClick={() => {
           if (bounds) onChange(pricesFromRange(bounds, draft))
         }}

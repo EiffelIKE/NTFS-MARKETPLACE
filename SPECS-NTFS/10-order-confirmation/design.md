@@ -188,3 +188,7 @@ Decisions taken while finalizing and implementing, where the draft was silent or
 ## Amendments (fix batch, 2026-10-28)
 
 - **R3.** `OrderPage` clears a stored checkout attempt for the order it shows once that order is terminal (`forgetSettledAttempt`, spec 09 §15), so the next purchase is not sent back to this receipt.
+
+## Amendment (Figma fidelity pass, 2026-10-29)
+
+The summary band uses 13 px text (Figma) instead of 11 px; the dt stays bold. Deviations kept: the page keeps the app shell (Figma shows the modal alone), the Subtotal/Desconto rows, the simulated-explorer note and the "Continuar explorando" link. Details in `SPECS-NTFS/12-visual-regression/fidelity.md`.
