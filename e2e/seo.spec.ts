@@ -60,6 +60,42 @@ test('the preview image and homepage sitemap are public static files', async ({ 
   expect(await robots.text()).toContain(`Sitemap: ${SITE_URL}/sitemap.xml`)
 })
 
+test('llms.txt is a Markdown file with an H1 and absolute links, not the SPA fallback', async ({
+  request,
+}) => {
+  const response = await request.get('/llms.txt')
+  expect(response.ok()).toBe(true)
+  expect(response.headers()['content-type']).toContain('text/plain')
+  const text = await response.text()
+  expect(text).not.toContain('<!doctype')
+  // What Lighthouse's `llms-txt` audit and llmstxt.org ask for: an H1 and Markdown links.
+  expect(text).toMatch(/^# KURIO$/m)
+  expect(text).toMatch(/^> .+/m)
+  const links = [...text.matchAll(/\[[^\]]+\]\((\S+?)\)/g)].map((match) => match[1] ?? '')
+  expect(links.length).toBeGreaterThan(3)
+  for (const link of links) expect(link.startsWith(`${SITE_URL}/`)).toBe(true)
+  expect(links).toContain(`${SITE_URL}/`)
+  expect(links).toContain(`${SITE_URL}/nfts/emerald-ape-042`)
+  expect(links).toContain(`${SITE_URL}/.well-known/ai-catalog.json`)
+})
+
+test('ai-catalog.json is valid JSON with the fields Agentic Resource Discovery requires', async ({
+  request,
+}) => {
+  const response = await request.get('/.well-known/ai-catalog.json')
+  expect(response.ok()).toBe(true)
+  expect(response.headers()['content-type']).toContain('application/json')
+  const catalog: unknown = JSON.parse(await response.text())
+  expect(catalog).toMatchObject({
+    specVersion: '1.0',
+    host: { displayName: 'KURIO', documentationUrl: `${SITE_URL}/llms.txt` },
+    entries: [],
+  })
+  // The site offers no agents, tools or MCP servers, so it advertises none; an invented entry would
+  // point agents at something that does not exist.
+  expect(Object.keys(catalog as object).sort()).toEqual(['entries', 'host', 'specVersion'])
+})
+
 test('Google metadata follows navigation without duplicates or stale canonicals', async ({
   page,
 }) => {
