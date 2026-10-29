@@ -90,7 +90,9 @@ test.describe('the grid (CAT-06, CAT-21)', () => {
     ).toHaveAttribute('href', '/nfts/emerald-ape-042')
   })
 
-  test('images carry srcset, sizes and intrinsic size (CAT-23)', async ({ page }) => {
+  test('images carry srcset, sizes and intrinsic size; only the first hero image is eager (CAT-23)', async ({
+    page,
+  }) => {
     await openHome(page)
     await waitForGrid(page)
     const card = await cards(page)
@@ -101,42 +103,17 @@ test.describe('the grid (CAT-06, CAT-21)', () => {
         sizes: img.sizes,
         width: img.getAttribute('width'),
         height: img.getAttribute('height'),
+        loading: img.loading,
       }))
     expect(card.candidates).toBe(3)
     expect(card.sizes).toContain('250px')
     expect(card.width).toBe('1000')
     expect(card.height).toBe('1000')
+    expect(card.loading).toBe('lazy')
 
     const hero = page.getByRole('region', { name: 'Destaques', exact: true }).locator('img').first()
     await expect(hero).toHaveAttribute('fetchpriority', 'high')
     await expect(hero).toHaveAttribute('loading', 'eager')
-  })
-
-  test('only the cards in the first viewport load eagerly: four on a phone, none from md up (CAT-23)', async ({
-    page,
-    isMobile,
-  }) => {
-    await openHome(page)
-    await waitForGrid(page)
-    const images = await cards(page)
-      .locator('img')
-      .evaluateAll((all: HTMLImageElement[]) =>
-        all.map((img) => ({
-          loading: img.loading,
-          priority: img.getAttribute('fetchpriority'),
-          // Whether it starts inside the first viewport, at the scroll position of the page load.
-          visible: img.getBoundingClientRect().top < window.innerHeight,
-        })),
-      )
-    expect(images.length).toBeGreaterThan(4)
-    images.forEach((image, index) => {
-      const eager = isMobile && index < 4
-      expect(image.loading, `card ${String(index)} loading`).toBe(eager ? 'eager' : 'lazy')
-      expect(image.priority, `card ${String(index)} fetchpriority`).toBe(eager ? 'high' : 'auto')
-      // The phone's eager set is exactly what the first viewport shows (its fourth card straddles
-      // the fold); nothing past it is eager.
-      if (isMobile && index >= 4) expect(image.visible).toBe(false)
-    })
   })
 
   test('the desktop card reveals its action on keyboard focus (CAT-21)', async ({

@@ -1,5 +1,4 @@
 import type { NftSummary } from '@/contracts'
-import { useMediaQuery } from '@/hooks/use-media-query'
 import { cn } from '@/lib/utils'
 
 import { CardCartAction } from '@/features/cart/components/card-cart-action'
@@ -13,27 +12,13 @@ import { DetailsAction, ProductCard } from './product-card'
 const gridClass =
   'grid grid-cols-2 gap-x-4 gap-y-6 pb-8 max-md:[&>li:nth-child(even)]:translate-y-8 md:grid-cols-3 md:gap-x-6 md:pb-0 lg:gap-x-8.5 lg:gap-y-18'
 
-/** The 2-column grid, below the `md` breakpoint. From `md` up the hero is the only LCP candidate. */
-const PHONE_MEDIA = '(max-width: 767px)'
-/**
- * Cards that intersect the first phone viewport. At Lighthouse's 412 x 823 the first four start at
- * 385, 417, 652 and 684 px (the right column is offset by 32), and which of them paints first, and
- * so becomes the LCP, varies between runs: every one of them counts as above the fold.
- */
-const ABOVE_THE_FOLD_CARDS = 4
-
 export function ProductGrid({ items }: { items: NftSummary[] }) {
-  // On a phone the first cards are in the first viewport, so they load eagerly at high priority
-  // (CAT-23). From `md` up they sit below the hero, which stays the only eager image there: raising
-  // them would make them compete with it.
-  const phone = useMediaQuery(PHONE_MEDIA)
   return (
     <ul className={gridClass}>
-      {items.map((nft, index) => (
+      {items.map((nft) => (
         <li key={nft.id}>
           <ProductCard
             nft={nft}
-            priority={phone && index < ABOVE_THE_FOLD_CARDS}
             cornerAction={<FavoriteButton nft={nft} variant="card-mobile" />}
             actions={
               <>
