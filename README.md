@@ -1,10 +1,13 @@
 # KURIO — NFT Marketplace
 
+**English** · [Português (Brasil)](README.pt-BR.md)
+
 A frontend-only NFT marketplace for the KURIO challenge: catalog with search, filters and sorting, NFT details, favorites, cart with coupons, checkout with a simulated wallet, order receipt and a simulated block explorer, profile and wallets, and realtime price, availability and order updates over Socket.IO. React 19, TypeScript, TanStack Router and Query, Axios, Zod, MSW, Tailwind v4 with shadcn/ui, Playwright and Lighthouse. There is **no backend**: the REST API and the Socket.IO server are simulated in the browser (MSW), so the same build runs anywhere, offline included.
 
 - **Live demo:** <https://ntfs-marketplace.vercel.app/>
 - **Repository:** <https://github.com/EiffelIKE/NTFS-MARKETPLACE>
 - **How it is built and why:** [`ARCHITECTURE.md`](ARCHITECTURE.md) (contracts, realtime, cache policy, deviations from Figma and the brief, limitations). The spec-by-spec design record is in [`SPECS-NTFS/`](SPECS-NTFS/README.md).
+- **Português (Brasil):** [`README.pt-BR.md`](README.pt-BR.md) and [`ARCHITECTURE.pt-BR.md`](ARCHITECTURE.pt-BR.md). English is the source of truth.
 
 ![KURIO home on desktop](docs/screenshots/home-desktop.png)
 
@@ -128,7 +131,7 @@ Every flow below has an automated E2E test, listed in the last column; the steps
 | `pnpm lighthouse` | Builds and audits home and details, mobile and desktop, 3 runs each | `reports/lighthouse/` |
 | `pnpm lighthouse:publish` | The same, and copies the summary and median runs | `lighthouse/reports/` |
 | `pnpm lighthouse:deployed <url>` | Audits a deployed origin (report only) | `reports/lighthouse/deployed/` |
-| `pnpm docs:update` | Regenerates the tables of this README and `ARCHITECTURE.md` from code | edits both files |
+| `pnpm docs:update` | Regenerates the tables of this README, `ARCHITECTURE.md` and their pt-BR copies from code | edits all four files |
 
 `pnpm docs:update` sets an environment variable inline, so on Windows run it from Git Bash or WSL.
 

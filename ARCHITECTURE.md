@@ -1,5 +1,7 @@
 # KURIO — Architecture
 
+**English** · [Português (Brasil)](ARCHITECTURE.pt-BR.md)
+
 How the NFT marketplace frontend is built and why. The challenge brief is [`OBJETIVES.md`](OBJETIVES.md); how to run and evaluate the app is the [README](README.md). Every decision below was taken in a spec of [`SPECS-NTFS/`](SPECS-NTFS/README.md) (requirements, design and tasks per area), which stays in the repository as the design record. Links in this document point there for the full reasoning.
 
 UI copy is pt-BR, as in Figma; documents, code and comments are English.
