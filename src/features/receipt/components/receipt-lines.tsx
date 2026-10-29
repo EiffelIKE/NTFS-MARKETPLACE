@@ -43,10 +43,10 @@ export function ReceiptLines({ lines }: { lines: ReceiptLineView[] }) {
                 />
                 <div className="flex min-w-0 flex-col max-lg:col-span-2">
                   <span className="text-body-lg font-bold text-foreground">{line.name}</span>
-                  <span className="text-caption-sm text-text-secondary">
+                  <span className="text-caption-sm text-text-secondary lg:text-body">
                     ID do token: {line.tokenId}
                   </span>
-                  <span className="text-caption-sm text-text-secondary">
+                  <span className="text-caption-sm text-text-secondary lg:text-body">
                     Edição: {line.editionLabel}
                   </span>
                 </div>
@@ -56,7 +56,7 @@ export function ReceiptLines({ lines }: { lines: ReceiptLineView[] }) {
               <span className="sr-only lg:hidden">Quantidade: </span>
               {line.quantity}
             </td>
-            <td className="py-3 text-right text-body-lg font-bold text-text-accent tabular-nums max-lg:col-start-3 max-lg:p-0">
+            <td className="py-3 text-right text-body-lg font-bold text-text-accent tabular-nums max-lg:col-start-3 max-lg:p-0 lg:text-title">
               <span className="sr-only lg:hidden">Subtotal: </span>
               {line.total}
             </td>
@@ -79,13 +79,15 @@ export function ReceiptTotals({ rows }: { rows: ReceiptTotalRow[] }) {
             data-testid={`receipt-row-${row.key}`}
             className="flex w-full items-baseline justify-between gap-6 lg:w-80"
           >
-            <dt className={cn('text-body-lg text-foreground', strong && 'font-bold')}>
+            <dt
+              className={cn('text-body-lg text-foreground lg:text-body-md', strong && 'font-bold')}
+            >
               {row.label}
             </dt>
             <dd
               className={cn(
-                'text-right text-body-lg tabular-nums',
-                strong ? 'font-bold text-text-accent' : 'text-foreground',
+                'text-right text-body-lg tabular-nums lg:text-title',
+                strong ? 'font-bold text-text-accent' : 'text-foreground lg:font-normal',
               )}
             >
               {row.value}

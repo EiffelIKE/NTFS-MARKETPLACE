@@ -51,6 +51,11 @@ export function MobileTabBar({
       >
         {/* The cut-out around the center button (Figma `15:5504`): an ink half-disc, 47 px radius. */}
         <span className="absolute top-0 left-1/2 size-23.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-ink" />
+        {/* The "ears": the bar's top corners where its edge meets the ring are rounded (14 px). Each
+            square is ink outside a quarter circle, so it blends into the ring and leaves the bar's own
+            color inside the fillet. */}
+        <span className="absolute top-0 left-[calc(50%+47px)] size-3.5 bg-[radial-gradient(circle_at_100%_100%,transparent_13.5px,var(--color-ink)_14.5px)]" />
+        <span className="absolute top-0 right-[calc(50%+47px)] size-3.5 bg-[radial-gradient(circle_at_0_100%,transparent_13.5px,var(--color-ink)_14.5px)]" />
       </div>
       {/* Figma icon centers 46 / 118 / FAB 207 / 301 / 364: kept symmetric around the FAB. */}
       <ul className="relative grid h-full grid-cols-[48px_48px_1fr_48px_48px] items-start gap-x-6 px-5.5 pt-13">

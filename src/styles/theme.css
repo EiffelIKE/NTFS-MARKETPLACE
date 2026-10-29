@@ -139,14 +139,21 @@
   );
 }
 
-/* Mobile hero card: `primary` at 30 % over ink at the top left, fading into `surface-card`. Figma is
-   brighter (about 42 %), but the copy over it has to stay at 4.5:1 (a11y wins). */
+/* Mobile hero card, as bright as Figma (`primary` at 42 % over ink) where the copy is not: the top
+   left corner holds only the eyebrow and title, and a glow sits behind the artwork. The diagonal fade
+   into `surface-card` reaches the description and the link dark enough for 4.5:1 (a11y wins). */
 @utility bg-hero-card {
-  background-image: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--color-primary) 30%, var(--color-ink)),
-    var(--color-surface-card)
-  );
+  background-image:
+    radial-gradient(
+      circle 170px at 86% 30%,
+      color-mix(in srgb, var(--color-primary) 26%, transparent),
+      transparent
+    ),
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-primary) 42%, var(--color-ink)),
+      var(--color-surface-card)
+    );
 }
 
 @utility bg-card-gradient {

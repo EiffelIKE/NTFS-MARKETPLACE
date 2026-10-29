@@ -50,7 +50,7 @@ Accepted deviations from earlier specs were not touched (auth as pages, the head
 | Details D | Spec list | Contract / Direitos autorais values were swapped in Figma | Accepted: values placed under the right labels (spec 06) |
 | Details M | Title | 18 px; Figma 20 px | Fixed: `text-[1.25rem]` |
 | Details M | Buy bar | Pill filled the row; Figma 196 × 60 pill + 60 circle with free space on the right. Price 18 px (Figma 20). Bar 138 px tall (Figma 163: 21 above the row, 20 between rows, 34 under the buttons) | Fixed: `w-49`, price `text-[1.25rem]`, `gap-5`, `pb-[2.125rem]` |
-| Details M | Back button | Row 10 px lower than Figma's details frame (center y 50, Figma 40); the cart and checkout frames do match at 50 | Accepted: one shared inner top bar (spec 01 decision 6); fixing it would move the other two screens away from their frames |
+| Details M | Back button | Row 10 px lower than Figma's details frame (center y 50, Figma 40); the cart and checkout frames do match at 50 | Fixed in the follow-up pass (see below): `raised` top bar for `panel` routes |
 | Details M | Zoom button on the artwork | Not drawn on Figma's mobile frame | Accepted: needed to open the large image (spec 06) |
 | Cart D | Breadcrumb | 16 px vs 15 px | Fixed (shared `PageBreadcrumb`) |
 | Cart D | Summary labels and rows | Labels 14 px, rows 36 px apart; Figma 15 px and 32 px | Fixed: `text-body-md`, `gap-2`; value column `min-w-28` so "Desconto do lançamento" stays on one line |
@@ -91,7 +91,7 @@ Accepted deviations from earlier specs were not touched (auth as pages, the head
 | 3a | Mobile card favorite | Solid `surface-card` circle (was 70 % `ink`), inside the image's top-right corner (`top-4 right-3`); outline heart, filled heart + `primary` when favorited. The orange hearts seen on a signed-in account are real favorites. |
 | 3b | Mobile hero | Background is a 135 deg gradient (`primary` 30 % over `ink` into `surface-card`, `bg-hero-card`) with two 248 px circles placed from the mask's geometry (overlap = the lighter lens); the thumbnail of the next slide now sits inside the artwork's bottom-left corner at every width (it was hidden under 400 px because it overlapped the copy). **Deviation (a11y wins):** Figma's card is brighter (primary at about 42 %, lens about `#96673F`); the copy over it measures 2.8:1 there, so the gradient starts at 30 % and the circles are 5 % (`contrast over artwork` stays green). |
 | 3c | Tab bar icons | Always the filled glyphs (`home`, `heart-filled`, `shop`, `user`); inactive `secondary`, active `text-accent`; the dot under the active icon is removed (the current page is still `aria-current`). |
-| 3d | Tab bar center button and notch | The FAB is `bg-primary-fab`: 45 % `primary` at the top to solid `primary` at 80 %, vertical as in Figma (it was a 137 deg fade that thinned out toward the bottom). The notch is an `ink` half-disc of 47 px radius around the button (Figma's ring, measured on the PNG) instead of the 42 px mask, so the cut-out reads as a solid ring; the old `tab-bar-notch` mask utility is gone. Not drawn: the small rounded "ears" where the bar's top edge meets the ring. |
+| 3d | Tab bar center button and notch | The FAB is `bg-primary-fab`: 45 % `primary` at the top to solid `primary` at 80 %, vertical as in Figma (it was a 137 deg fade that thinned out toward the bottom). The notch is an `ink` half-disc of 47 px radius around the button (Figma's ring, measured on the PNG) instead of the 42 px mask, so the cut-out reads as a solid ring; the old `tab-bar-notch` mask utility is gone. Not drawn: the small rounded "ears" where the bar's top edge meets the ring (added in the follow-up pass, see below). |
 | 4 | "Meu perfil" menu | Measured on the PNG: every label is `text-accent` (`#E89B55`) in Figma; what differs is the icon: **active icon `primary` (`#D28A4C`), inactive icons `secondary` (`#B39463`)**, with the 6 px bar on the active row. Done that way (icons only); the labels stay accent as in Figma. Same component on mobile. |
 
 ## Test changes caused by the fidelity pass
@@ -105,11 +105,30 @@ Accepted deviations from earlier specs were not touched (auth as pages, the head
 - Baselines regenerated with `pnpm exec playwright test --grep @visual --update-snapshots --workers=3`: `home`, `home-loading` (desktop and mobile), `details` and `details-viewport`, `cart`, `checkout` changed as described above and were reviewed one by one. `details-loading` (desktop and mobile) did not change.
 - `pnpm test:visual:update -- --workers=3` does not pass the flag on (pnpm hands `--workers=3` to Playwright as a file filter and 6 workers run). Use `pnpm exec playwright test --grep @visual --update-snapshots --workers=3`.
 
-## Not done / dropped (delivery deadline)
+## Follow-up pass (2026-10-29, owner review of the deployed app)
 
-- Tab bar notch "ears" (the small rounded corners where the bar's top edge meets the ring).
-- Details mobile top bar sits 10 px lower than Figma's details frame (the shared inner top bar is kept).
-- Figma's brighter mobile hero gradient and circles (blocked by the 4.5:1 contrast test).
-- Pager dots of the related row (at most 5 related items, they would be an inert control).
-- Cart button glyph uses `secondary` (as measured); switching to accent is one class (`text-text-accent`) in `mobile-buy-bar.tsx`.
-- Remaining sub-pixel typography differences (letter spacing, 1 px line offsets) on login, sign-up, profile, wallets and the receipt were not chased.
+Same method (Chrome DevTools at 414 and 390, 1440 for shared parts, crops against the PNGs). Contrast numbers were measured on the screenshot of the hero with the text hidden, the way the `contrast over artwork` test does it.
+
+| # | Item | Before | After |
+|---|---|---|---|
+| 1 | Tab bar notch "ears" | The bar's top corners met the ring at a right angle | Two 14 px squares at the ring's ends are `ink` outside a quarter circle, so the bar's corners are rounded into the ring (`mobile-tab-bar.tsx`). The FAB gradient and the solid 47 px ring are unchanged |
+| 2 | Mobile filter button, odd half-orange edge | `Button` has `border border-transparent`; a `background-image` gradient is painted from the padding box and *repeats* into the transparent border, so a 1 px strip of the opposite end of the gradient showed along the edges | `bg-origin-border` in the shared `Button` base (`button.tsx`): the gradient now covers the border box, no strip. The same fix applies to every gradient button (`bg-primary-cta`, `bg-primary-fab` users). Focus ring is the global `:focus-visible` one, untouched (still keyboard only) |
+| 3 | Details mobile top bar 10 px low | Circles centered at y 50, Figma 40 | `MobileTopBar` takes `raised` (`pt-3` instead of `pt-5.5`), set from the `panel` flag in `app-shell.tsx`, so only the details route moves. Back and heart circles now center at y 40 as in Figma; the artwork starts at 68 (Figma 66). Cart, checkout, wallets etc. keep 50 |
+| 4 | Brighter mobile hero | Gradient started at 30 % `primary` over `ink`, circles 5 % | Gradient starts at 42 % (Figma ~42 %) in the top-left corner, which holds only the eyebrow and title, and fades along the 135 deg diagonal into `surface-card`, so the description and the link sit on a darker part. A radial glow (26 % `primary`, 170 px) sits behind the artwork. Circles unchanged (5 %): at 8 % the description fell to 4.38:1. Measured at 390: eyebrow 7.5:1, title 7.8:1, description 4.72:1, EXPLORAR 4.64:1, the test's threshold is 4.5:1 and was not touched. Still not Figma's lighter lens in the middle (that would sit under the copy) |
+| 5a | Login and sign-up card (D) | Tabs 18 px bold with 16 px padding; intro 12 px wrapping before "perfil"; fields on `ink`; social buttons white and bold; divider inset; stack 4 to 9 px off | Tabs 20 px medium with 10 px padding (glyph widths 69 and 130 px as in Figma); intro 13 px, 16 px line, unwrapped width; fields on `surface-card` from `lg` (mobile stays on `ink`, as Figma's mobile frame); field gap 12; button 45 px; divider full card width; social labels `text-secondary`; "Esqueceu a senha?" regular; close button 20 px from the top. Every row of the form lands within 2 px of Figma |
+| 5b | Profile (D) | Menu labels 14 px, avatar label bold 14, "Alterar" 16 px and 125 px wide | Menu labels 15 px (glyph width 160 px as in Figma), "Avatar" label 15 px regular, "Alterar" and "Remover" 14 px (98 px button, 24 px gap), "Salvar" 14 px |
+| 5c | Wallets (D) | Section titles 18 px, "Salvar carteira" 16 px, 202 px wide | Titles 17 px, button 14 px with 6 px padding (about 138 px; Figma squeezes the label into 131) |
+| 5d | Receipt (D) | Summary band 13 px; token id lines 12 px; totals and line amounts 16 px | Band 14 px, token id and edition 14 px, totals labels 15 px (regular values 18 px, "Total" 18 px bold), line amounts 18 px (glyph widths as in Figma). Mobile unchanged |
+
+Checked and left alone: card corner radius of the sign-up modal, the profile ENS suffix and the extra hint lines (already accepted above), the band's divider style (Figma floats short rules, ours are full-height cell borders), and the item column offsets of the account menu (Figma's differ per row by a few px, no rule to copy).
+
+## Test changes caused by the follow-up pass
+
+- None in the specs. The `contrast over artwork` test and every other a11y check pass untouched (251 passed in `a11y.spec.ts`).
+- Baselines regenerated: `mobile-chromium/home`, `home-viewport` (hero, filter button, ears; Playwright's per-pixel threshold let the old image pass, so both files were deleted and written again to keep the baseline honest), `details` and `details-viewport` (top bar). Desktop baselines did not change.
+
+## Not done / dropped
+
+- Pager dots of the related row (at most 5 related items, they would be an inert control): kept as decided.
+- Cart button glyph uses `secondary` (as measured); switching to accent is one class (`text-text-accent`) in `mobile-buy-bar.tsx`: kept as decided.
+- Figma's mid-card lighter lens in the mobile hero (it sits under the description and fails 4.5:1).

@@ -81,6 +81,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <MobileTopBar
             className="lg:hidden"
             title={mobile.title}
+            raised={mobile.panel}
             trailing={mobile.trailing === 'favorite' ? <RouteFavorite /> : undefined}
           />
         )}

@@ -53,7 +53,7 @@ export function SignupForm({ search }: { search: AuthSearch }) {
     <form
       ref={formRef}
       noValidate
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-4 lg:gap-3"
       onSubmit={(event) => {
         event.preventDefault()
         event.stopPropagation()

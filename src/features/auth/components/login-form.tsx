@@ -56,7 +56,7 @@ export function LoginForm({ search }: { search: AuthSearch }) {
     <form
       ref={formRef}
       noValidate
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-4 lg:gap-3"
       onSubmit={(event) => {
         event.preventDefault()
         event.stopPropagation()
@@ -100,7 +100,7 @@ export function LoginForm({ search }: { search: AuthSearch }) {
             />
           )}
         </form.AppField>
-        <Unavailable className="self-end text-caption text-text-accent">
+        <Unavailable className="self-end text-caption font-normal text-text-accent">
           Esqueceu a senha?
         </Unavailable>
       </div>

@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils'
 export type AccountPage = 'profile' | 'wallets'
 
 const row =
-  'relative flex h-12 w-full items-center gap-3 px-4 text-left text-body text-text-accent lg:h-11.25 [&>svg:first-child]:text-secondary'
+  'relative flex h-12 w-full items-center gap-3 px-4 text-left text-body text-text-accent lg:h-11.25 lg:text-body-md [&>svg:first-child]:text-secondary'
 const activeRow =
   'before:absolute before:inset-y-0 before:left-0 before:w-1.5 before:bg-primary [&>svg:first-child]:text-primary'
 

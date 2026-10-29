@@ -10,18 +10,20 @@ export interface MobileTopBarProps extends React.ComponentProps<'header'> {
   title?: string | undefined
   /** Right-hand control (e.g. the details favorite button, spec 06). */
   trailing?: React.ReactNode
+  /** 10 px closer to the top: Figma's details frame centers the circles at y 40, the others at 50. */
+  raised?: boolean | undefined
 }
 
 /**
  * Compact bar on mobile inner screens (decision 6). The title is visual only: pages keep their own
  * `h1`, so the bar title is hidden from assistive tech.
  */
-export function MobileTopBar({ title, trailing, className, ...props }: MobileTopBarProps) {
+export function MobileTopBar({ title, trailing, raised, className, ...props }: MobileTopBarProps) {
   const router = useRouter()
   const canGoBack = useCanGoBack()
 
   return (
-    <header className={cn('pt-5.5', className)} {...props}>
+    <header className={cn(raised ? 'pt-3' : 'pt-5.5', className)} {...props}>
       <PageContainer className="grid h-14 grid-cols-[40px_1fr_40px] items-center gap-2">
         <button
           type="button"

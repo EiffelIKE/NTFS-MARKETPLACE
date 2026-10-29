@@ -19,10 +19,10 @@ function SummaryBand({ view }: { view: ReceiptView }) {
       className="grid grid-cols-2 border-y border-primary lg:grid-cols-[1.2fr_1.4fr_1fr_1fr]"
     >
       <div className={bandCell}>
-        <dt className="text-caption-sm font-bold text-text-secondary lg:text-caption lg:font-bold">
+        <dt className="text-caption-sm font-bold text-text-secondary lg:text-body lg:font-bold">
           ID da transação
         </dt>
-        <dd className="text-caption-sm text-text-secondary lg:text-caption lg:font-normal">
+        <dd className="text-caption-sm text-text-secondary lg:text-body lg:font-normal">
           <Tooltip>
             <TooltipTrigger asChild>
               <span
@@ -42,30 +42,28 @@ function SummaryBand({ view }: { view: ReceiptView }) {
         </dd>
       </div>
       <div className={bandCell}>
-        <dt className="text-caption-sm text-text-secondary lg:text-caption lg:font-normal">Data</dt>
+        <dt className="text-caption-sm text-text-secondary lg:text-body lg:font-normal">Data</dt>
         <dd
           data-testid="receipt-date"
-          className="text-caption-sm text-text-secondary lg:text-caption lg:font-normal"
+          className="text-caption-sm text-text-secondary lg:text-body lg:font-normal"
         >
           {view.date}
         </dd>
       </div>
       <div className={bandCell}>
-        <dt className="text-caption-sm text-text-secondary lg:text-caption lg:font-normal">
-          Total
-        </dt>
+        <dt className="text-caption-sm text-text-secondary lg:text-body lg:font-normal">Total</dt>
         <dd
           data-testid="receipt-total"
-          className="text-caption-sm text-text-secondary tabular-nums lg:text-caption lg:font-normal"
+          className="text-caption-sm text-text-secondary tabular-nums lg:text-body lg:font-normal"
         >
           {view.total}
         </dd>
       </div>
       <div className={bandCell}>
-        <dt className="text-caption-sm font-bold text-text-secondary lg:text-caption lg:font-bold">
+        <dt className="text-caption-sm font-bold text-text-secondary lg:text-body lg:font-bold">
           Carteira
         </dt>
-        <dd className="text-caption-sm text-text-secondary lg:text-caption lg:font-normal">
+        <dd className="text-caption-sm text-text-secondary lg:text-body lg:font-normal">
           {view.wallet}
         </dd>
       </div>
