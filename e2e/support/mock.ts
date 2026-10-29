@@ -12,13 +12,18 @@ type Remote<T> = {
     : never
 }
 
-/** A typed proxy over `window.__mock`: `await mock(page).useScenario('slow')`. */
+/**
+ * A typed proxy over `window.__mock`: `await mock(page).useScenario('slow')`. Each call first waits
+ * for `__mock`: the shell renders before the mock finishes booting (spec 13), so a view that needs
+ * no request can be on screen before the control API exists.
+ */
 export function mock(page: Page): Remote<MockControl> {
   return new Proxy({} as Remote<MockControl>, {
     get:
       (_target, name: string) =>
-      (...args: unknown[]) =>
-        page.evaluate(
+      async (...args: unknown[]) => {
+        await page.waitForFunction(() => '__mock' in window)
+        return page.evaluate(
           ([method, params]) => {
             const control = (
               window as unknown as { __mock?: Record<string, (...a: unknown[]) => unknown> }
@@ -28,7 +33,8 @@ export function mock(page: Page): Remote<MockControl> {
             return fn(...params)
           },
           [name, args] as [string, unknown[]],
-        ),
+        )
+      },
   })
 }
 
