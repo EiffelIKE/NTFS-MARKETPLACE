@@ -154,14 +154,14 @@ Audited on the **deployed** URL (Lighthouse CLI through LHCI, 3 runs per page an
 
 | Profile | Page | Performance | Accessibility | Best Practices | SEO | LCP | CLS | TBT |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
-| Mobile | Home | 86 | 100 | 100 | 100 | 3.42 s | 0 | 41 ms |
-| Mobile | Details | 87 | 100 | 100 | 100 | 3.26 s | 0 | 4 ms |
-| Desktop | Home | 99 | 100 | 100 | 100 | 0.76 s | 0 | 0 ms |
-| Desktop | Details | 100 | 100 | 100 | 100 | 0.68 s | 0 | 0 ms |
+| Mobile | Home | 86 | 100 | 100 | 100 | 3.35 s | 0 | 89 ms |
+| Mobile | Details | 86 | 100 | 100 | 100 | 3.33 s | 0 | 54 ms |
+| Desktop | Home | 99 | 100 | 100 | 100 | 0.75 s | 0 | 0 ms |
+| Desktop | Details | 99 | 100 | 100 | 100 | 0.76 s | 0 | 0 ms |
 
-That deploy predates the last commits (it was built before the service-worker boot recovery and the Figma fidelity pass), so re-run `pnpm lighthouse:deployed https://ntfs-marketplace.vercel.app/` after the final deploy. The raw summary of this run is [`lighthouse/reports/deployed-2026-10-29.md`](lighthouse/reports/deployed-2026-10-29.md). The local audit against `vite preview` (committed reports, with the analysis of every miss) is in [`lighthouse/reports/summary.md`](lighthouse/reports/summary.md): mobile Performance 76 there, desktop 98–99.
+Build `6915bac`, the final deploy; re-run with `pnpm lighthouse:deployed https://ntfs-marketplace.vercel.app/`. The summary of this run, with the live checks of the build id, `/dev` and `robots.txt`, is [`lighthouse/reports/deployed-2026-10-29.md`](lighthouse/reports/deployed-2026-10-29.md). The local audit against `vite preview` (committed reports, with the analysis of every miss) is in [`lighthouse/reports/summary.md`](lighthouse/reports/summary.md): mobile Performance 76 there, desktop 98–99.
 
-**Mobile Performance is below the brief's 90 target (86–87 deployed, 76 locally); every other category and target is met, and CLS is 0 everywhere.** This is an accepted, documented deviation: Lighthouse's simulated slow 4G with a 4× CPU slowdown prices the chain HTML → app → mock worker → API → LCP image, and a diagnostic build with mocks off only reached 79–83 locally. The analysis and the options not taken are in [`lighthouse/reports/analysis.md`](lighthouse/reports/analysis.md) and [`ARCHITECTURE.md`](ARCHITECTURE.md#12-performance-notes).
+**Mobile Performance is below the brief's 90 target (86 deployed, 76 locally); every other category and target is met, and CLS is 0 everywhere.** This is an accepted, documented deviation: Lighthouse's simulated slow 4G with a 4× CPU slowdown prices the chain HTML → app → mock worker → API → LCP image, and a diagnostic build with mocks off only reached 79–83 locally. The analysis and the options not taken are in [`lighthouse/reports/analysis.md`](lighthouse/reports/analysis.md) and [`ARCHITECTURE.md`](ARCHITECTURE.md#12-performance-notes).
 
 ## Deploy
 

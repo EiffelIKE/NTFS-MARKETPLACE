@@ -154,14 +154,14 @@ Auditado na URL **publicada** (Lighthouse CLI via LHCI, 3 execuções por págin
 
 | Perfil | Página | Performance | Acessibilidade | Boas práticas | SEO | LCP | CLS | TBT |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
-| Mobile | Home | 86 | 100 | 100 | 100 | 3,42 s | 0 | 41 ms |
-| Mobile | Detalhes | 87 | 100 | 100 | 100 | 3,26 s | 0 | 4 ms |
-| Desktop | Home | 99 | 100 | 100 | 100 | 0,76 s | 0 | 0 ms |
-| Desktop | Detalhes | 100 | 100 | 100 | 100 | 0,68 s | 0 | 0 ms |
+| Mobile | Home | 86 | 100 | 100 | 100 | 3,35 s | 0 | 89 ms |
+| Mobile | Detalhes | 86 | 100 | 100 | 100 | 3,33 s | 0 | 54 ms |
+| Desktop | Home | 99 | 100 | 100 | 100 | 0,75 s | 0 | 0 ms |
+| Desktop | Detalhes | 99 | 100 | 100 | 100 | 0,76 s | 0 | 0 ms |
 
-Esse deploy é anterior aos últimos commits (foi gerado antes da recuperação de boot do service worker e do passe de fidelidade ao Figma), então rode `pnpm lighthouse:deployed https://ntfs-marketplace.vercel.app/` de novo depois do deploy final. O resumo bruto desta execução é [`lighthouse/reports/deployed-2026-10-29.md`](lighthouse/reports/deployed-2026-10-29.md). A auditoria local contra o `vite preview` (relatórios commitados, com a análise de cada ponto perdido) está em [`lighthouse/reports/summary.md`](lighthouse/reports/summary.md): Performance mobile 76 ali, desktop 98–99.
+Build `6915bac`, o deploy final; para repetir, rode `pnpm lighthouse:deployed https://ntfs-marketplace.vercel.app/`. O resumo desta execução, com as verificações ao vivo do id de build, de `/dev` e do `robots.txt`, está em [`lighthouse/reports/deployed-2026-10-29.md`](lighthouse/reports/deployed-2026-10-29.md). A auditoria local contra o `vite preview` (relatórios commitados, com a análise de cada ponto perdido) está em [`lighthouse/reports/summary.md`](lighthouse/reports/summary.md): Performance mobile 76 ali, desktop 98–99.
 
-**A Performance mobile está abaixo da meta de 90 do enunciado (86–87 publicada, 76 local); todas as outras categorias e metas são atingidas, e o CLS é 0 em todo lugar.** É um desvio aceito e documentado: o slow 4G simulado do Lighthouse, com CPU 4× mais lenta, precifica a cadeia HTML → app → worker do mock → API → imagem do LCP, e um build de diagnóstico com os mocks desligados chegou a apenas 79–83 localmente. A análise e as opções não adotadas estão em [`lighthouse/reports/analysis.md`](lighthouse/reports/analysis.md) e em [`ARCHITECTURE.pt-BR.md`](ARCHITECTURE.pt-BR.md#12-notas-de-desempenho).
+**A Performance mobile está abaixo da meta de 90 do enunciado (86 publicada, 76 local); todas as outras categorias e metas são atingidas, e o CLS é 0 em todo lugar.** É um desvio aceito e documentado: o slow 4G simulado do Lighthouse, com CPU 4× mais lenta, precifica a cadeia HTML → app → worker do mock → API → imagem do LCP, e um build de diagnóstico com os mocks desligados chegou a apenas 79–83 localmente. A análise e as opções não adotadas estão em [`lighthouse/reports/analysis.md`](lighthouse/reports/analysis.md) e em [`ARCHITECTURE.pt-BR.md`](ARCHITECTURE.pt-BR.md#12-notas-de-desempenho).
 
 ## Deploy
 
