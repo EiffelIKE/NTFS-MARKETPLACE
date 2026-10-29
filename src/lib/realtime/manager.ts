@@ -44,8 +44,17 @@ export interface RealtimeManager {
   setSession(session: RealtimeSession): void
   status: () => RealtimeStatus
   subscribeStatus: (listener: () => void) => () => void
-  /** Listens to events that passed the guards, after the default applier. Returns the remover. */
-  on<T extends RealtimeEventType>(type: T, listener: Listener<T>): () => void
+  /**
+   * Listens to events that passed the guards, after the default applier. Returns the remover. An
+   * event the cache already had (`known`: a refetch got there first) skips the listener unless it
+   * asks for `known`: server-owned data the applier does not patch, such as the cart, still has
+   * to hear about it.
+   */
+  on<T extends RealtimeEventType>(
+    type: T,
+    listener: Listener<T>,
+    options?: { known?: boolean },
+  ): () => void
   /** The last events with what happened to each, newest last (`/dev/realtime`). */
   eventLog: () => readonly EventLogEntry[]
   subscribeEventLog: (listener: () => void) => () => void
@@ -71,7 +80,23 @@ export function createRealtimeManager(options: ManagerOptions = {}): RealtimeMan
 
   const statusListeners = new Set<() => void>()
   const logListeners = new Set<() => void>()
-  const eventListeners = new Map<RealtimeEventType, Set<(event: never) => void>>()
+  interface Registered {
+    listener: (event: never) => void
+    known: boolean
+  }
+  const eventListeners = new Map<RealtimeEventType, Set<Registered>>()
+
+  const notifyListeners = (event: RealtimeEvent, known: boolean) => {
+    for (const entry of [...(eventListeners.get(event.type) ?? [])]) {
+      if (known && !entry.known) continue
+      try {
+        ;(entry.listener as (e: RealtimeEvent) => void)(event)
+      } catch (error) {
+        // One failing listener must not keep the others from running.
+        console.error('[realtime] a listener failed', error)
+      }
+    }
+  }
 
   const setStatus = (next: RealtimeStatus) => {
     if (status === next) return
@@ -119,18 +144,12 @@ export function createRealtimeManager(options: ManagerOptions = {}): RealtimeMan
     applyEvent(queryClient, event)
     if (admission === 'known') {
       record('stale', info)
+      notifyListeners(event, true)
       return
     }
 
     record('applied', info)
-    for (const listener of [...(eventListeners.get(event.type) ?? [])]) {
-      try {
-        ;(listener as (e: RealtimeEvent) => void)(event)
-      } catch (error) {
-        // One failing listener must not keep the others from running.
-        console.error('[realtime] a listener failed', error)
-      }
-    }
+    notifyListeners(event, false)
   }
 
   const detach = (old: SocketLike) => {
@@ -222,12 +241,13 @@ export function createRealtimeManager(options: ManagerOptions = {}): RealtimeMan
         statusListeners.delete(listener)
       }
     },
-    on(type, listener) {
+    on(type, listener, options) {
       let set = eventListeners.get(type)
       if (!set) eventListeners.set(type, (set = new Set()))
-      set.add(listener)
+      const entry: Registered = { listener, known: options?.known ?? false }
+      set.add(entry)
       return () => {
-        set.delete(listener)
+        set.delete(entry)
       }
     },
     eventLog: () => log,

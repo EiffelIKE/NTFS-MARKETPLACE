@@ -3,7 +3,6 @@ import { eth } from '@/lib/money'
 import type { IsoDateTime } from '@/contracts'
 
 import { COUPONS } from '../fixtures/coupons'
-import { CREDENTIALS } from '../fixtures/credentials'
 import { HIGHLIGHTS } from '../fixtures/highlights'
 import { buildCatalog } from '../fixtures/catalog'
 import { PAYMENT_NETWORKS } from '../fixtures/networks'
@@ -18,6 +17,9 @@ import {
   type WalletRecord,
 } from './state'
 
+// The seed names users by their literal ids: importing the credentials file would put the plaintext
+// demo passwords in the production bundle (G4). `fixtures.test.ts` ties both files together.
+//
 // `seed(seedId)` builds the whole database from fixed data and a seeded PRNG. It never reads the
 // clock: every timestamp is a fixed ISO string, except sessions, which are created at login.
 
@@ -182,14 +184,14 @@ export function seed(seedId: SeedId = 'default'): MockState {
     favorites: empty
       ? {}
       : {
-          [CREDENTIALS.ana.id]: [
+          usr_ana: [
             'emerald-ape-042',
             'golden-beat-207',
             'neon-vessel-552',
             'penny-pixel-001',
             'sage-nomad-009',
           ],
-          [CREDENTIALS.carla.id]: ['cosmic-bloom-118', 'crown-relic-999'],
+          usr_carla: ['cosmic-bloom-118', 'crown-relic-999'],
         },
     carts: empty
       ? {}

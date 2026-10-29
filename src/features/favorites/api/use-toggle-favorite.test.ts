@@ -5,6 +5,7 @@ import { actAs, serveMockApi, useFakeClock } from '@/api/contract-kit'
 import type { FavoriteIds } from '@/contracts'
 import type { SessionController } from '@/features/auth/model/session'
 
+import { currentFavorite, withPendingIntents } from './favorites-cache'
 import { favoritesKeys } from './keys'
 import { FAVORITE_ERROR, favoriteMutationOptions } from './use-toggle-favorite'
 
@@ -14,9 +15,10 @@ vi.mock('@/components/feedback', () => ({ notify }))
 const mock = serveMockApi()
 
 const NFT = 'cosmic-bloom-118'
-const current: Pick<SessionController, 'epoch' | 'isCurrent'> = {
+const current: Pick<SessionController, 'epoch' | 'isCurrent' | 'owner'> = {
   epoch: () => 0,
   isCurrent: () => true,
+  owner: () => ({ kind: 'user', userId: 'usr_ana' }),
 }
 
 afterEach(() => {
@@ -29,12 +31,12 @@ async function signedInClient() {
   await actAs('ana')
   const client = new QueryClient()
   const { favoritesApi } = await import('@/api')
-  client.setQueryData(favoritesKeys.all, await favoritesApi.list())
+  client.setQueryData(favoritesKeys.list('usr_ana'), await favoritesApi.list())
   return client
 }
 
 const cached = (client: QueryClient) =>
-  client.getQueryData<FavoriteIds>(favoritesKeys.all)?.nftIds.includes(NFT)
+  client.getQueryData<FavoriteIds>(favoritesKeys.list('usr_ana'))?.nftIds.includes(NFT)
 const server = () => mock.control.snapshot().favorites.usr_ana?.includes(NFT)
 const toggle = (client: QueryClient, next: boolean, session = current) =>
   new MutationObserver(client, favoriteMutationOptions(client, NFT, session)).mutate(next)
@@ -127,7 +129,11 @@ describe('favoriteMutationOptions (DET-20, DET-21)', () => {
     mock.control.configure({ latency: { kind: 'fixed', ms: 500 } })
     useFakeClock()
     let epoch = 0
-    const session = { epoch: () => epoch, isCurrent: (value: number) => value === epoch }
+    const session = {
+      ...current,
+      epoch: () => epoch,
+      isCurrent: (value: number) => value === epoch,
+    }
 
     const run = toggle(client, true, session).catch(() => undefined)
     await vi.advanceTimersByTimeAsync(10)
@@ -138,5 +144,58 @@ describe('favoriteMutationOptions (DET-20, DET-21)', () => {
     expect(notify.error).not.toHaveBeenCalled()
     // The optimistic write was made for the old identity; nothing of it is touched again.
     expect(cached(client)).toBe(true)
+  })
+})
+
+describe('toggles that are still on their way (F1)', () => {
+  it('a list read that lands meanwhile keeps them, and the next click flips from the last intent', async () => {
+    const client = await signedInClient()
+    mock.control.configure({ latency: { kind: 'fixed', ms: 500 } })
+    useFakeClock()
+
+    const first = toggle(client, true)
+    await vi.advanceTimersByTimeAsync(10)
+    expect(currentFavorite(client, 'usr_ana', NFT)).toBe(true)
+
+    // A read that left before the add reached the server comes back without the NFT, and the
+    // cache takes it as it is: the heart must not flip back, and a click must still mean "off".
+    const stale = {
+      nftIds: (
+        client.getQueryData<FavoriteIds>(favoritesKeys.list('usr_ana')) ?? { nftIds: [] }
+      ).nftIds.filter((id) => id !== NFT),
+    }
+    expect(withPendingIntents(client, stale).nftIds).toContain(NFT)
+    client.setQueryData(favoritesKeys.list('usr_ana'), stale)
+    expect(cached(client)).toBe(false)
+    expect(currentFavorite(client, 'usr_ana', NFT)).toBe(true)
+
+    // The next toggle is created from that intent and wins: add, then remove.
+    const second = toggle(client, !currentFavorite(client, 'usr_ana', NFT))
+    await vi.advanceTimersByTimeAsync(10)
+    expect(currentFavorite(client, 'usr_ana', NFT)).toBe(false)
+    await vi.advanceTimersByTimeAsync(2000)
+    await Promise.all([first, second])
+
+    expect(server()).toBe(false)
+    expect(cached(client)).toBe(false)
+    // Settled: the cached list is the truth again.
+    expect(currentFavorite(client, 'usr_ana', NFT)).toBe(false)
+  })
+
+  it('returns the same list when nothing is pending', async () => {
+    const client = await signedInClient()
+    const list = { nftIds: ['sage-nomad-009'] }
+    expect(withPendingIntents(client, list)).toBe(list)
+  })
+})
+
+describe('the list belongs to its user (G5)', () => {
+  it('a toggle writes only the list of the user who asked, and another user starts empty', async () => {
+    const client = await signedInClient()
+    const bruno = { ...current, owner: () => ({ kind: 'user', userId: 'usr_bruno' }) as const }
+    await toggle(client, true, bruno)
+    expect(client.getQueryData<FavoriteIds>(favoritesKeys.list('usr_bruno'))?.nftIds).toEqual([NFT])
+    expect(cached(client)).toBe(false) // Ana's list is untouched
+    expect(favoritesKeys.list('usr_ana')).not.toEqual(favoritesKeys.list('usr_bruno'))
   })
 })

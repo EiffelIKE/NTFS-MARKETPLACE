@@ -1,6 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 
 import type { ScenarioId } from '../../src/mocks/scenarios'
+import { ANA_PRIMARY_ADDRESS } from '../../src/mocks/fixtures/users'
 import { loginAs } from './mock'
 import { waitForConnection } from './realtime'
 import { expect } from './test'
@@ -99,3 +100,48 @@ export async function ensureConnected(page: Page) {
     await connectWallet(page)
   }
 }
+
+/** The storage key of a user's checkout attempt (spec 09 design §6). */
+export const ATTEMPT_KEY = (userId: string) => `kurio.checkout.attempt.${userId}`
+
+/**
+ * Writes a checkout attempt the way the app stores it, `ageMs` old, for `usr_ana`: what a payment
+ * that never got an answer (or whose order is known) leaves behind.
+ */
+export async function storeAttempt(
+  page: Page,
+  { ageMs, orderId = null }: { ageMs: number; orderId?: string | null },
+) {
+  await page.evaluate(
+    ([key, age, order, address]) => {
+      const attempt = {
+        userId: 'usr_ana',
+        key: 'stale-attempt-0001',
+        body: {
+          quoteId: 'quo_stale',
+          walletId: 'wal_000001',
+          provider: 'metamask',
+          network: 'ethereum',
+          collector: {
+            displayName: 'Ana Souza',
+            username: 'anasouza',
+            profileName: 'Ana S.',
+            email: 'ana@kurio.example',
+            ensName: 'ana',
+            referralCode: 'ANA-KURIO',
+            walletAddress: address,
+          },
+        },
+        fingerprint: 'stale',
+        orderId: order,
+        phase: 'sent',
+        createdAt: Date.now() - age,
+      }
+      localStorage.setItem(key, JSON.stringify(attempt))
+    },
+    [ATTEMPT_KEY('usr_ana'), ageMs, orderId, ANA_PRIMARY_ADDRESS] as const,
+  )
+}
+
+export const readAttempt = (page: Page, userId = 'usr_ana') =>
+  page.evaluate((key) => localStorage.getItem(key), ATTEMPT_KEY(userId))

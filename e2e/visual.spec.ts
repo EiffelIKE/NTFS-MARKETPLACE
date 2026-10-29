@@ -9,6 +9,17 @@ import { prepare, settle, settleLoading } from './support/visual'
 const DETAILS = '/nfts/emerald-ape-042'
 
 test.describe('@visual', () => {
+  // The baselines are named `-linux` (playwright.config `snapshotPathTemplate`): fonts and
+  // anti-aliasing differ per OS, so elsewhere they would fail on a missing file, not on the UI (G3).
+  // `pnpm test:visual:update` still runs here, to create local baselines on that OS.
+  // eslint-disable-next-line no-empty-pattern -- Playwright requires a destructured first argument
+  test.beforeEach(({}, testInfo) => {
+    test.skip(
+      process.platform !== 'linux' && testInfo.config.updateSnapshots !== 'all',
+      `Visual baselines are Linux-only and this is ${process.platform}. Run \`pnpm test:visual:update\` to create local ones.`,
+    )
+  })
+
   test('home', async ({ page, isMobile }) => {
     await prepare(page)
     await page.goto('/')

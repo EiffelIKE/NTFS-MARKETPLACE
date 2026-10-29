@@ -5,6 +5,7 @@ import { notify } from '@/components/feedback'
 import type { Cart, CartMergeResult } from '@/contracts'
 import type { SessionController, SignedInTask } from '@/features/auth/model/session'
 import { nftDetailQuery } from '@/features/catalog/api/queries'
+import { isSessionError } from '@/lib/http/auth'
 
 import { applyCart } from '../api/apply-cart'
 import { cartKeys, type CartOwner } from '../api/cart-keys'
@@ -13,6 +14,7 @@ import { clearGuestCartId, getGuestCartId } from './guest-cart-id'
 type Adjustment = CartMergeResult['adjustments'][number]
 
 export const MERGE_TITLE = 'Carrinho ajustado ao entrar'
+export const MERGE_FAILED_TITLE = 'Não foi possível juntar o seu carrinho de visitante'
 
 export interface MergeDeps {
   queryClient: QueryClient
@@ -20,6 +22,8 @@ export interface MergeDeps {
   merge?: (guestCartId: string) => Promise<CartMergeResult>
   /** Shows the single toast; replaced in tests. */
   report?: (title: string, lines: string[]) => void
+  /** Shows the failure toast with its retry action; replaced in tests. */
+  reportFailure?: (retry: () => void) => void
 }
 
 /** The line a merge adjustment is about, named the way the cart names it. */
@@ -54,8 +58,9 @@ async function describeAdjustment(
  * 1. No stored guest cart id: nothing to do.
  * 2. `cart.merge` once; on success the id is cleared (the guest cart no longer exists), the merged
  *    cart is written under the user's key and every adjusted line is reported in one toast.
- * 3. On failure the id stays and the next session start (restore, or the next sign-in) retries.
- *    A 401 is spec 04's to handle.
+ * 3. On failure the id stays, a toast says so and offers a retry (R5: the user would otherwise see
+ *    an empty cart and no reason), and the next session start (restore, or the next sign-in)
+ *    retries too. A 401 is spec 04's to handle.
  *
  * Runs before the form navigates, so landing on `/checkout` after `?redirect=` sees the merged
  * cart. Calls that overlap share one request.
@@ -68,6 +73,16 @@ export function createMergeGuestCartTask(deps: MergeDeps): SignedInTask {
     // A report of what changed in the user's cart: long enough to read it (WCAG 2.2.1), well
     // beyond the default few seconds that a one-line confirmation needs.
     ((title, lines) => notify.info(title, { description: lines.join('\n'), duration: 12_000 }))
+  const reportFailure =
+    deps.reportFailure ??
+    ((retry) => {
+      notify.error(MERGE_FAILED_TITLE, {
+        id: 'cart-merge-failed',
+        description: 'Os itens continuam salvos neste navegador.',
+        duration: 12_000,
+        action: { label: 'Tentar novamente', onClick: retry },
+      })
+    })
   let running: Promise<void> | null = null
 
   const run = async (userId: string): Promise<void> => {
@@ -77,7 +92,10 @@ export function createMergeGuestCartTask(deps: MergeDeps): SignedInTask {
     let result: CartMergeResult
     try {
       result = await merge(guestCartId)
-    } catch {
+    } catch (error) {
+      // A 401 is the session's (spec 04); a result for somebody who has since left belongs to nobody.
+      if (!isSessionError(error) && session.isCurrent(epoch))
+        reportFailure(() => void start(userId))
       return
     }
     // The guest cart is gone server side whatever happened to the session meanwhile.
@@ -96,10 +114,12 @@ export function createMergeGuestCartTask(deps: MergeDeps): SignedInTask {
     report(MERGE_TITLE, lines)
   }
 
-  return ({ userId }) => {
+  const start = (userId: string): Promise<void> => {
     running ??= run(userId).finally(() => {
       running = null
     })
     return running
   }
+
+  return ({ userId }) => start(userId)
 }

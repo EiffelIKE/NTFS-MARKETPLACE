@@ -12,7 +12,8 @@ import { sessionArea, type SafeStorage } from './safe-storage'
  * the chosen wallet's own values. Fictitious data only; removed on logout and when an order is
  * created.
  */
-export const draftKey = (userId: string) => `kurio.checkout.draft.${userId}`
+export const DRAFT_PREFIX = 'kurio.checkout.draft.'
+export const draftKey = (userId: string) => `${DRAFT_PREFIX}${userId}`
 
 const DraftSchema = z.object({
   values: z.object({
@@ -39,6 +40,8 @@ export interface DraftStore {
   read(userId: string): CheckoutDraft | null
   write(userId: string, draft: CheckoutDraft): void
   clear(userId: string): void
+  /** Removes the drafts of every user but `userId` (a different person signed in). */
+  clearOthers(userId: string): void
 }
 
 export function createDraftStore(area: SafeStorage = sessionArea): DraftStore {
@@ -60,6 +63,11 @@ export function createDraftStore(area: SafeStorage = sessionArea): DraftStore {
     },
     clear(userId) {
       area.remove(draftKey(userId))
+    },
+    clearOthers(userId) {
+      for (const key of area.keys(DRAFT_PREFIX)) {
+        if (key !== draftKey(userId)) area.remove(key)
+      }
     },
   }
 }

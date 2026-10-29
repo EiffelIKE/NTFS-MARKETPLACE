@@ -184,3 +184,7 @@ Decisions taken while finalizing and implementing, where the draft was silent or
 | `src/features/explorer/model/explorer.test.ts`, `receipt.test.ts` | view formatting; `explorerTarget` internal vs external |
 | `e2e/explorer.spec.ts` | receipt → link → same tab, same hash, fee and total; no private data; direct access with no session and refresh; another user; unknown hash, other network, unknown network (no API call), 503 then retry; 390 / 768 / 1440 with no overflow and no axe violation |
 | `e2e/a11y.spec.ts` (spec 11 matrix) | the explorer and its 404 added to the axe and overflow matrices |
+
+## Amendments (fix batch, 2026-10-28)
+
+- **R3.** `OrderPage` clears a stored checkout attempt for the order it shows once that order is terminal (`forgetSettledAttempt`, spec 09 §15), so the next purchase is not sent back to this receipt.

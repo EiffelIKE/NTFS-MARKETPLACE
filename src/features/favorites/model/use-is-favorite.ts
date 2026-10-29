@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 
 import type { NftId } from '@/contracts'
-import { useSession } from '@/features/auth/model/use-session'
+import { useAccountUserId } from '@/features/account/model/use-account'
 
 import { favoritesQuery } from '../api/queries'
 
@@ -25,9 +25,10 @@ export interface FavoriteState {
  * and the state is known and `false`. Every heart on the page shares one request.
  */
 export function useFavoriteState(nftId: NftId): FavoriteState {
-  const authenticated = useSession().status === 'authenticated'
+  const userId = useAccountUserId()
+  const authenticated = userId !== undefined
   const { data, isFetching, refetch } = useQuery({
-    ...favoritesQuery(),
+    ...favoritesQuery(userId ?? ''),
     enabled: authenticated,
     select: (response) => response.nftIds.includes(nftId),
   })

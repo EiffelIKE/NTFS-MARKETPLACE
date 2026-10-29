@@ -2,6 +2,7 @@ import type { Locator, Page } from '@playwright/test'
 
 import { homeHeading } from './support/home'
 import { loginAs, mock } from './support/mock'
+import { realtime, waitForConnection } from './support/realtime'
 import { expect, test } from './support/test'
 
 // Brief §9 scenario 12: skeletons while loading slowly, failure feedback and recovery after a
@@ -120,6 +121,28 @@ test.describe('catalog', () => {
       await expect(panel.getByRole('alert')).toHaveCount(0)
     })
 
+    test('a 429 is a 4xx the UI explains in its own words, then "Tentar novamente" recovers (brief §6, G6)', async ({
+      page,
+    }) => {
+      await page.clock.install()
+      await page.goto('/?scenario=rate-limited')
+      // Three 429s per the scenario: the first call and its two retries (1 s, then 2 s).
+      await page.clock.runFor(5000)
+
+      const panel = catalogPanel(page)
+      await expect(panel.getByRole('alert')).toContainText('Não foi possível carregar o catálogo')
+      // The API's own message for the code, not the generic 5xx copy.
+      await expect(panel.getByRole('alert')).toContainText('Muitas tentativas. Aguarde um momento.')
+      await expect(cards(page)).toHaveCount(0)
+      const statuses = (await mock(page).requests({ op: 'nfts.list' })).map((r) => r.status)
+      expect(statuses).toEqual([429, 429, 429])
+
+      await panel.getByRole('button', { name: 'Tentar novamente' }).click()
+      await page.clock.runFor(500)
+      await expect(cards(page)).toHaveCount(9)
+      await expect(panel.getByRole('alert')).toHaveCount(0)
+    })
+
     test('a failure after a successful load shows the alert above the old results, and retry recovers', async ({
       page,
       isMobile,
@@ -181,6 +204,31 @@ test.describe('details', () => {
     for (const key of ['x', 'y', 'width', 'height'] as const) {
       expect(Math.abs(after[key] - before[key]), `${key} moved`).toBeLessThanOrEqual(1)
     }
+  })
+
+  test('a background refetch keeps the page and marks it updating, then clears it (brief §4, G7)', async ({
+    page,
+  }) => {
+    await page.goto('/nfts/emerald-ape-042')
+    await expect(detailsHeading(page)).toHaveText('Emerald Ape #042')
+    await waitForConnection(page)
+    const content = page.getByTestId('details-content')
+    await expect(content).not.toHaveAttribute('aria-busy', 'true')
+
+    // A dropped socket that comes back refetches what is on screen (spec 03, RT-17); the slow
+    // answer keeps the refetch in flight long enough to look at.
+    await mock(page).configure({ latency: { kind: 'fixed', ms: 2500 } })
+    await realtime(page).drop()
+
+    await expect(content).toHaveAttribute('aria-busy', 'true')
+    await expect(content).toHaveAttribute('data-outdated', 'true')
+    // The page itself is still there, not a skeleton.
+    await expect(detailsHeading(page)).toHaveText('Emerald Ape #042')
+    await expect(content).toHaveCSS('opacity', '0.75')
+
+    await expect(content).not.toHaveAttribute('aria-busy', 'true')
+    await expect(content).not.toHaveAttribute('data-outdated')
+    await expect(content).toHaveCSS('opacity', '1')
   })
 
   test.describe('failures', () => {

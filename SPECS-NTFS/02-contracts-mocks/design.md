@@ -657,8 +657,8 @@ Emerald Ape and the five "Mais desta coleção" items (Cosmic Bloom, Violet Noma
 
 | Code | Discount | Minimum subtotal | Expires | Purpose |
 |---|---|---|---|---|
-| `KURIO10` | 10 % | — | 2027-12-31 | Valid |
-| `COLECAO05` | 0.05 fixed | 0.50 | 2027-12-31 | Minimum subtotal |
+| `KURIO10` | 10 % | — | 2099-12-31 | Valid |
+| `COLECAO05` | 0.05 fixed | 0.50 | 2099-12-31 | Minimum subtotal |
 | `VERAO25` | 25 % | — | 2026-03-31 | Expired |
 
 Any other code is invalid.
@@ -958,3 +958,10 @@ Decisions taken while implementing, where the design was silent or had to give w
 - Reset (`?reset=1`, `useScenario`) clears sessions, so E2E tests log in again afterwards.
 
 > Amended by spec 13 (2026-10-28): the `prepare()` snippet in §3 is replaced by `startBackend()` in `main.tsx`: the app renders at once, the mock chunk is `modulepreload`ed from the HTML, and the Axios request interceptor and the Socket.IO factory await `lib/backend-ready.ts`. Step 1 of the `startMocks()` order (URL params) now runs in `main.tsx` through `takeMockUrlParams()` before the first render; the other steps are unchanged. A worker that fails to start still replaces the app with `BootError`.
+
+## 17. Amendments (fix batch, 2026-10-28)
+
+- **G4 — no plaintext passwords in the bundle.** `db/seed.ts` names the seeded users by literal ids (`usr_ana`, `usr_carla`) instead of importing `fixtures/credentials.ts`, which is now imported only by tests, `contract-kit` and the E2E helpers. `fixtures.test.ts` fails if an app file imports it, and `grep -r "Kurio#Ana2026" dist/` returns nothing after a build.
+- **G6 — a named 4xx scenario.** `rate-limited` ("Limite de requisições"): `nfts.list` answers 429 `RATE_LIMITED` three times (the first call and its two query retries), then recovers. The `http` effect now adds `details: { retryAfterMs }` and `Retry-After` for that code, so the client parses it and the catalog shows the API's own message. E2E: `loading-states.spec.ts` ("a 429 is a 4xx…").
+- **R9 — unguessable guest cart ids.** `ensureCart` creates `g_<32 hex>` (a random token) instead of `g_<seq>`: the id is the guest's only credential. `seq.guestCart` stays in the state shape, unused, to avoid a schema bump. Nothing showed or depended on the old values.
+- **R11 — coupon dates.** `KURIO10` and `COLECAO05` expire in 2099; `VERAO25` stays in March 2026. The §9 table is updated, and `fixtures.test.ts` checks that no plausible clock flips either state.

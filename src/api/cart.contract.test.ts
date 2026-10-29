@@ -199,7 +199,8 @@ describe('guest cart and merge', () => {
       editionId: 'open',
       quantity: 2,
     })
-    expect(first.id).toMatch(/^g_\d+$/)
+    // Unguessable, not a counter (R9): 128 random bits.
+    expect(first.id).toMatch(/^g_[0-9a-f]{32}$/)
     as(undefined, first.id ?? '')
     expect((await cartApi.get()).itemCount).toBe(2)
     const second = await cartApi.addItem({
@@ -208,6 +209,14 @@ describe('guest cart and merge', () => {
       quantity: 1,
     })
     expect(second.id).toBe(first.id)
+    // Two guests never share an id.
+    as(undefined)
+    const other = await cartApi.addItem({
+      nftId: 'penny-pixel-001',
+      editionId: 'open',
+      quantity: 1,
+    })
+    expect(other.id).not.toBe(first.id)
   })
 
   it('merges a guest cart into the user cart with a capped adjustment, once', async () => {

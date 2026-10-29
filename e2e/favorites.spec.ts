@@ -185,6 +185,15 @@ test.describe('failure and recovery (DET-21)', () => {
       .poll(async () => (await mock(page).requests({ op: 'favorites.add' })).length)
       .toBe(2)
     expect(await mock(page).requests({ op: 'favorites.remove' })).toHaveLength(1)
+    // The log starts a request when it is sent, so the last "add" may still be in flight here, and a
+    // reload now would drop it: wait until the mock has answered every favorites call (F1).
+    await expect
+      .poll(async () =>
+        (await mock(page).requests()).filter(
+          (request) => request.op.startsWith('favorites.') && request.status === 'pending',
+        ),
+      )
+      .toEqual([])
     await page.reload()
     await expect(heart(page, isMobile)).toHaveAttribute('aria-pressed', 'true')
   })

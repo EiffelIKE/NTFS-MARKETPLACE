@@ -7,14 +7,27 @@ import { useCartOwner } from '@/features/cart/model/use-cart'
 import { session } from '@/features/auth/model/instance'
 import { useAccountUserId } from '@/features/account/model/use-account'
 import { orderKeys } from '@/features/orders/api/order-queries'
+import { takeMissedNewerEvent } from '@/features/orders/model/missed-events'
 
 import { attemptStore, prepareAttempt } from '../model/attempt-store'
 import { draftStore } from '../model/draft-store'
 import { placeOrder, type PlaceOutcome } from './place-order'
 
-/** An order exists: follow it from the cache, forget the draft, refresh the pending gate. */
+/**
+ * An order exists: follow it from the cache, forget the draft, refresh the pending gate. The
+ * response may be older than an `order.updated` that arrived first and found nothing cached to
+ * patch (spec 03 still counted its version). A newer cached order is kept, and when such an event
+ * was missed the entry is refetched, so the screen never waits for the 5 s poll to learn the order
+ * settled (R7). With no missed event there is no extra request.
+ */
 export function recordOrder(queryClient: QueryClient, userId: string, order: Order) {
-  queryClient.setQueryData(orderKeys.detail(order.id), order)
+  const key = orderKeys.detail(order.id)
+  queryClient.setQueryData<Order>(key, (cached) =>
+    cached && cached.version > order.version ? cached : order,
+  )
+  if (takeMissedNewerEvent(order.id, order.version)) {
+    void queryClient.invalidateQueries({ queryKey: key })
+  }
   draftStore.clear(userId)
   void queryClient.invalidateQueries({ queryKey: orderKeys.pending() })
 }

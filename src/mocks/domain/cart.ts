@@ -3,6 +3,7 @@ import { eth } from '@/lib/money'
 
 import type { CartItemRecord, CartKey, CartRecord, MockState, NftRecord } from '../db/state'
 import type { Tx } from '../db/store'
+import { newToken } from '../lib/crypto'
 import { HttpError } from '../lib/http-error'
 import { toCoupon } from './mappers'
 
@@ -91,7 +92,11 @@ export function toCart(
   }
 }
 
-/** Creates the cart on first write; guests get a `g_<seq>` id only now. */
+/**
+ * Creates the cart on first write; guests get a `g_<random>` id only now. The id is the guest's
+ * only credential (`X-Guest-Cart-Id`), so it is unguessable, not a counter someone could walk
+ * through (R9). Nothing depends on its value: tests and baselines never show it.
+ */
 export function ensureCart(
   tx: Tx,
   key: CartKey | null,
@@ -105,7 +110,7 @@ export function ensureCart(
   } else if (resolved) {
     id = resolved.slice('guest:'.length)
   } else {
-    id = `g_${String(++tx.state.seq.guestCart).padStart(4, '0')}`
+    id = `g_${newToken()}`
     resolved = guestCartKey(id)
   }
   const existing = tx.state.carts[resolved]

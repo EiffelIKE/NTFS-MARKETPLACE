@@ -15,11 +15,14 @@ import {
   openReview,
   pay,
   pending,
+  readAttempt,
   reviewConnectAndPay,
   reviewDialog,
   settle,
+  storeAttempt,
 } from './support/checkout'
-import { forgetSession, loginAs, mock } from './support/mock'
+import { apiFetch, bearer, forgetSession, loginAs, mock } from './support/mock'
+import { waitForConnection } from './support/realtime'
 import { expect, test } from './support/test'
 
 // Spec 09 design §12 (brief §9 scenario 7): the purchase when things go wrong. A declined payment,
@@ -164,6 +167,98 @@ test.describe('no duplicate orders (CHK-23 – CHK-27)', () => {
     await expect(pending(page)).toContainText('ord_000002')
     await expect(confirmPurchase(page)).toHaveCount(0)
     expect(await mock(page).requests({ op: 'orders.create' })).toEqual([])
+  })
+})
+
+test.describe('stale attempts (R2, R3)', () => {
+  test('an attempt older than ten minutes is dropped, never replayed without a click (R2)', async ({
+    page,
+  }) => {
+    await openCheckout(page)
+    await expectFormReady(page)
+    await storeAttempt(page, { ageMs: 11 * 60_000 })
+
+    await page.reload()
+    // The form is next, with nothing paid and nothing sent on the user's behalf.
+    await expectFormReady(page)
+    expect(await mock(page).requests({ op: 'orders.create' })).toEqual([])
+    expect(await ordersOf(page)).toEqual(['ord_000001'])
+    expect(await readAttempt(page)).toBeNull()
+  })
+
+  test('a recent attempt is still replayed once, so a reload recovers the order (R2, CHK-26)', async ({
+    page,
+  }) => {
+    await openCheckout(page)
+    await expectFormReady(page)
+    await storeAttempt(page, { ageMs: 60_000 })
+
+    await page.reload()
+    await page.waitForFunction(() => '__mock' in window)
+    // The replay's own request was sent: that is the recovery. The stale quote is refused, so
+    // nothing is created, and the form is next.
+    await expect
+      .poll(async () => (await mock(page).requests({ op: 'orders.create' })).length)
+      .toBe(1)
+  })
+
+  /** Pays, leaves checkout while the order is pending and returns the stored attempt. */
+  async function payAndLeave(page: Page) {
+    await openCheckout(page, { scenario: 'payment-manual' })
+    await expectFormReady(page)
+    await reviewConnectAndPay(page)
+    await expect(pending(page)).toContainText('ord_000002')
+    const attempt = await readAttempt(page)
+    expect(attempt).toContain('ord_000002')
+    await page.goto('/')
+    await waitForConnection(page, { userId: 'usr_ana' })
+    return attempt ?? ''
+  }
+
+  /** The next purchase: a line in the cart and /checkout, which must show the form. */
+  async function buyAgain(page: Page) {
+    const token = await loginAs(page, 'ana', { seed: false })
+    const added = await apiFetch(page, '/cart/items', {
+      method: 'POST',
+      headers: bearer(token),
+      body: { nftId: 'penny-pixel-001', editionId: 'open', quantity: 1 },
+    })
+    expect(added.status).toBe(200)
+    await page.goto('/checkout')
+    await expectFormReady(page)
+    await expect(page).toHaveURL(/\/checkout$/)
+    await expect(pending(page)).toHaveCount(0)
+  }
+
+  test('an order that settles while the user is elsewhere ends its attempt (R3)', async ({
+    page,
+  }) => {
+    await payAndLeave(page)
+    await mock(page).settleOrder('ord_000002', 'confirmed')
+    await expect.poll(() => readAttempt(page)).toBeNull()
+    await buyAgain(page)
+  })
+
+  test('seeing the settled order on its receipt ends a stored attempt, so the next purchase is not sent back (R3)', async ({
+    page,
+  }) => {
+    const attempt = await payAndLeave(page)
+    await mock(page).settleOrder('ord_000002', 'confirmed')
+    await expect.poll(() => readAttempt(page)).toBeNull()
+    // The attempt that a lost event would have left behind.
+    await page.evaluate(
+      ([key, value]) => {
+        localStorage.setItem(key, value)
+      },
+      ['kurio.checkout.attempt.usr_ana', attempt] as const,
+    )
+
+    await page.goto('/orders/ord_000002')
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Seus NFTs agora estão na sua carteira' }),
+    ).toBeVisible()
+    await expect.poll(() => readAttempt(page)).toBeNull()
+    await buyAgain(page)
   })
 })
 
@@ -338,6 +433,35 @@ test.describe('session expiry (CHK-28)', () => {
       await page.evaluate(() => Object.keys(sessionStorage).filter((k) => k.includes('draft'))),
     ).toEqual([])
     await forgetSession(page)
+  })
+})
+
+test.describe('another user after an expiry (R8)', () => {
+  const DRAFT = 'kurio.checkout.draft.usr_ana'
+
+  async function expiredWithAnaData(page: Page) {
+    await page.goto('/login?redirect=%2Fcheckout&reason=expired')
+    await page.evaluate(
+      ([attemptKey, draftKey]) => {
+        localStorage.setItem(attemptKey, '{}')
+        sessionStorage.setItem(draftKey, '{}')
+      },
+      ['kurio.checkout.attempt.usr_ana', DRAFT] as const,
+    )
+  }
+
+  async function signIn(page: Page, who: { email: string; password: string }) {
+    await page.getByRole('main').getByLabel('E-mail', { exact: true }).fill(who.email)
+    await page.getByRole('main').getByLabel('Senha', { exact: true }).fill(who.password)
+    await page.getByRole('button', { name: 'Entrar', exact: true }).click()
+    await expect(page).toHaveURL(/\/checkout/)
+  }
+
+  test("somebody else signing in removes the first user's draft and attempt", async ({ page }) => {
+    await expiredWithAnaData(page)
+    await signIn(page, { email: 'bruno@kurio.example', password: 'Kurio#Bruno2026' })
+    expect(await readAttempt(page)).toBeNull()
+    expect(await page.evaluate((key) => sessionStorage.getItem(key), DRAFT)).toBeNull()
   })
 })
 

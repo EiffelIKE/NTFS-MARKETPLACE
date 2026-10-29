@@ -354,6 +354,32 @@ test.describe('guest cart and login (CART-01, CART-04, CART-18)', () => {
     await expect(stepperValue(page, EMERALD)).toHaveText('10')
   })
 
+  test('a merge that fails says so, keeps the guest items, and its retry joins the carts (R5)', async ({
+    page,
+  }) => {
+    await guestAdds(page, [{ nftId: 'violet-nomad-314', editionId: 'limited-50', quantity: 1 }])
+    await mock(page).addRule({
+      op: 'cart.merge',
+      effect: { kind: 'http', status: 503, code: 'SERVICE_UNAVAILABLE' },
+      times: 1,
+    })
+
+    await signInThroughForm(page, { email: 'bruno@kurio.example', password: 'Kurio#Bruno2026' })
+    await expect(page).toHaveURL(/\/cart$/)
+    const toasts = page.getByRole('region', { name: 'Notificações' })
+    await expect(
+      toasts.getByText('Não foi possível juntar o seu carrinho de visitante'),
+    ).toBeVisible()
+    // Nothing was lost: the id is still stored, and the cart simply has not received the items.
+    expect(await page.evaluate(() => localStorage.getItem('kurio.guestCartId'))).toMatch(/^g_/)
+    await expect(lines(page)).toHaveCount(0)
+
+    await toasts.getByRole('button', { name: 'Tentar novamente' }).click()
+    await expect(line(page, 'Violet Nomad #314')).toBeVisible()
+    expect(await page.evaluate(() => localStorage.getItem('kurio.guestCartId'))).toBeNull()
+    expect(await mock(page).requests({ op: 'cart.merge' })).toHaveLength(2)
+  })
+
   test('"Conectar e finalizar" sends a guest to login and a signed-in user to checkout', async ({
     page,
   }) => {
@@ -415,6 +441,25 @@ test.describe('live changes (CART-18 – CART-22)', () => {
     await note.getByRole('button', { name: /^Entendi/ }).click()
     await expect(note).toHaveCount(0)
     await expect(amount(page, 'subtotal')).toContainText(eth('3.37'))
+  })
+
+  test('a price that changes while the cart page is closed is there when it opens (R1, brief §7)', async ({
+    page,
+  }) => {
+    await loginAs(page, 'ana')
+    await page.goto('/')
+    await waitForConnection(page, { userId: 'usr_ana' })
+    // A client-side navigation from here: no reload, so only the cache can know the new price.
+    const cartLink = page.getByRole('link', { name: 'Carrinho, 3 itens' }).locator('visible=true')
+    await expect(cartLink).toBeVisible()
+
+    await mock(page).updateNft('golden-beat-207', { price: '1.09' })
+    // Opened well within the cart query's 30 s freshness: it must already be refreshed.
+    await cartLink.click()
+    await expect(heading(page)).toBeAttached()
+    await expect(notice(page, GOLDEN)).toContainText(/de 0\.99\sETH para 1\.09\sETH/)
+    await expect(amount(page, 'subtotal')).toContainText(eth('3.37'))
+    await expect(amount(page, 'total')).toContainText(eth('3.386'))
   })
 
   test('availability below the quantity limits the line and blocks checkout until it is adjusted', async ({

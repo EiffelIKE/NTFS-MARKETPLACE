@@ -2,6 +2,8 @@ import { getRouteApi, useLocation, useNavigate } from '@tanstack/react-router'
 import * as React from 'react'
 
 import { PageContainer } from '@/components/layout/page-container'
+import { useAccountUserId } from '@/features/account/model/use-account'
+import { attemptStore, forgetSettledAttempt } from '@/features/checkout/model/attempt-store'
 import { useOrderStatus } from '@/features/orders/api/use-order-status'
 import { OrderDeclinedPanel } from '@/features/orders/components/order-declined-panel'
 import { OrderPendingPanel } from '@/features/orders/components/order-pending-panel'
@@ -22,6 +24,13 @@ export function OrderPage() {
   const fromCheckout = useLocation({ select: (location) => location.state.fromCheckout === true })
   const navigate = useNavigate()
   const { order, status } = useOrderStatus(orderId)
+  const userId = useAccountUserId()
+  // The user has now seen how this order ended, so a stored checkout attempt for it is over: the
+  // next purchase starts clean instead of being sent back here (R3).
+  const settled = order && order.status !== 'pending' ? order : undefined
+  React.useEffect(() => {
+    if (userId && settled) forgetSettledAttempt(attemptStore, userId, settled)
+  }, [userId, settled])
   // The receipt takes focus when it appears after an event: the checkout navigation, or the
   // processing panel it replaces. Derived during render, not in an effect (RCPT-15).
   const [sawOpen, setSawOpen] = React.useState(false)

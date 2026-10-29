@@ -18,10 +18,12 @@ import type { ApiError } from '@/lib/http/errors'
 import { setFavorite } from './favorites-cache'
 import { favoritesKeys } from './keys'
 
-type Guard = Pick<SessionController, 'epoch' | 'isCurrent'>
+type Guard = Pick<SessionController, 'epoch' | 'isCurrent' | 'owner'>
 
 interface ToggleContext {
   epoch: number
+  /** Whose list the toggle touched: the one that was current when it was asked for. */
+  userId: string
 }
 
 export const FAVORITE_ERROR = 'Não foi possível atualizar seus favoritos.'
@@ -39,6 +41,8 @@ const isFavoritesList = (queryKey: readonly unknown[]) =>
  * - `onMutate` flips the cache at once.
  * - The mutation `scope` is the NFT, so quick toggles of one NFT reach the server in click order
  *   and it ends in the last one's state.
+ * - What was asked for while a toggle is pending also survives a list read that lands meanwhile
+ *   (`withPendingIntents`), and the next click flips from that intent (`currentFavorite`).
  * - A failure undoes only its own intent instead of restoring a snapshot, so toggles queued after
  *   it keep their state, and the final refetch (below) shows the server's truth.
  * - The last settled toggle of an NFT reconciles the list and the favorites-only catalog lists.
@@ -58,13 +62,15 @@ export function favoriteMutationOptions(
     mutationFn: (next) => (next ? favoritesApi.add(nftId) : favoritesApi.remove(nftId)),
     onMutate: async (next) => {
       const epoch = session.epoch()
-      await queryClient.cancelQueries({ queryKey: favoritesKeys.all })
-      setFavorite(queryClient, nftId, next)
-      return { epoch }
+      const owner = session.owner()
+      const userId = owner.kind === 'user' ? owner.userId : ''
+      await queryClient.cancelQueries({ queryKey: favoritesKeys.list(userId) })
+      setFavorite(queryClient, userId, nftId, next)
+      return { epoch, userId }
     },
     onError: (error, next, context) => {
       if (!context || !session.isCurrent(context.epoch)) return
-      setFavorite(queryClient, nftId, !next)
+      setFavorite(queryClient, context.userId, nftId, !next)
       // An expired session has its own flow (spec 04); a toast about favorites would be noise.
       if (isSessionError(error)) return
       notify.error(FAVORITE_ERROR, {
@@ -81,7 +87,7 @@ export function favoriteMutationOptions(
       if (!context || !session.isCurrent(context.epoch)) return
       // This mutation is still counted as pending here, so "1" means it is the last one.
       if (queryClient.isMutating({ mutationKey: ['favorite', nftId] }) > 1) return
-      void queryClient.invalidateQueries({ queryKey: favoritesKeys.all })
+      void queryClient.invalidateQueries({ queryKey: favoritesKeys.list(context.userId) })
       void queryClient.invalidateQueries({
         queryKey: catalogKeys.lists(),
         predicate: (query) => isFavoritesList(query.queryKey),

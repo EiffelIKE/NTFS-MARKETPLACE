@@ -312,6 +312,26 @@ describe('event pipeline', () => {
     })
   })
 
+  it('tells a listener that asked for `known` events about one the cache already had (R4)', async () => {
+    const { manager, socket, queryClient } = await started()
+    queryClient.setQueryData(['nfts', 'detail', 'emerald-ape-042'], {
+      id: 'emerald-ape-042',
+      version: 2,
+      price: '1.29',
+    })
+    const plain = vi.fn()
+    const known = vi.fn()
+    manager.on('nft.updated', plain)
+    manager.on('nft.updated', known, { known: true })
+    socket.fire('nft.updated', nftEvent(2, '1.29'))
+    expect(plain).not.toHaveBeenCalled()
+    expect(known).toHaveBeenCalledTimes(1)
+    // An accepted event reaches both kinds of listener.
+    socket.fire('nft.updated', nftEvent(3, '1.39'))
+    expect(plain).toHaveBeenCalledTimes(1)
+    expect(known).toHaveBeenCalledTimes(2)
+  })
+
   it('keeps running listeners when one throws', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => undefined)
     const { manager, socket } = await started()

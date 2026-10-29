@@ -129,12 +129,54 @@ describe('merge guest cart (CART-04)', () => {
     setGuestCartId('g_0001')
     const merge = vi.fn().mockRejectedValue(new Error('503'))
     const queryClient = new QueryClient()
-    const task = createMergeGuestCartTask({ queryClient, session: live, merge })
+    const reportFailure = vi.fn()
+    const task = createMergeGuestCartTask({ queryClient, session: live, merge, reportFailure })
     await task(context)
     expect(getGuestCartId()).toBe('g_0001')
     expect(queryClient.getQueryData(cartKeys.detail(owner))).toBeUndefined()
     await task(context)
     expect(merge).toHaveBeenCalledTimes(2)
+  })
+
+  it('says so when the merge fails, and its retry runs the merge again (R5)', async () => {
+    setGuestCartId('g_0001')
+    const cart: Cart = {
+      id: 'cart_usr_ana',
+      items: [],
+      coupon: null,
+      itemCount: 0,
+      version: 2,
+      updatedAt: '2026-10-28T12:00:00.000Z',
+    }
+    const merge = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('503'))
+      .mockResolvedValue({ cart, adjustments: [] })
+    const queryClient = new QueryClient()
+    const reportFailure = vi.fn<(retry: () => void) => void>()
+    const task = createMergeGuestCartTask({ queryClient, session: live, merge, reportFailure })
+    await task(context)
+    expect(reportFailure).toHaveBeenCalledOnce()
+
+    reportFailure.mock.calls[0]?.[0]()
+    await vi.waitFor(() => {
+      expect(getGuestCartId()).toBeNull()
+    })
+    expect(merge).toHaveBeenCalledTimes(2)
+    expect(queryClient.getQueryData(cartKeys.detail(owner))).toEqual(cart)
+  })
+
+  it('stays silent for a session error and for a session that has since changed', async () => {
+    setGuestCartId('g_0001')
+    const reportFailure = vi.fn()
+    const merge = vi.fn().mockRejectedValue(new Error('503'))
+    await createMergeGuestCartTask({
+      queryClient: new QueryClient(),
+      session: { epoch: () => 0, isCurrent: () => false },
+      merge,
+      reportFailure,
+    })(context)
+    expect(reportFailure).not.toHaveBeenCalled()
   })
 
   it('drops the result when the session changed meanwhile, but still forgets the merged guest cart', async () => {

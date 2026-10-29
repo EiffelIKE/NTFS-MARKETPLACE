@@ -189,9 +189,17 @@ async function run(
       if (effect.kind === 'http') {
         await runtime.network.wait(runtime.network.latencyFor(id), signal)
         runtime.network.log.finish(entry, effect.status)
+        // The one code whose envelope carries details (`retryAfterMs`), so the client parses it.
+        const limited = effect.code === 'RATE_LIMITED'
         return HttpResponse.json(
-          { error: { code: effect.code, message: ERROR_DEFAULTS[effect.code].message } },
-          { status: effect.status },
+          {
+            error: {
+              code: effect.code,
+              message: ERROR_DEFAULTS[effect.code].message,
+              ...(limited && { details: { retryAfterMs: 1000 } }),
+            },
+          },
+          { status: effect.status, ...(limited && { headers: { 'Retry-After': '1' } }) },
         )
       }
       hangAfter = true

@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
@@ -12,6 +12,7 @@ import { toNftDetail, toNftSummary } from '../domain/mappers'
 import { queryCatalog } from '../domain/catalog-query'
 import { verifyPassword } from '../lib/crypto'
 import { ARTWORK_KEYS, ARTWORK_WIDTHS } from './artworks'
+import { COUPONS } from './coupons'
 import { CREDENTIALS } from './credentials'
 import { USERS } from './users'
 
@@ -180,6 +181,31 @@ describe('users', () => {
     },
   )
 
+  it('names the seeded users by the same ids the credentials carry (G4)', () => {
+    expect(Object.keys(state.favorites).sort()).toEqual([CREDENTIALS.ana.id, CREDENTIALS.carla.id])
+  })
+
+  it('keeps the plaintext passwords out of the app graph: only tests and the e2e helpers import them (G4)', () => {
+    const importers: string[] = []
+    const walk = (dir: string) => {
+      for (const name of readdirSync(dir)) {
+        const path = resolve(dir, name)
+        if (statSync(path).isDirectory()) walk(path)
+        else if (
+          /\.tsx?$/.test(name) &&
+          readFileSync(path, 'utf8').includes("fixtures/credentials'")
+        ) {
+          importers.push(path.replace(`${resolve(import.meta.dirname, '../..')}/`, ''))
+        }
+      }
+    }
+    walk(resolve(import.meta.dirname, '../..'))
+    const inApp = importers.filter(
+      (path) => !/\.test\.tsx?$/.test(path) && !path.endsWith('api/contract-kit.ts'),
+    )
+    expect(inApp).toEqual([])
+  })
+
   it('never serializes a plaintext password into the seed', () => {
     const text = JSON.stringify(state)
     for (const { password } of Object.values(CREDENTIALS)) expect(text).not.toContain(password)
@@ -206,4 +232,16 @@ describe('artworks', () => {
       expect(webpWidth(resolve(root, String(width), `${key}.webp`))).toBe(width)
     },
   )
+})
+
+describe('coupons (R11)', () => {
+  const at = (code: string) => Date.parse(must(COUPONS.find((c) => c.code === code)).expiresAt)
+
+  it('keeps the valid ones valid and the expired one expired for any plausible clock', () => {
+    const early = Date.parse('2026-04-01T00:00:00Z')
+    const late = Date.parse('2060-01-01T00:00:00Z')
+    expect(at('KURIO10')).toBeGreaterThan(late)
+    expect(at('COLECAO05')).toBeGreaterThan(late)
+    expect(at('VERAO25')).toBeLessThan(early)
+  })
 })

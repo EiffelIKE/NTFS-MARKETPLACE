@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import * as React from 'react'
 
 import type { ApiError } from '@/lib/http/errors'
-import type { OrderList } from '@/contracts'
+import type { Order, OrderList } from '@/contracts'
 import { useAccountUserId } from '@/features/account/model/use-account'
 import { useCartOwner } from '@/features/cart/model/use-cart'
 import { orderKeys, pendingOrdersQueryOptions } from '@/features/orders/api/order-queries'
@@ -40,7 +40,17 @@ export function useTrackedOrder({ cartEmpty }: { cartEmpty: boolean }) {
   const [released, setReleased] = React.useState<ReadonlySet<string>>(new Set())
 
   // What was stored when the page opened: later writes are this page's own and must not re-run it.
-  const [opened] = React.useState(() => (userId ? attemptStore.read(userId) : null))
+  // An attempt older than its TTL is dropped here, so it is neither replayed nor followed (R2). One
+  // whose order is already known to be confirmed is dropped too: the user has moved on, and the
+  // next purchase must not bounce to the old receipt (R3). Decided once, at mount.
+  const [opened] = React.useState(() => {
+    const attempt = userId ? attemptStore.readLive(userId) : null
+    if (!userId || attempt?.orderId == null) return attempt
+    const cached = queryClient.getQueryData<Order>(orderKeys.detail(attempt.orderId))
+    if (cached?.status !== 'confirmed') return attempt
+    attemptStore.clear(userId)
+    return null
+  })
   const [late, setLate] = React.useState<CheckoutAttempt | null>(null)
   const unanswered = (attempt: CheckoutAttempt | null) =>
     attempt !== null && attempt.orderId === null && attempt.phase === 'sent' ? attempt : null
@@ -49,7 +59,7 @@ export function useTrackedOrder({ cartEmpty }: { cartEmpty: boolean }) {
   // cart empties and the form goes away. The attempt is then replayed too, instead of showing
   // "Seu carrinho está vazio" for an order that was paid.
   if (cartEmpty && userId !== undefined && late === null) {
-    const found = unanswered(attemptStore.read(userId))
+    const found = unanswered(attemptStore.readLive(userId))
     if (found) setLate(found)
   }
 

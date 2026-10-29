@@ -3,12 +3,13 @@ import { useRouter } from '@tanstack/react-router'
 
 import { HeartFilledIcon, HeartIcon } from '@/components/icons'
 import { Button } from '@/components/ui/button'
-import type { FavoriteIds, NftSummary } from '@/contracts'
+import type { NftSummary } from '@/contracts'
+import { useAccountUserId } from '@/features/account/model/use-account'
 import { useSession } from '@/features/auth/model/use-session'
 import { actionClass } from '@/features/catalog/components/product-card'
 import { cn } from '@/lib/utils'
 
-import { favoritesKeys } from '../api/keys'
+import { currentFavorite } from '../api/favorites-cache'
 import { useToggleFavorite } from '../api/use-toggle-favorite'
 import { useFavoriteState } from '../model/use-is-favorite'
 
@@ -40,6 +41,7 @@ export function FavoriteButton({
   const router = useRouter()
   const queryClient = useQueryClient()
   const status = useSession().status
+  const userId = useAccountUserId()
   const { pressed: favorite, known, loading, retry } = useFavoriteState(nft.id)
   const toggle = useToggleFavorite(nft.id)
 
@@ -50,16 +52,13 @@ export function FavoriteButton({
     }
     // The list has not arrived (or failed): the click cannot know what "toggle" means. The button
     // stays focusable (`aria-disabled`, not `disabled`), and a failed read is asked for again.
-    if (!known) {
+    if (!known || userId === undefined) {
       if (!loading) retry()
       return
     }
-    // Read the cache, not the rendered value: two quick clicks must flip twice even when React has
-    // not re-rendered between them.
-    const current = queryClient
-      .getQueryData<FavoriteIds>(favoritesKeys.all)
-      ?.nftIds.includes(nft.id)
-    toggle.mutate(!(current ?? false))
+    // Read the last intent or the cache, not the rendered value: two quick clicks must flip twice
+    // even when React has not re-rendered between them (F1).
+    toggle.mutate(!currentFavorite(queryClient, userId, nft.id))
   }
 
   const Icon = favorite ? HeartFilledIcon : HeartIcon

@@ -117,3 +117,9 @@ Results go to `playwright-report/deploy/`; the README links the latest pass date
 
 - Documents are English (open question 1); UI copy quoted inside them stays pt-BR.
 - The specs folder stays in the repository as the design record; the README links it.
+
+## 8. Notes added by the fix batch (2026-10-28)
+
+- `pnpm test:e2e` skips the `@visual` tests off Linux (spec 12 §9); the README's testing section should say that macOS and Windows runs report them as skipped and how to create local baselines.
+- A scenario for a 4xx exists now: `?scenario=rate-limited` (spec 02 §17). Add it to the README's scenario list next to the 5xx ones.
+- The plaintext demo passwords live only in `fixtures/credentials.ts` and the README; the production bundle no longer contains them (spec 02 §17).

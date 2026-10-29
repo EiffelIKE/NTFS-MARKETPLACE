@@ -12,6 +12,7 @@ export type ScenarioId =
   | 'out-of-order'
   | 'offline'
   | 'errors-then-recover'
+  | 'rate-limited'
   | 'server-down'
   | 'session-short'
   | 'payment-declined'
@@ -95,6 +96,23 @@ const list: Scenario[] = [
         unavailable('nfts.get'),
         unavailable('cart.get'),
         unavailable('highlights.get'),
+      ],
+    },
+  },
+  {
+    id: 'rate-limited',
+    label: 'Limite de requisições',
+    description:
+      'A listagem de NFTs responde 429 (limite de requisições) 3 vezes e depois volta ao normal.',
+    seed: 'default',
+    config: {
+      rules: [
+        {
+          op: 'nfts.list',
+          effect: { kind: 'http', status: 429, code: 'RATE_LIMITED' },
+          // 3 failures exhaust the 2 query retries; the next attempt succeeds.
+          times: 3,
+        },
       ],
     },
   },

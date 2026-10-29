@@ -394,3 +394,5 @@ Decisions taken while implementing, where the design was silent or had to give w
 
 > Amended by spec 11 (2026-10-28): the header account menu is `DropdownMenu modal={false}` (a modal menu hides a focusable page with `aria-hidden`, which axe reports as `aria-hidden-focus`); `Tab` closes it. In-app navigation to another path focuses the new page's `h1` (`app/use-route-focus.ts`).
 > Amended by spec 13 (2026-10-28): `main.tsx` no longer waits for the mock worker before rendering. `bootApp()` still runs once, but the ordering it needed (no request before the worker) is now enforced by `lib/backend-ready.ts`, which the Axios request interceptor and the socket factory await, so the `auth.session` restore cannot miss the worker.
+
+> Amended by the fix batch (2026-10-28): `bootApp` now purges the checkout draft and attempt of every other user whenever someone signs in, so an expiry followed by a login as a different person leaves nothing of the first one (R8, spec 09 §15). A same-user login after an expiry still resumes checkout.

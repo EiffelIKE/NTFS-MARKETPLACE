@@ -5,9 +5,12 @@ import { collectorFor } from '@/api/order-kit'
 import { ANA_PRIMARY_ADDRESS } from '@/mocks/fixtures/users'
 
 import {
+  ATTEMPT_TTL_MS,
   attemptKey,
   canonicalJson,
   createAttemptStore,
+  forgetSettledAttempt,
+  isExpired,
   prepareAttempt,
   type CheckoutAttempt,
 } from './attempt-store'
@@ -103,5 +106,69 @@ describe('attempt store (CHK-26)', () => {
     store.write(prepareAttempt(null, 'usr_bruno', body, deps))
     area.set(attemptKey('usr_ana'), area.get(attemptKey('usr_bruno')) ?? '')
     expect(store.read('usr_ana')).toBeNull()
+  })
+})
+
+describe('attempt TTL (R2)', () => {
+  const fresh = prepareAttempt(null, 'usr_ana', body, deps)
+  const edge = fresh.createdAt + ATTEMPT_TTL_MS
+
+  it('expires an attempt with no order after the TTL, and never one that knows its order', () => {
+    expect(isExpired(fresh, edge)).toBe(false)
+    expect(isExpired(fresh, edge + 1)).toBe(true)
+    expect(isExpired({ ...fresh, orderId: 'ord_9' }, edge + 1)).toBe(false)
+  })
+
+  it('readLive returns a live attempt and removes an expired one, which is never replayed', () => {
+    const area = memoryStorage()
+    const store = createAttemptStore(area)
+    store.write(fresh)
+    expect(store.readLive('usr_ana', edge)).toEqual(fresh)
+    expect(store.readLive('usr_ana', edge + 1)).toBeNull()
+    expect(area.get(attemptKey('usr_ana'))).toBeNull()
+  })
+
+  it('does not reuse the key of an expired attempt, even for the same body', () => {
+    const again = prepareAttempt(fresh, 'usr_ana', body, { ...deps, now: () => edge + 1 })
+    expect(again.key).not.toBe(fresh.key)
+    expect(again.createdAt).toBe(edge + 1)
+    // Within the window the same body keeps its key: recovery through idempotency (CHK-23).
+    expect(prepareAttempt(fresh, 'usr_ana', body, { ...deps, now: () => edge }).key).toBe(fresh.key)
+  })
+})
+
+describe('forgetSettledAttempt (R3)', () => {
+  const known: CheckoutAttempt = {
+    ...prepareAttempt(null, 'usr_ana', body, deps),
+    orderId: 'ord_9',
+  }
+
+  it('clears the attempt of a settled order, and only that one', () => {
+    const store = createAttemptStore(memoryStorage())
+    store.write(known)
+    forgetSettledAttempt(store, 'usr_ana', { id: 'ord_other', status: 'confirmed' })
+    expect(store.read('usr_ana')).not.toBeNull()
+    forgetSettledAttempt(store, 'usr_ana', { id: 'ord_9', status: 'pending' })
+    expect(store.read('usr_ana')).not.toBeNull()
+    forgetSettledAttempt(store, 'usr_ana', { id: 'ord_9', status: 'declined' })
+    expect(store.read('usr_ana')).toBeNull()
+  })
+
+  it('leaves an attempt that is still waiting for its answer to the replay', () => {
+    const store = createAttemptStore(memoryStorage())
+    store.write({ ...known, orderId: null })
+    forgetSettledAttempt(store, 'usr_ana', { id: 'ord_9', status: 'confirmed' })
+    expect(store.read('usr_ana')).not.toBeNull()
+  })
+})
+
+describe('clearOthers (R8)', () => {
+  it("removes every user's attempt but the given one", () => {
+    const store = createAttemptStore(memoryStorage())
+    store.write(prepareAttempt(null, 'usr_ana', body, deps))
+    store.write(prepareAttempt(null, 'usr_bruno', body, deps))
+    store.clearOthers('usr_bruno')
+    expect(store.read('usr_ana')).toBeNull()
+    expect(store.read('usr_bruno')).not.toBeNull()
   })
 })

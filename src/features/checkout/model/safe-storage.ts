@@ -6,6 +6,8 @@ export interface SafeStorage {
   get(key: string): string | null
   set(key: string, value: string): void
   remove(key: string): void
+  /** Every stored key that starts with `prefix`. */
+  keys(prefix: string): string[]
 }
 
 export function safeStorage(getArea: () => Storage | undefined): SafeStorage {
@@ -38,6 +40,19 @@ export function safeStorage(getArea: () => Storage | undefined): SafeStorage {
         // Nothing to clean up.
       }
     },
+    keys(prefix) {
+      try {
+        const found: string[] = []
+        const storage = area()
+        for (let index = 0; storage && index < storage.length; index++) {
+          const key = storage.key(index)
+          if (key?.startsWith(prefix)) found.push(key)
+        }
+        return found
+      } catch {
+        return []
+      }
+    },
   }
 }
 
@@ -59,5 +74,6 @@ export function memoryStorage(): SafeStorage {
     remove: (key) => {
       map.delete(key)
     },
+    keys: (prefix) => [...map.keys()].filter((key) => key.startsWith(prefix)),
   }
 }

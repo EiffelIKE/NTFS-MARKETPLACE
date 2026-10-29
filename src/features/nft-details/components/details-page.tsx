@@ -17,6 +17,7 @@ import { notifyAddError, notifyAdded } from '@/features/cart/model/add-feedback'
 import { catalogKeys } from '@/features/catalog/api/keys'
 import { nftDetailQuery } from '@/features/catalog/api/queries'
 import { useMediaQuery } from '@/hooks/use-media-query'
+import { cn } from '@/lib/utils'
 
 import { usePurchaseSelection } from '../hooks/use-purchase-selection'
 import { CART_FULL_MESSAGE, SOLD_OUT_MESSAGE, describeAddError } from '../model/add-errors'
@@ -39,12 +40,14 @@ const route = getRouteApi('/nfts/$nftId')
  */
 export function DetailsPage() {
   const { nftId } = route.useParams()
-  const { data: nft } = useSuspenseQuery(nftDetailQuery(nftId))
-  // Keyed by id: going to a related NFT starts from a clean selection.
-  return <DetailsContent key={nft.id} nft={nft} />
+  const { data: nft, isFetching } = useSuspenseQuery(nftDetailQuery(nftId))
+  // Keyed by id: going to a related NFT starts from a clean selection. `isFetching` with the NFT
+  // already on screen is a background refetch (a reconnection, an invalidation): the page stays,
+  // marked as updating (brief §4, G7).
+  return <DetailsContent key={nft.id} nft={nft} refreshing={isFetching} />
 }
 
-function DetailsContent({ nft }: { nft: NftDetail }) {
+function DetailsContent({ nft, refreshing }: { nft: NftDetail; refreshing: boolean }) {
   const router = useRouter()
   const queryClient = useQueryClient()
   const wide = useMediaQuery('(min-width: 1024px)')
@@ -128,7 +131,17 @@ function DetailsContent({ nft }: { nft: NftDetail }) {
         </BreadcrumbList>
       </Breadcrumb>
 
-      <div className="flex flex-col lg:grid lg:grid-cols-[minmax(0,573fr)_minmax(0,595fr)] lg:gap-x-8">
+      <div
+        data-testid="details-content"
+        aria-busy={refreshing || undefined}
+        data-outdated={refreshing || undefined}
+        className={cn(
+          'flex flex-col transition-opacity motion-reduce:transition-none lg:grid lg:grid-cols-[minmax(0,573fr)_minmax(0,595fr)] lg:gap-x-8',
+          // The dimming waits 300 ms: a refetch that ends sooner (the socket's first connection)
+          // never flickers, and it clears at once when the refetch ends.
+          refreshing && 'opacity-75 delay-300',
+        )}
+      >
         <Gallery nft={nft} className="px-6 lg:px-0" />
 
         <div className="relative -mt-16 flex flex-col gap-6 rounded-t-[30px] bg-surface-card px-6 pt-6 pb-10 lg:contents">

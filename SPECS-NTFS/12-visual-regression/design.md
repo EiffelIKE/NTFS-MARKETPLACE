@@ -100,3 +100,7 @@ One `test.describe('@visual')` with `home`, `home loading`, `details`, `details 
 - Mobile captures are downscaled to CSS pixels.
 - Visual tests run with zero mock latency and a pinned clock; skeleton captures use a one-hour latency and advance the clock only until the pending view shows.
 - `pnpm test:visual:update` regenerates; review the diff before committing.
+
+## 9. Amendments (fix batch, 2026-10-28)
+
+- **G3 — skip off Linux.** `@visual` tests skip when `process.platform !== 'linux'`, with the reason in the report, instead of failing on a missing `-linux` baseline. `pnpm test:visual:update` still runs on any OS to create local baselines. No baseline image changed in this batch.

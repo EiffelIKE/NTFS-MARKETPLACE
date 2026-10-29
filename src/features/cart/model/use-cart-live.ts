@@ -1,25 +1,22 @@
-import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef } from 'react'
 
 import { announce } from '@/components/feedback'
 import type { Cart } from '@/contracts'
 import { useRealtimeEvent } from '@/lib/realtime'
 
-import { cartKeys } from '../api/cart-keys'
 import { announcementsFor, emptyNoticeMemory, type NoticeMemory } from './line-notices'
 import { useCartOwner } from './use-cart'
 
 /**
  * Live price and availability while the cart is open (spec 07 design §7, CART-19, CART-22).
  *
- * - An `nft.updated` for an NFT in the cart refetches the cart and, through the key prefix, its
- *   quote. Spec 03 has dropped duplicate and older events and patched the catalog caches; the cart
- *   is server-owned, so it is refreshed, never patched.
+ * - Refreshing the cart on `nft.updated` is not done here: `bootApp` does it for the whole session
+ *   (R1), so a change that lands while the page is not mounted is not missed. This hook only
+ *   remembers the NFT version of the last event per line, for the announcement key.
  * - Each cart that arrives is compared with the previous one, and a line whose notice changed is
  *   announced once through the polite region (the notice itself has no toast: one channel).
  */
 export function useCartLive(cart: Cart | undefined): void {
-  const queryClient = useQueryClient()
   const owner = useCartOwner()
   const versions = useRef(new Map<string, number>())
   const memory = useRef<{ owner: string; value: NoticeMemory }>({
@@ -27,13 +24,13 @@ export function useCartLive(cart: Cart | undefined): void {
     value: emptyNoticeMemory(),
   })
 
-  useRealtimeEvent('nft.updated', (event) => {
-    const nftId = event.resource.id
-    const cached = queryClient.getQueryData<Cart>(cartKeys.detail(owner))
-    if (!cached?.items.some((item) => item.nftId === nftId)) return
-    versions.current.set(nftId, event.version)
-    void queryClient.invalidateQueries({ queryKey: cartKeys.detail(owner) })
-  })
+  useRealtimeEvent(
+    'nft.updated',
+    (event) => {
+      versions.current.set(event.resource.id, event.version)
+    },
+    { known: true },
+  )
 
   const ownerId = owner.kind === 'user' ? owner.userId : 'guest'
   useEffect(() => {
