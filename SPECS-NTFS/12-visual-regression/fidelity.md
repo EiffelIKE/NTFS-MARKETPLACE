@@ -122,6 +122,16 @@ Same method (Chrome DevTools at 414 and 390, 1440 for shared parts, crops agains
 
 Checked and left alone: card corner radius of the sign-up modal, the profile ENS suffix and the extra hint lines (already accepted above), the band's divider style (Figma floats short rules, ours are full-height cell borders), and the item column offsets of the account menu (Figma's differ per row by a few px, no rule to copy).
 
+## Second owner review (2026-10-29)
+
+| # | Item | Before | After |
+|---|---|---|---|
+| 6 | Tab bar notch background | The cut-out was an `ink` half-disc, so it showed black over the content scrolling behind the bar | The bar's top strip is a 146 px SVG between two flexible fills (`mobile-tab-bar.tsx`). The hole is a real cut-out (47 px radius), so the page shows through it |
+| 7 | Notch "ears" too sharp | 14 px fillets | 30 px fillets, measured on the Figma home frame. Each one is tangent to the bar's top edge and to the hole |
+| 8 | Details favorite heart optically high | Glyph box centered (0.5 px high), but the heart's mass sits in its top lobes | `translate-y-px` on the `circle` variant's glyph (`favorite-button.tsx`) |
+
+Baselines rewritten (deleted and regenerated, so the threshold can't hide small changes): `mobile-chromium/{home,home-viewport,details,details-viewport,cart,checkout}`. Verified with `--repeat-each=2` (24/24) and the mobile `a11y`, `smoke` and `favorites` specs (148 passed).
+
 ## Test changes caused by the follow-up pass
 
 - None in the specs. The `contrast over artwork` test and every other a11y check pass untouched (251 passed in `a11y.spec.ts`).

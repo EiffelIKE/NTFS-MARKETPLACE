@@ -18,7 +18,8 @@ export type FavoriteVariant = 'button' | 'circle' | 'card-desktop' | 'card-mobil
 
 const iconVariants: Record<Exclude<FavoriteVariant, 'button'>, string> = {
   circle:
-    'size-8.75 rounded-full border border-primary/20 bg-surface-raised text-primary [&_svg]:size-5 hover:bg-surface-dark',
+    // The heart's mass sits in its top lobes: 1 px down centers it optically in the circle.
+    'size-8.75 rounded-full border border-primary/20 bg-surface-raised text-primary [&_svg]:size-5 [&_svg]:translate-y-px hover:bg-surface-dark',
   // Same light glyph as the cart and search buttons beside it; a favorited item turns accent (and
   // fills the heart), so the state is not carried by color alone.
   'card-desktop': `${actionClass} aria-pressed:text-primary`,
