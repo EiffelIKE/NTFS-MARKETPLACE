@@ -162,3 +162,41 @@ Shell-first behavior is unchanged: the shell still renders at once and requests 
 **Tests.** `lib/mock-recovery.test.ts` (timeout, guard, recovery policy, boot outcomes, registrations, probe), `mocks/db/validate.test.ts` and new `store.load` cases, and `e2e/boot-recovery.spec.ts` (a cut-short database, a worker unregistered before a reload, a worker that never takes control: error screen, then the button recovers).
 
 **For the deployment.** `vercel.json` already serves `/mockServiceWorker.js` with `Cache-Control: no-cache`; nothing else is required. `Service-Worker-Allowed` is not needed (scope `/`, script at the root).
+
+### Follow-up: recovery still fails after Lighthouse
+
+The timeout screen was reported again after the first fix. A single tab audited from the DevTools
+panel always came back, so the failure was reproduced by driving the real DevTools Lighthouse panel
+(Chrome 156) with **a second tab of the site open**, which is the normal case in a real browser.
+
+**Cause.** Lighthouse runs `Storage.clearDataForOrigin` (service workers included) before and after
+the audit. The load it audits registers a fresh worker, and the worker's `clients.claim()` hands
+every open tab to it. MSW's worker only mocks for a tab that sent it `MOCK_ACTIVATE`; any other tab
+gets `passthrough`, so the claimed tab's requests reach the network (the SPA rewrite answers HTML).
+That tab's watchdog then ran the boot recovery: it **unregistered** the worker and reloaded. Its
+fresh worker claimed the first tab, whose watchdog did the same, and the tabs fought over the worker
+until the reload guard ran out and both showed the error screen. An intermediate attempt that gave
+each recovery its own script URL (`?recovery=<timestamp>`) made it worse: every tab then registered
+a different script and replaced the others' worker.
+
+**Fix.**
+- The watchdog (a tab that booted fine, then stopped being mocked) reloads **without unregistering**.
+  The reload activates the tab with the worker that now controls it and leaves the other tabs alone.
+  It has its own guard (`kurio.mock.resync`, one reload per 10 s), so a boot recovery shortly
+  before does not block it and it can never loop.
+- The boot recovery is unchanged (unregister, then one guarded reload): a tab that cannot boot has
+  a broken registration.
+- The worker URL is always `/mockServiceWorker.js`.
+- The "Recarregar página" button also spends the automatic reload, so a retry that still fails
+  returns to the error screen without an extra reload. The error screen also suggests closing
+  DevTools or turning off "Bypass for network", a debugging override that page code cannot change.
+
+**Remaining gap.** The audited tab itself is unmocked for about a second after the run, because
+Lighthouse's cleanup clears the worker under it. The panel then navigates the tab back to the
+inspected URL, and F5 has the same effect; both boot normally.
+
+**Tests.** `e2e/boot-recovery.spec.ts` "another tab that registers a fresh worker does not break
+this one": two tabs, `Storage.clearDataForOrigin`, reload one, and both must be mocked again with no
+error screen. It failed 3/3 before the fix. `lib/mock-recovery.test.ts` checks that the watchdog
+reload leaves the registration alone and has its own guard, and that the button spends the
+automatic reload.

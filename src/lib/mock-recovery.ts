@@ -20,6 +20,9 @@ export const RELOAD_WINDOW_MS = 30_000
 export const RELOAD_GRACE_MS = 5_000
 
 export const RELOAD_GUARD_KEY = 'kurio.mock.recovery'
+/** Between two watchdog reloads of the same tab (see `browserResync`). */
+export const RESYNC_WINDOW_MS = 10_000
+export const RESYNC_GUARD_KEY = 'kurio.mock.resync'
 
 export type MockFailureCode = 'timeout' | 'unreachable' | 'start-failed' | 'lost'
 
@@ -96,10 +99,15 @@ export interface GuardStorage {
 }
 
 /** True, and records the reload, when this tab may reload now. Storage that throws means no reload. */
-export function claimAutoReload(storage: GuardStorage, now: number): boolean {
+export function claimAutoReload(
+  storage: GuardStorage,
+  now: number,
+  key = RELOAD_GUARD_KEY,
+  windowMs = RELOAD_WINDOW_MS,
+): boolean {
   try {
-    if (!canAutoReload(storage.getItem(RELOAD_GUARD_KEY), now)) return false
-    storage.setItem(RELOAD_GUARD_KEY, String(now))
+    if (!canAutoReload(storage.getItem(key), now, windowMs)) return false
+    storage.setItem(key, String(now))
     return true
   } catch {
     return false
@@ -280,7 +288,7 @@ function browserGuardStorage(): GuardStorage | null {
   }
 }
 
-/** The recovery used at boot and by the watchdog: cleanup, then one guarded reload. */
+/** The recovery used at boot: cleanup, then one guarded reload. */
 export function browserRecovery(): Promise<'reloading' | 'gave-up'> {
   const storage = browserGuardStorage()
   return recoverOnce({
@@ -293,12 +301,36 @@ export function browserRecovery(): Promise<'reloading' | 'gave-up'> {
 }
 
 /**
- * The "Recarregar página" button: a manual reload always goes ahead, so it clears the guard and
- * removes the stale registrations first. Reloading alone would keep the dead worker.
+ * The watchdog's recovery: one guarded reload, and the registration is left alone. The usual cause
+ * is another tab: Lighthouse clears the origin's workers, the load it audits registers a fresh one,
+ * and `clients.claim()` hands every open tab to it. MSW only answers a tab that activated itself
+ * with the worker controlling it, so this tab's requests now pass through to the network. A reload
+ * activates it with that worker. Unregistering it instead would break the tabs that already use
+ * it, and their own recovery would then break this one, back and forth.
+ */
+export function browserResync(): Promise<'reloading' | 'gave-up'> {
+  const storage = browserGuardStorage()
+  return recoverOnce({
+    claim: () =>
+      storage !== null && claimAutoReload(storage, Date.now(), RESYNC_GUARD_KEY, RESYNC_WINDOW_MS),
+    cleanup: () => Promise.resolve(),
+    reload: () => {
+      globalThis.location.reload()
+    },
+  })
+}
+
+/**
+ * The "Recarregar página" button: a manual retry always goes ahead and requests a fresh worker.
+ * Spend the automatic reload too: if the browser still blocks workers, return to the error screen
+ * instead of following this explicit retry with another automatic reload.
  */
 export async function resetMockWorkerAndReload(): Promise<void> {
   const storage = browserGuardStorage()
-  if (storage !== null) releaseAutoReload(storage)
+  if (storage !== null) {
+    releaseAutoReload(storage)
+    claimAutoReload(storage, Date.now())
+  }
   await unregisterMockWorkers()
   globalThis.location.reload()
 }
@@ -322,7 +354,7 @@ export function watchMockWorker(options: {
       .ping()
       .then(async (alive) => {
         if (alive) return
-        if ((await browserRecovery()) === 'gave-up') options.onLost(lostError())
+        if ((await browserResync()) === 'gave-up') options.onLost(lostError())
       })
       .finally(() => {
         checking = false
