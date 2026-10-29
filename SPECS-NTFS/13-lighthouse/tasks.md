@@ -52,6 +52,7 @@ Started after specs 05–12 were Done.
 - The first full E2E run after the shell-first boot failed one test: the grid test `only the first hero image is eager (CAT-23)`, which my first idea (priority on the first catalog card) broke. The idea was reverted.
 - Pre-existing, found while changing `vite.config.ts`: `src/styles/no-raw-colors.test.ts` flagged `Emerald Ape #042` (comments and sample data) as hex colors on a fresh run. The regex now ignores a `#` after a word and a space.
 - The unit test for the summary lives next to the script; the `--deployed` mechanism was run once against a local `vite preview` standing in for the deployed origin and the output deleted.
+- Post-deploy fix (2026-10-29): after a DevTools Lighthouse run the deployed app could stay black, half-loaded, or on the `Operation has been aborted` boot error until the site data was cleared. Root cause and fix in design §11 (bounded `worker.start()`, interception probe, guarded unregister-and-reload, validated persisted database, a button that cleans the stale registration). Gate: `pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm test`, `pnpm build`; E2E `boot-recovery` (6, new), `mocks`, `smoke`, `catalog`, `purchase`, `loading-states`, `realtime-resilience` pass.
 
 ## Coverage
 

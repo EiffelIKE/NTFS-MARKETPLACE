@@ -1,5 +1,6 @@
 import type { Bus, DomainChange } from './bus'
-import { SCHEMA_VERSION, type MockState } from './state'
+import type { MockState } from './state'
+import { validateState } from './validate'
 
 export const DB_KEY = 'kurio.mock.db'
 export const CONFIG_KEY = 'kurio.mock.config'
@@ -74,14 +75,6 @@ interface StoreOptions {
   seed: () => MockState
 }
 
-function isState(value: unknown): value is MockState {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    (value as { schemaVersion?: unknown }).schemaVersion === SCHEMA_VERSION
-  )
-}
-
 export function createStore({ storage, bus, seed }: StoreOptions): Store {
   let state: MockState = seed()
 
@@ -116,11 +109,12 @@ export function createStore({ storage, bus, seed }: StoreOptions): Store {
       else {
         try {
           const parsed: unknown = JSON.parse(raw)
-          if (isState(parsed)) {
-            state = parsed
+          const problem = validateState(parsed)
+          if (problem === null) {
+            state = parsed as MockState
             return true
           }
-          reason = 'unknown schema version'
+          reason = `invalid database (${problem})`
         } catch {
           reason = 'corrupt database'
         }

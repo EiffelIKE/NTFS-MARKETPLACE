@@ -148,7 +148,10 @@ export function createConfigStore(storage: StorageAdapter): ConfigStore {
       const stored = JSON.parse(raw) as Partial<StoredConfig>
       if (stored.scenarioId && isScenarioId(stored.scenarioId)) {
         scenarioId = stored.scenarioId
-        overrides = stored.overrides ?? {}
+        const saved: unknown = stored.overrides
+        // A stored value that is not an object would break every merge below.
+        overrides =
+          typeof saved === 'object' && saved !== null && !Array.isArray(saved) ? saved : {}
       }
     }
   } catch {

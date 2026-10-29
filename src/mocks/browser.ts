@@ -1,12 +1,22 @@
 import { setupWorker } from 'msw/browser'
 
 import { env } from '@/lib/env'
+import {
+  MOCK_WORKER_URL,
+  bootWithRecovery,
+  browserRecovery,
+  hasOrphanedRegistration,
+  pingMock,
+  unregisterMockWorkers,
+  watchMockWorker,
+  type MockBootError,
+} from '@/lib/mock-recovery'
 
 import { isScenarioId } from './config'
 import { createControl } from './control'
 import type { MockControl } from './control-types'
 import { createBrowserStorage, DB_KEY, PANEL_KEY } from './db/store'
-import { createHandlers } from './handlers'
+import { createHandlers, healthPath } from './handlers'
 import { createRuntime } from './runtime'
 import type { MockUrlParams } from './url-params'
 
@@ -29,14 +39,21 @@ function hasLauncherFlag(): boolean {
   }
 }
 
+interface StartHooks {
+  /** The worker went away after a successful boot and could not be brought back. */
+  onLost?: (error: MockBootError) => void
+}
+
 /**
  * Starts the mock API (spec 02 §3): runtime, service worker, `window.__mock`, settlement timer and
  * (when asked for) the panel. `params` come from `takeMockUrlParams()`, read before the first
  * render. The app renders while this runs and holds its requests until it resolves
- * (`lib/backend-ready.ts`). Rejects when the worker cannot start, so the bootstrap shows an error
- * instead of calling a backend that does not exist.
+ * (`lib/backend-ready.ts`). It always settles (spec 13, SW boot recovery): the worker start has a
+ * deadline, a started worker must prove it intercepts, and a failure unregisters the stale
+ * registrations and reloads once. It rejects when that is not enough, so the bootstrap shows an
+ * error instead of calling a backend that does not exist or waiting forever.
  */
-export async function startMocks(params: MockUrlParams): Promise<void> {
+export async function startMocks(params: MockUrlParams, hooks: StartHooks = {}): Promise<void> {
   const runtime = createRuntime({ storage: createBrowserStorage(), baseUrl: env.VITE_API_BASE_URL })
 
   if (params.scenario !== null && !isScenarioId(params.scenario)) {
@@ -49,12 +66,30 @@ export async function startMocks(params: MockUrlParams): Promise<void> {
     runtime.reset()
   }
 
-  const worker = setupWorker(...createHandlers(runtime))
-  await worker.start({
-    serviceWorker: { url: '/mockServiceWorker.js' },
-    quiet: import.meta.env.PROD,
-    // Anything outside the API base (assets, fonts) goes straight to the network.
-    onUnhandledRequest: 'bypass',
+  const healthUrl = `${runtime.baseUrl}${healthPath}`
+  const ping = () => pingMock(healthUrl)
+
+  await bootWithRecovery({
+    start: async () => {
+      // A registration that does not control this page (a hard reload, a worker the browser
+      // dropped) would make MSW reload and wait for a controller that may never come: replace it
+      // with a fresh one in this load.
+      if (await hasOrphanedRegistration()) await unregisterMockWorkers()
+      const worker = setupWorker(...createHandlers(runtime))
+      await worker.start({
+        serviceWorker: { url: MOCK_WORKER_URL },
+        quiet: import.meta.env.PROD,
+        // Anything outside the API base (assets, fonts) goes straight to the network.
+        onUnhandledRequest: 'bypass',
+      })
+    },
+    ping,
+    recover: browserRecovery,
+  })
+
+  watchMockWorker({
+    ping,
+    onLost: (error) => hooks.onLost?.(error),
   })
 
   window.__mock = createControl(runtime)
