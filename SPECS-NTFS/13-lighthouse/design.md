@@ -207,6 +207,8 @@ Two follow-ups after the owner ran Lighthouse 13.5 (Chrome 156 DevTools) on the 
 
 ### 12.1 Phone LCP: eager, high-priority card images
 
+**Status: reverted (`938c491`).** The owner chose the measured score over the insight checks: the change below lowered local mobile Performance from 76 to 73 for an applied-throttling LCP gain of about 0.1 s. The cards are lazy again; this section stays as the record of what was measured.
+
 **Finding.** On the 412 x 823 phone profile the first four catalog cards are in the first viewport (image tops at 385, 417, 652 and 684 px; the right column is offset by 32). The LCP is whichever of them paints first, so it varies between runs (the first card in every local run, the third in the owner's). Each was `loading="lazy"`, `fetchpriority="auto"`, and requested only after the JavaScript and the mock API had produced the card.
 
 **Change.** `ProductGrid` passes `priority` (the existing `NftImage` prop: `loading="eager"`, `fetchpriority="high"`) to the first four cards when `(max-width: 767px)` matches (`useMediaQuery`). Nothing changes from `md` up: at 1350 x 940 the first row is partly visible, but the LCP there is the hero (`priority` already), and raising the cards would make them compete with it. `e2e/catalog.spec.ts` checks it in both projects: four eager and high on the phone project, none on desktop, and that nothing past the fourth card starts inside the first viewport. This supersedes the "first catalog card stays lazy" line of §8 (spec 05 CAT-23); the hero, the details gallery and these four cards are the eager images.
